@@ -1,0 +1,17 @@
+repositories:
+  gym-ignition:
+    type: git
+    url: https://github.com/AndrejOrsula/gym-ignition.git
+    branch: drl_grasping
+  panda_ign:
+    type: git
+    url: https://github.com/AndrejOrsula/panda_ign.git
+    branch: master
+  panda_moveit2_config:
+    type: git
+    url: https://github.com/AndrejOrsula/panda_moveit2_config.git
+    branch: master
+  ign_moveit2:
+    type: git
+    url: https://github.com/AndrejOrsula/ign_moveit2.git
+    branch: joint_trajectory_controller
