@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="3">
+    <name>drl_grasping</name>
+    <version>0.0.0</version>
+    <description>TODO</description>
+    <maintainer email="orsula.andrej@gmail.com">Andrej Orsula</maintainer>
+    <author>Andrej Orsula</author>
+    <license>BSD</license>
+
+    <buildtool_depend>ament_cmake</buildtool_depend>
+
+    <depend>rclcpp</depend>
+
+    <exec_depend>rclpy</exec_depend>
+
+    <test_depend>ament_lint_auto</test_depend>
+    <test_depend>ament_lint_common</test_depend>
+
+    <export>
+        <build_type>ament_cmake</build_type>
+    </export>
+</package>
