@@ -26,38 +26,37 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 
-# # Executables
-# set(EXECUTABLE_0 executable_0)
-# # Executable 0
-# add_executable(${EXECUTABLE_0} src/${EXECUTABLE_0}.cpp)
-# target_link_libraries(${EXECUTABLE_0})
-# ament_target_dependencies(${EXECUTABLE_0}
-#     rclcpp
-# )
-
-# # Install cpp targets
-# install(TARGETS
-#     ${EXECUTABLE_0}
-#     DESTINATION lib/${PROJECT_NAME}
-# )
-
 # Install python module
 ament_python_install_module(
     drl_grasping
 )
 
-# Install python scripts and examples
+# Install scripts
 set(SCRIPTS_DIR scripts)
+install(PROGRAMS
+    ${SCRIPTS_DIR}/utils/process_collection.py
+    ${SCRIPTS_DIR}/enjoy.py
+    ${SCRIPTS_DIR}/train.py
+    DESTINATION lib/${PROJECT_NAME}
+)
+
+# Install tests
+set(TESTS_DIR tests)
+install(PROGRAMS
+    ${TESTS_DIR}/test_env.py
+    ${TESTS_DIR}/test_octree_conv.py
+    DESTINATION lib/${PROJECT_NAME}
+)
+
+# Install examples
 set(EXAMPLES_DIR examples)
 install(PROGRAMS
-    ${SCRIPTS_DIR}/train_grasping.py
-    ${SCRIPTS_DIR}/test_models.py
-    # ${EXAMPLES_DIR}/example_0.py
+    ${EXAMPLES_DIR}train_enjoy.bash
     DESTINATION lib/${PROJECT_NAME}
 )
 
 # Install directories
-install(DIRECTORY config launch drl_grasping/envs/worlds DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 # Setup the project
 ament_package()

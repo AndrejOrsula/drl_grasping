@@ -1,1 +1,1 @@
-from .grasping import GraspingGazeboEnvRandomizer
+from .manipulation import ManipulationGazeboEnvRandomizer

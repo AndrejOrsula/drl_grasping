@@ -2,7 +2,7 @@ from gym_ignition.scenario import model_wrapper
 from gym_ignition.utils import misc
 from gym_ignition.utils.scenario import get_unique_model_name
 from scenario import core as scenario
-from typing import List
+from typing import List, Union
 import os
 
 
@@ -10,6 +10,7 @@ class Camera(model_wrapper.ModelWrapper):
 
     def __init__(self,
                  world: scenario.World,
+                 name: Union[str, None] = None,
                  position: List[float] = (0, 0, 0),
                  orientation: List[float] = (1, 0, 0, 0),
                  camera_type: str = 'rgbd_camera',
@@ -24,10 +25,14 @@ class Camera(model_wrapper.ModelWrapper):
                  noise_stddev: float = None,
                  ros2_bridge_color: bool = False,
                  ros2_bridge_depth: bool = False,
-                 ros2_bridge_points: bool = False):
+                 ros2_bridge_points: bool = False,
+                 visibility_mask: int = 2):
 
         # Get a unique model name
-        model_name = get_unique_model_name(world, camera_type)
+        if name is not None:
+            model_name = get_unique_model_name(world, name)
+        else:
+            model_name = get_unique_model_name(world, camera_type)
         self._model_name = model_name
 
         # Initial pose
@@ -60,15 +65,16 @@ class Camera(model_wrapper.ModelWrapper):
                                     <near>{clip_depth[0]}</near>
                                     <far>{clip_depth[1]}</far>
                                 </clip>
-                            </depth_camera>""" if self.is_rgbd() else ''
+                            </depth_camera>""" if self.is_rgbd() else ""
                             }
                             {
                             f"""<noise>
                                 <type>gaussian</type>
                                 <mean>{noise_mean}</mean>
                                 <stddev>{noise_stddev}</stddev>
-                            </noise>""" if noise_mean is not None and noise_stddev is not None else ''
+                            </noise>""" if noise_mean is not None and noise_stddev is not None else ""
                             }
+                        <visibility_mask>{visibility_mask}</visibility_mask>
                         </camera>
                     </sensor>
                 </link>
@@ -142,7 +148,7 @@ class Camera(model_wrapper.ModelWrapper):
         return f'/{self._model_name}/image' if self.is_rgbd() else f'/{self._model_name}'
 
     def depth_topic(self) -> str:
-        return f'/{self._model_name}/depth_image'
+        return f'/{self._model_name}/depth_image' if self.is_rgbd() else f'/{self._model_name}'
 
     def points_topic(self) -> str:
         return f'/{self._model_name}/points'

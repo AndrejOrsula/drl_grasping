@@ -9,20 +9,21 @@ class Ground(model_wrapper.ModelWrapper):
 
     def __init__(self,
                  world: scenario.World,
+                 name: str = 'ground',
                  position: List[float] = (0, 0, 0),
                  orientation: List[float] = (1, 0, 0, 0),
                  size: List[float] = (1.0, 1.0),
                  collision_thickness=0.05):
 
         # Get a unique model name
-        model_name = get_unique_model_name(world, 'ground')
+        model_name = get_unique_model_name(world, name)
 
         # Initial pose
         initial_pose = scenario.Pose(position, orientation)
 
         # Create SDF string for the model
         sdf = \
-            f"""<sdf version="1.7">
+            f'''<sdf version="1.7">
             <model name="{model_name}">
                 <static>true</static>
                 <link name="{model_name}_link">
@@ -34,7 +35,7 @@ class Ground(model_wrapper.ModelWrapper):
                             </box>
                         </geometry>
                     </collision>
-                    <visual name="%s_visual">
+                    <visual name="{model_name}_visual">
                         <geometry>
                             <plane>
                                 <normal>0 0 1</normal>
@@ -49,7 +50,7 @@ class Ground(model_wrapper.ModelWrapper):
                     </visual>
                 </link>
             </model>
-        </sdf>"""
+        </sdf>'''
 
         # Convert it into a file
         sdf_file = misc.string_to_file(sdf)
