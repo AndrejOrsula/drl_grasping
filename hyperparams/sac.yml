@@ -1,0 +1,94 @@
+# Reach environments
+Reach-Gazebo-v0:
+  policy: "MlpPolicy"
+  policy_kwargs: "dict(net_arch=[128, 64])"
+  env_wrapper:
+    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
+        object_random_pose: True
+  n_timesteps: 100000
+  buffer_size: 50000
+  learning_starts: 2500
+  batch_size: 128
+  learning_rate: 0.0005
+  gamma: 0.98
+  tau: 0.02
+  ent_coef: "auto"
+  target_entropy: "auto"
+  train_freq: -1
+  n_episodes_rollout: 1
+  gradient_steps: -1
+  optimize_memory_usage: True
+  # noise_type: "normal"
+  # noise_std: 0.0
+
+Reach-ColorImage-Gazebo-v0:
+  policy: "CnnPolicy"
+  policy_kwargs: "dict(net_arch=[64, 32])"
+  env_wrapper:
+    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
+        camera_pose_rollouts_num: 0
+        object_random_pose: True
+  n_timesteps: 1000000
+  buffer_size: 10000
+  learning_starts: 1000
+  batch_size: 16
+  learning_rate: 0.0001
+  gamma: 0.98
+  tau: 0.01
+  ent_coef: "auto"
+  target_entropy: "auto"
+  train_freq: -1
+  n_episodes_rollout: 1
+  gradient_steps: -1
+  optimize_memory_usage: True
+  # noise_type: "normal"
+  # noise_std: 0.0
+
+Reach-Octree-Gazebo-v0:
+  policy: "OctreeCnnPolicy"
+  policy_kwargs: "dict(net_arch=[128, 64],features_extractor_kwargs=dict(depth=6,channel_multiplier=8))"
+  env_wrapper:
+    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
+        camera_pose_rollouts_num: 0
+        object_random_pose: True
+  n_timesteps: 100000
+  buffer_size: 50000
+  learning_starts: 20000
+  batch_size: 64
+  learning_rate: 0.0001
+  gamma: 0.98
+  tau: 0.01
+  ent_coef: "auto"
+  target_entropy: "auto"
+  train_freq: -1
+  n_episodes_rollout: 1
+  gradient_steps: 200
+  optimize_memory_usage: True
+  # noise_type: "normal"
+  # noise_std: 0.0
+
+Grasp-Octree-Gazebo-v0:
+  policy: "OctreeCnnPolicy"
+  policy_kwargs: "dict(net_arch=[128, 96],features_extractor_kwargs=dict(depth=5,channel_multiplier=16))"
+  env_wrapper:
+    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
+        robot_random_joint_positions: False
+        camera_pose_rollouts_num: 0
+        ground_model_rollouts_num: 0
+        object_random_pose: True
+        object_models_rollouts_num: 0
+  n_timesteps: 1000000
+  buffer_size: 75000
+  learning_starts: 25000
+  batch_size: 64
+  learning_rate: 0.0001
+  gamma: 0.995
+  tau: 0.005
+  ent_coef: "auto"
+  target_entropy: "auto"
+  train_freq: -1
+  n_episodes_rollout: 1
+  gradient_steps: 250
+  optimize_memory_usage: True
+  noise_type: "normal"
+  noise_std: 0.1
