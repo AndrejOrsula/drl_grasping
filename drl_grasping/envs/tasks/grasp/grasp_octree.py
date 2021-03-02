@@ -33,6 +33,7 @@ class GraspOctree(Grasp, abc.ABC):
                  required_object_height: float = 0.25,
                  octree_depth: int = 5,
                  octree_full_depth: int = 2,
+                 octree_include_color: bool = False,
                  verbose: bool = False,
                  **kwargs):
 
@@ -64,6 +65,7 @@ class GraspOctree(Grasp, abc.ABC):
                                             max_bound=max_bound,
                                             depth=octree_depth,
                                             full_depth=octree_full_depth,
+                                            include_color=octree_include_color,
                                             use_sim_time=True,
                                             debug_draw=False,
                                             node_name=f'drl_grasping_octree_creator_{self.id}')
