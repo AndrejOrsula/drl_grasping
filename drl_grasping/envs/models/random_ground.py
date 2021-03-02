@@ -11,6 +11,7 @@ class RandomGround(model_wrapper.ModelWrapper):
 
     def __init__(self,
                  world: scenario.World,
+                 name: str = 'ground',
                  position: List[float] = (0, 0, 0),
                  orientation: List[float] = (1, 0, 0, 0),
                  size: List[float] = (1.0, 1.0),
@@ -22,7 +23,7 @@ class RandomGround(model_wrapper.ModelWrapper):
             np_random = np.random.default_rng()
 
         # Get a unique model name
-        model_name = get_unique_model_name(world, 'ground')
+        model_name = get_unique_model_name(world, name)
 
         # Initial pose
         initial_pose = scenario.Pose(position, orientation)
@@ -57,7 +58,7 @@ class RandomGround(model_wrapper.ModelWrapper):
 
         # Create SDF string for the model
         sdf = \
-            f"""<sdf version="1.7">
+            f'''<sdf version="1.7">
             <model name="{model_name}">
                 <static>true</static>
                 <link name="{model_name}_link">
@@ -69,7 +70,7 @@ class RandomGround(model_wrapper.ModelWrapper):
                             </box>
                         </geometry>
                     </collision>
-                    <visual name="%s_visual">
+                    <visual name="{model_name}_visual">
                         <geometry>
                             <plane>
                                 <normal>0 0 1</normal>
@@ -82,21 +83,21 @@ class RandomGround(model_wrapper.ModelWrapper):
                             <specular>1 1 1 1</specular>
                             <pbr>
                                 <metal>
-                                    {'<albedo_map>%s</albedo_map>'
-                                        % albedo_map if albedo_map is not None else ''}
-                                    {'<normal_map>%s</normal_map>'
-                                        % normal_map if normal_map is not None else ''}
-                                    {'<roughness_map>%s</roughness_map>'
-                                        % roughness_map if roughness_map is not None else ''}
-                                    {'<metalness_map>%s</metalness_map>' 
-                                        % metalness_map if metalness_map is not None else ''}
+                                    {"<albedo_map>%s</albedo_map>"
+                                        % albedo_map if albedo_map is not None else ""}
+                                    {"<normal_map>%s</normal_map>"
+                                        % normal_map if normal_map is not None else ""}
+                                    {"<roughness_map>%s</roughness_map>"
+                                        % roughness_map if roughness_map is not None else ""}
+                                    {"<metalness_map>%s</metalness_map>" 
+                                        % metalness_map if metalness_map is not None else ""}
                                 </metal>
                             </pbr>
                         </material>
                     </visual>
                 </link>
             </model>
-        </sdf>"""
+        </sdf>'''
 
         # Convert it into a file
         sdf_file = misc.string_to_file(sdf)

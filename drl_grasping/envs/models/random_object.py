@@ -9,6 +9,7 @@ class RandomObject(model_wrapper.ModelWrapper):
 
     def __init__(self,
                  world: scenario.World,
+                 name: str = 'object',
                  position: List[float] = (0, 0, 0),
                  orientation: List[float] = (1, 0, 0, 0),
                  model_paths: str = None,
@@ -21,7 +22,7 @@ class RandomObject(model_wrapper.ModelWrapper):
                  np_random=None):
 
         # Get a unique model name
-        model_name = get_unique_model_name(world, 'object')
+        model_name = get_unique_model_name(world, name)
 
         # Initial pose
         initial_pose = scenario.Pose(position, orientation)

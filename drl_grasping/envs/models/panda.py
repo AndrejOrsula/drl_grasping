@@ -10,6 +10,7 @@ class Panda(model_wrapper.ModelWrapper,
 
     def __init__(self,
                  world: scenario.World,
+                 name: str = 'panda',
                  position: List[float] = (0, 0, 0),
                  orientation: List[float] = (1, 0, 0, 0),
                  model_file: str = None,
@@ -17,7 +18,7 @@ class Panda(model_wrapper.ModelWrapper,
                  initial_joint_positions: List[float] = (0, 0, 0, -1.57, 0, 1.57, 0.79, 0, 0)):
 
         # Get a unique model name
-        model_name = get_unique_model_name(world, "panda")
+        model_name = get_unique_model_name(world, name)
 
         # Initial pose
         initial_pose = scenario.Pose(position, orientation)
@@ -84,6 +85,19 @@ class Panda(model_wrapper.ModelWrapper,
                 (-2.897246558310587, 2.897246558310587),
                 (0.0, 0.04),
                 (0.0, 0.04)]
+
+    @classmethod
+    def get_base_link_name(self) -> str:
+        return "panda_link0"
+
+    @classmethod
+    def get_ee_link_name(self) -> str:
+        return "panda_link8"
+
+    @classmethod
+    def get_gripper_link_names(self) -> List[str]:
+        return ["panda_leftfinger",
+                "panda_rightfinger"]
 
     @classmethod
     def get_finger_count(self) -> int:
