@@ -3,6 +3,14 @@ repositories:
     type: git
     url: https://github.com/AndrejOrsula/gym-ignition.git
     branch: drl_grasping
+  ros_ign:
+    type: git
+    url: https://github.com/ignitionrobotics/ros_ign.git
+    branch: ros2
+  ign_moveit2:
+    type: git
+    url: https://github.com/AndrejOrsula/ign_moveit2.git
+    branch: master
   panda_ign:
     type: git
     url: https://github.com/AndrejOrsula/panda_ign.git
@@ -11,7 +19,7 @@ repositories:
     type: git
     url: https://github.com/AndrejOrsula/panda_moveit2_config.git
     branch: master
-  ign_moveit2:
+  O-CNN:
     type: git
-    url: https://github.com/AndrejOrsula/ign_moveit2.git
-    branch: joint_trajectory_controller
+    url: https://github.com/AndrejOrsula/O-CNN.git
+    branch: master
