@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
 
-from drl_grasping.envs.randomizers import GraspingGazeboEnvRandomizer
+from stable_baselines3.common.env_checker import check_env
+from drl_grasping.envs.randomizers import ManipulationGazeboEnvRandomizer
 from gym_ignition.utils import logger
 import functools
 import gym
 
+# env_id="Reach-Gazebo-v0"
+# env_id="Reach-ColorImage-Gazebo-v0"
+# env_id="Reach-DepthImage-Gazebo-v0"
+# env_id="Reach-Octree-Gazebo-v0"
+
+# env_id="Grasp-Gazebo-v0"
+# env_id="Grasp-ColorImage-Gazebo-v0"
+# env_id="Grasp-DepthImage-Gazebo-v0"
+env_id="Grasp-Octree-Gazebo-v0"
+
 
 def make_env_from_id(env_id: str, **kwargs) -> gym.Env:
     return gym.make(env_id, **kwargs)
-
 
 def main(args=None):
 
@@ -16,10 +26,13 @@ def main(args=None):
     logger.set_level(gym.logger.ERROR)
 
     # Create a partial function passing the environment id
-    make_env = functools.partial(make_env_from_id, env_id="Grasping-Gazebo-v0")
+    make_env = functools.partial(make_env_from_id, env_id=env_id)
 
     # Wrap environment with randomizer
-    env = GraspingGazeboEnvRandomizer(env=make_env)
+    env = ManipulationGazeboEnvRandomizer(env=make_env, object_random_pose=True)
+    
+    # Check it
+    check_env(env, warn=True, skip_render_check=True)
 
     # Initialize random seed
     env.seed(42)
@@ -28,7 +41,7 @@ def main(args=None):
     env.render('human')
 
     # Step environment for bunch of episodes
-    for episode in range(10000):
+    for episode in range(100000):
 
         # Initialize returned values
         done = False
@@ -44,7 +57,7 @@ def main(args=None):
             action = env.action_space.sample()
 
             # Step the environment with the random action
-            observation, reward, done, _ = env.step(action)
+            observation, reward, done, info = env.step(action)
 
             # Accumulate the reward
             total_reward += reward
