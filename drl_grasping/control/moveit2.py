@@ -5,11 +5,7 @@ import rclpy
 
 
 class MoveIt2(MoveIt2Interface):
-    def __init__(self):
-        self.__add_moveit2_interface()
-
-    def __add_moveit2_interface(self):
-        """Add MoveIt2 interface and spin it in another thread"""
+    def __init__(self, separate_gripper_controller: bool = True, use_sim_time: bool = True, node_name: str = 'ign_moveit2_py'):
         try:
             rclpy.init()
         except:
@@ -17,7 +13,9 @@ class MoveIt2(MoveIt2Interface):
                 import sys
                 sys.exit("ROS 2 could not be initialised")
 
-        super().__init__()
+        super().__init__(separate_gripper_controller=separate_gripper_controller,
+                         use_sim_time=use_sim_time,
+                         node_name=node_name)
 
         self._moveit2_executor = MultiThreadedExecutor(1)
         self._moveit2_executor.add_node(self)
