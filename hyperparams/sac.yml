@@ -14,8 +14,7 @@ Reach-Gazebo-v0:
   tau: 0.02
   ent_coef: "auto"
   target_entropy: "auto"
-  train_freq: -1
-  n_episodes_rollout: 1
+  train_freq: [1, "episode"]
   gradient_steps: -1
   optimize_memory_usage: True
   # noise_type: "normal"
@@ -37,8 +36,7 @@ Reach-ColorImage-Gazebo-v0:
   tau: 0.01
   ent_coef: "auto"
   target_entropy: "auto"
-  train_freq: -1
-  n_episodes_rollout: 1
+  train_freq: [1, "episode"]
   gradient_steps: -1
   optimize_memory_usage: True
   # noise_type: "normal"
@@ -60,8 +58,7 @@ Reach-Octree-Gazebo-v0:
   tau: 0.01
   ent_coef: "auto"
   target_entropy: "auto"
-  train_freq: -1
-  n_episodes_rollout: 1
+  train_freq: [1, "episode"]
   gradient_steps: 200
   optimize_memory_usage: True
   # noise_type: "normal"
@@ -86,8 +83,7 @@ Grasp-Octree-Gazebo-v0:
   tau: 0.005
   ent_coef: "auto"
   target_entropy: "auto"
-  train_freq: -1
-  n_episodes_rollout: 1
+  train_freq: [1, "episode"]
   gradient_steps: 250
   optimize_memory_usage: True
   noise_type: "normal"
