@@ -29,6 +29,7 @@ class ReachOctree(Reach, abc.ABC):
                  required_accuracy: float = 0.05,
                  octree_depth: int = 6,
                  octree_full_depth: int = 2,
+                 octree_include_color: bool = False,
                  verbose: bool = False,
                  **kwargs):
 
@@ -56,6 +57,7 @@ class ReachOctree(Reach, abc.ABC):
                                             max_bound=max_bound,
                                             depth=octree_depth,
                                             full_depth=octree_full_depth,
+                                            include_color=octree_include_color,
                                             use_sim_time=True,
                                             debug_draw=False,
                                             node_name=f'drl_grasping_octree_creator_{self.id}')
