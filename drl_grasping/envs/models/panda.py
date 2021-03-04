@@ -25,7 +25,7 @@ class Panda(model_wrapper.ModelWrapper,
 
         # Get the default model description (URDF or SDF) allowing to pass a custom model
         if model_file is None:
-            model_file = self.get_model_file(fuel=False)
+            model_file = self.get_model_file()
 
         # Insert the model
         ok_model = world.to_gazebo().insert_model(model_file,
