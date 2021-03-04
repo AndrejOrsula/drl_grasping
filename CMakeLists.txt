@@ -51,7 +51,7 @@ install(PROGRAMS
 # Install examples
 set(EXAMPLES_DIR examples)
 install(PROGRAMS
-    ${EXAMPLES_DIR}train_enjoy.bash
+    ${EXAMPLES_DIR}/train_enjoy.bash
     DESTINATION lib/${PROJECT_NAME}
 )
 
