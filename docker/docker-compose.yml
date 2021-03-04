@@ -1,0 +1,32 @@
+# Note: Until nvidia runtime [GPU] is supported with compose, instead use `docker run` that achieves exactly this setup
+# Issue to follow: https://github.com/docker/compose/issues/6691
+version: "3.0"
+
+services:
+  drl_grasping:
+    command: ros2 run drl_grasping train_enjoy.bash
+    volumes:
+      - /home/user/.ignition:/root/.ignition
+      - /path/to/training:/root/drl_grasping/training
+      - /path/to/pbr_textures:/root/drl_grasping/pbr_textures
+    image: drl_grasping
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        PARENT_IMAGE: nvidia/cuda:11.2.1-cudnn8-devel-ubuntu20.04
+        PYTHON3_VERSION: "3.8"
+        ROS2_DISTRO: foxy
+        IGNITION_VERSION: dome
+    stdin_open: true
+    tty: true
+    network_mode: host
+    ipc: host
+
+    # The following does not currently work. See note at the beginning of the file
+    # runtime: nvidia
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #       - capabilities: [gpu]
