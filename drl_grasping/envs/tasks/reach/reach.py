@@ -34,7 +34,7 @@ class Reach(Manipulation, abc.ABC):
                  shaped_reward: bool = True,
                  act_quick_reward: float = 0.0,
                  required_accuracy: float = 0.05,
-                 verbose: bool = True,
+                 verbose: bool = False,
                  **kwargs):
 
         # Initialize the Task base class

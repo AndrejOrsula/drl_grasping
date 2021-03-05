@@ -24,6 +24,7 @@ class ReachDepthImage(Reach, abc.ABC):
                  agent_rate: float,
                  restrict_position_goal_to_workspace: bool = True,
                  shaped_reward: bool = True,
+                 act_quick_reward: float = 0.0,
                  required_accuracy: float = 0.05,
                  verbose: bool = False,
                  **kwargs):
@@ -33,6 +34,7 @@ class ReachDepthImage(Reach, abc.ABC):
                        agent_rate=agent_rate,
                        restrict_position_goal_to_workspace=restrict_position_goal_to_workspace,
                        shaped_reward=shaped_reward,
+                       act_quick_reward=act_quick_reward,
                        required_accuracy=required_accuracy,
                        verbose=verbose,
                        **kwargs)

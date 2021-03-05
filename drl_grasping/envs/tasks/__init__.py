@@ -16,6 +16,11 @@ register(
             'agent_rate': REACH_AGENT_RATE,
             'physics_rate': REACH_PHYSICS_RATE,
             'real_time_factor': REACH_RTF,
+            'restrict_position_goal_to_workspace': True,
+            'shaped_reward': True,
+            'act_quick_reward': 0.0,
+            'required_accuracy': 0.05,
+            'verbose': False,
             })
 register(
     id='Reach-ColorImage-Gazebo-v0',
@@ -25,6 +30,11 @@ register(
             'agent_rate': REACH_AGENT_RATE,
             'physics_rate': REACH_PHYSICS_RATE,
             'real_time_factor': REACH_RTF,
+            'restrict_position_goal_to_workspace': True,
+            'shaped_reward': True,
+            'act_quick_reward': 0.0,
+            'required_accuracy': 0.05,
+            'verbose': False,
             })
 register(
     id='Reach-DepthImage-Gazebo-v0',
@@ -34,6 +44,11 @@ register(
             'agent_rate': REACH_AGENT_RATE,
             'physics_rate': REACH_PHYSICS_RATE,
             'real_time_factor': REACH_RTF,
+            'restrict_position_goal_to_workspace': True,
+            'shaped_reward': True,
+            'act_quick_reward': 0.0,
+            'required_accuracy': 0.05,
+            'verbose': False,
             })
 register(
     id='Reach-Octree-Gazebo-v0',
@@ -43,6 +58,14 @@ register(
             'agent_rate': REACH_AGENT_RATE,
             'physics_rate': REACH_PHYSICS_RATE,
             'real_time_factor': REACH_RTF,
+            'restrict_position_goal_to_workspace': True,
+            'shaped_reward': True,
+            'act_quick_reward': 0.0,
+            'required_accuracy': 0.05,
+            'octree_depth': 5,
+            'octree_full_depth': 2,
+            'octree_include_color': False,
+            'verbose': False,
             })
 
 # Grasp
@@ -58,4 +81,18 @@ register(
             'agent_rate': GRASP_AGENT_RATE,
             'physics_rate': GRASP_PHYSICS_RATE,
             'real_time_factor': GRASP_RTF,
+            'restrict_position_goal_to_workspace': True,
+            'gripper_dead_zone': 0.25,
+            'full_3d_orientation': False,
+            'shaped_reward': True,
+            'object_distance_reward_scale': 0.025,
+            'object_height_reward_scale': 1.0,
+            'grasping_object_reward': 0.05,
+            'act_quick_reward': -0.001,
+            'ground_collision_reward': -0.05,
+            'required_object_height': 0.25,
+            'octree_depth': 5,
+            'octree_full_depth': 2,
+            'octree_include_color': False,
+            'verbose': False,
             })
