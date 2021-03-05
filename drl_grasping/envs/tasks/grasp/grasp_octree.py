@@ -14,7 +14,10 @@ class GraspOctree(Grasp, abc.ABC):
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
     _camera_enable: bool = True
     _camera_type: str = 'rgbd_camera'
-    _camera_position: Tuple[float, float, float] = (1.1, -0.75, 0.45)
+    _camera_width: int = 100
+    _camera_height: int = 100
+    _camera_update_rate: int = 6
+    _camera_position: Tuple[float, float, float] = (1.1, -0.75, 0.35)
     _camera_quat_xyzw: Tuple[float, float,
                              float, float] = (-0.0402991, -0.0166924, 0.9230002, 0.3823192)
     _camera_ros2_bridge_points: bool = True
@@ -28,8 +31,11 @@ class GraspOctree(Grasp, abc.ABC):
                  gripper_dead_zone: float = 0.25,
                  full_3d_orientation: bool = False,
                  shaped_reward: bool = True,
-                 grasping_object_reward: float = 0.01,
-                 act_quick_reward: float = -0.002,
+                 object_distance_reward_scale: float = 0.025,
+                 object_height_reward_scale: float = 1.0,
+                 grasping_object_reward: float = 0.05,
+                 act_quick_reward: float = -0.001,
+                 ground_collision_reward: float = -0.05,
                  required_object_height: float = 0.25,
                  octree_depth: int = 5,
                  octree_full_depth: int = 2,
@@ -44,8 +50,11 @@ class GraspOctree(Grasp, abc.ABC):
                        gripper_dead_zone=gripper_dead_zone,
                        full_3d_orientation=full_3d_orientation,
                        shaped_reward=shaped_reward,
+                       object_distance_reward_scale=object_distance_reward_scale,
+                       object_height_reward_scale=object_height_reward_scale,
                        grasping_object_reward=grasping_object_reward,
                        act_quick_reward=act_quick_reward,
+                       ground_collision_reward=ground_collision_reward,
                        required_object_height=required_object_height,
                        verbose=verbose,
                        **kwargs)

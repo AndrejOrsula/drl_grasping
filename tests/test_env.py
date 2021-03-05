@@ -31,14 +31,14 @@ def main(args=None):
     # Wrap environment with randomizer
     env = ManipulationGazeboEnvRandomizer(env=make_env, object_random_pose=True)
     
-    # Check it
-    check_env(env, warn=True, skip_render_check=True)
-
     # Initialize random seed
     env.seed(42)
 
     # Enable rendering
     env.render('human')
+
+    # Check it
+    check_env(env, warn=True, skip_render_check=True)
 
     # Step environment for bunch of episodes
     for episode in range(100000):

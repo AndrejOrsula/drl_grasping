@@ -30,8 +30,11 @@ class Grasp(Manipulation, abc.ABC):
                  gripper_dead_zone: float = 0.25,
                  full_3d_orientation: bool = False,
                  shaped_reward: bool = True,
-                 grasping_object_reward: float = 0.01,
+                 object_distance_reward_scale: float = 0.025,
+                 object_height_reward_scale: float = 1.0,
+                 grasping_object_reward: float = 0.05,
                  act_quick_reward: float = -0.001,
+                 ground_collision_reward: float = -0.05,
                  required_object_height: float = 0.25,
                  verbose: bool = False,
                  **kwargs):
@@ -47,8 +50,11 @@ class Grasp(Manipulation, abc.ABC):
         self._gripper_dead_zone: float = gripper_dead_zone
         self._full_3d_orientation: bool = full_3d_orientation
         self._shaped_reward: bool = shaped_reward
+        self._object_distance_reward_scale: float = object_distance_reward_scale
+        self._object_height_reward_scale: float = object_height_reward_scale
         self._grasping_object_reward: float = grasping_object_reward
         self._act_quick_reward: float = act_quick_reward
+        self._ground_collision_reward: float = ground_collision_reward
         self._required_object_height: float = required_object_height
 
         # Flag indicating if the task is done (performance - get_reward + is_done)
@@ -97,9 +103,9 @@ class Grasp(Manipulation, abc.ABC):
         # gripper_action = action['gripper_action']
         gripper_action = action[0]
         if gripper_action < -self._gripper_dead_zone:
-            self.moveit2.gripper_close(speed=0.1, force=20)
+            self.moveit2.gripper_close()
         elif gripper_action > self._gripper_dead_zone:
-            self.moveit2.gripper_open(speed=0.1)
+            self.moveit2.gripper_open()
         else:
             # No-op for the gripper as it is in the dead zone
             pass
@@ -145,20 +151,26 @@ class Grasp(Manipulation, abc.ABC):
         if not self._is_done:
             if self._shaped_reward:
                 # Give reward based on how much closer robot got relative to the closest object
-                current_min_distance = self.get_closest_object_distance(
-                    object_positions)
+                current_min_distance = self._object_distance_reward_scale * \
+                    self.get_closest_object_distance(object_positions)
                 reward += self._previous_min_distance - current_min_distance
                 self._previous_min_distance = current_min_distance
 
                 # Give reward based on increase in object's height above the ground (only positive)
                 for object_name, object_position in self.get_object_positions().items():
-                    reward += max(0.0, object_position[2] -
-                                  self._previous_object_heights[object_name])
+                    reward += self._object_height_reward_scale * max(0.0, object_position[2] -
+                                                                     self._previous_object_heights[object_name])
                     self._previous_object_heights[object_name] = object_position[2]
 
                 # Give a small positive reward if an object is grasped
                 if len(grasped_objects) > 0:
+                    if self._verbose:
+                        print(f"Object(s) grasped: {grasped_objects}")
                     reward += self._grasping_object_reward
+
+                # Give negative reward for collisions with ground
+                if self.check_ground_collision():
+                    reward += self._ground_collision_reward
 
             # Subtract a small reward each step to provide incentive to act quickly (if enabled)
             if self._act_quick_reward < 0.0:
@@ -192,6 +204,7 @@ class Grasp(Manipulation, abc.ABC):
             self._previous_min_distance = self.get_closest_object_distance(
                 object_positions)
             # Get height of all objects in the scene after the reset
+            self._previous_object_heights.clear()
             for object_name, object_position in object_positions.items():
                 self._previous_object_heights[object_name] = object_position[2]
 
@@ -237,7 +250,7 @@ class Grasp(Manipulation, abc.ABC):
         """
 
         robot = self.world.get_model(self.robot_name)
-        grasped_objects = []
+        grasp_candidates = {}
 
         for gripper_link_name in self.robot_gripper_link_names:
             finger = robot.to_gazebo().get_link(link_name=gripper_link_name)
@@ -246,21 +259,55 @@ class Grasp(Manipulation, abc.ABC):
             if 0 == len(finger_contacts):
                 # If any of the fingers has no contact, immediately return None
                 return []
-            elif 0 == len(grasped_objects):
-                # If there are no candidates (first link being checked), add all current contact bodies
-                for contact in finger_contacts:
-                    for object_name in self.object_names:
-                        if object_name in contact.body_b:
-                            grasped_objects.append(contact.body_b)
             else:
-                # Otherwise, keep only candidates that also have contact with the other finger(s)
-                contact_bodies = [contact.body_b
-                                  for contact in finger_contacts]
-                grasped_objects = list(itertools.filterfalse(lambda x: x not in grasped_objects,
-                                                             contact_bodies))
+                # Otherwise, add all contacted objects as grasp candidates (together with contact points - used later)
+                for contact in finger_contacts:
+                    # Keep only the model name (disregard the link of object that is in collision)
+                    model_name = contact.body_b.split('::', 1)[0]
+                    if any(object_name in model_name for object_name in self.object_names):
+                        if model_name not in grasp_candidates:
+                            grasp_candidates[model_name] = []
+                        grasp_candidates[model_name].append(contact.points)
 
-        # Keep only the model name (disregard the link of object that is in collision)
-        grasped_objects = [model_name.split('::', 1)[0]
-                           for model_name in grasped_objects]
+        # Determine what grasp candidates are indeed grasped objects
+        # First make sure it has concact with all fingers
+        # Then make sure that their normals are dissimilar
+        grasped_objects = []
+        for model_name, contact_points_list in grasp_candidates.items():
+            if len(contact_points_list) < len(self.robot_gripper_link_names):
+                continue
+
+            # Compute average normal of all finger-object collisions
+            average_normals = []
+            for contact_points in contact_points_list:
+                average_normal = np.array([0.0, 0.0, 0.0])
+                for point in contact_points:
+                    average_normal += point.normal
+                average_normal /= np.linalg.norm(average_normal)
+                average_normals.append(average_normal)
+            # Compare normals (via their angle) and reject candidates that are too similar
+            normal_angles = []
+            for n1, n2 in itertools.combinations(average_normals, 2):
+                normal_angles.append(
+                    np.arccos(np.clip(np.dot(n1, n2), -1.0, 1.0)))
+
+            # Angle between at least two normals must be larger than 0.5*pi/(number_of_fingers)
+            sufficient_angle = 0.5*np.pi/len(self.robot_gripper_link_names)
+            for angle in normal_angles:
+                if angle > sufficient_angle:
+                    # If sufficient, add to list and process other candidates
+                    grasped_objects.append(model_name)
+                    continue
 
         return grasped_objects
+
+    def check_ground_collision(self) -> bool:
+        """
+        Returns true if robot links are in collision with the ground.
+        """
+
+        ground = self.world.get_model(self.ground_name)
+        for contact in ground.contacts():
+            if self.robot_name in contact.body_b and not self.robot_base_link_name in contact.body_b:
+                return True
+        return False
