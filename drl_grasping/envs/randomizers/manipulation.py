@@ -31,8 +31,9 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                  robot_random_joint_positions: bool = False,
                  robot_random_joint_positions_std: float = 0.1,
                  camera_pose_rollouts_num: int = 0,
-                 camera_random_pose_distance: float = 0.5,
-                 camera_random_pose_height: Tuple[float, float] = (0.5, 1.0),
+                 camera_random_pose_distance: float = 1.25,
+                 camera_random_pose_height_range: Tuple[float, float] = (
+                     0.1, 0.75),
                  camera_noise_mean: float = None,
                  camera_noise_stddev: float = None,
                  ground_model_rollouts_num: int = 0,
@@ -64,7 +65,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         # Additional parameters
         self._robot_random_joint_positions_std = robot_random_joint_positions_std
         self._camera_random_pose_distance = camera_random_pose_distance
-        self._camera_random_pose_height = camera_random_pose_height
+        self._camera_random_pose_height_range = camera_random_pose_height_range
         self._camera_noise_mean = camera_noise_mean
         self._camera_noise_stddev = camera_noise_stddev
         self._object_random_model_count = object_random_model_count
@@ -366,13 +367,12 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
     def randomize_camera_pose(self,
                               task: SupportedTasks):
 
-        # TODO: Take another look at this (random camera pose)
         # Get random camera pose, centred at object position (or centre of object spawn box)
         position, quat_xyzw = self.get_random_camera_pose(
             task,
             centre=task._workspace_centre,
             distance=self._camera_random_pose_distance,
-            camera_height=self._camera_random_pose_height)
+            height=self._camera_random_pose_height_range)
 
         # Move pose of the camera
         camera = task.world.to_gazebo().get_model(task.camera_name)
@@ -386,24 +386,33 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                            xyzw=True,
                                            child_frame_id=camera_base_frame_id)
 
-    def get_random_camera_pose(self, task: SupportedTasks, centre, distance, camera_height):
+    def get_random_camera_pose(self,
+                               task: SupportedTasks,
+                               centre: Tuple[float, float, float],
+                               distance: float,
+                               height: Tuple[float, float]):
 
-        # Range [0;pi] [-pi;pi]
-        theta = task.np_random.uniform(0.0, 1.0) * np.pi
-        phi = task.np_random.uniform(-1.0, 1.0) * np.pi
+        # Select a random 3D position (with restricted min height)
+        while True:
+            position = np.array([task.np_random.uniform(low=-1.0, high=1.0),
+                                 task.np_random.uniform(low=-1.0, high=1.0),
+                                 task.np_random.uniform(low=height[0], high=height[1])])
+            # Normalize
+            position /= np.linalg.norm(position)
 
-        # Switch to cartesian coordinates
-        x = np.sin(theta) * np.cos(phi)
-        y = np.sin(theta) * np.sin(phi)
-        z = task.np_random.uniform(camera_height[0], camera_height[1])
+            # Make sure it does not get spawned directly behind the robot (checking for +-22.5 deg)
+            if abs(np.arctan2(position[0], position[1]) + np.pi/2) > np.pi/8:
+                break
 
-        pitch = np.arctan2(z, np.sqrt(x**2+y**2))
-        yaw = np.arctan2(y, x) + np.pi
+        # Determine orientation such that camera faces the origin
+        rpy = [0.0,
+               np.arctan2(position[2], np.linalg.norm(position[:2], 2)),
+               np.arctan2(position[1], position[0]) + np.pi]
+        quat_xyzw = Rotation.from_euler('xyz', rpy).as_quat()
 
-        position = [x*distance + centre[0],
-                    y*distance + centre[1],
-                    z*distance + centre[2]]
-        quat_xyzw = Rotation.from_euler('xyz', [0.0, pitch, yaw],).as_quat()
+        # Scale normal vector by distance and translate camera to point at the workspace centre
+        position *= distance
+        position += centre
 
         return position, quat_xyzw
 
