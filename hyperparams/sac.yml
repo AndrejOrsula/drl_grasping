@@ -72,6 +72,34 @@ Reach-Octree-Gazebo-v0:
   noise_type: "normal"
   noise_std: 0.05
 
+Reach-OctreeWithColor-Gazebo-v0:
+  policy: "OctreeCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      depth: 5
+      full_depth: 2
+      channels_in: 6
+      channel_multiplier: 8
+    net_arch: [128, 64]
+  env_wrapper:
+    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
+        camera_pose_rollouts_num: 0
+        object_random_pose: True
+  n_timesteps: 100000
+  buffer_size: 50000
+  learning_starts: 20000
+  batch_size: 64
+  learning_rate: 0.0001
+  gamma: 0.98
+  tau: 0.01
+  ent_coef: "auto"
+  target_entropy: "auto"
+  train_freq: [1, "episode"]
+  gradient_steps: 200
+  optimize_memory_usage: True
+  noise_type: "normal"
+  noise_std: 0.05
+
 # Grasp task
 Grasp-Octree-Gazebo-v0:
   policy: "OctreeCnnPolicy"
@@ -100,6 +128,37 @@ Grasp-Octree-Gazebo-v0:
   target_entropy: "auto"
   train_freq: [1, "episode"]
   gradient_steps: 250
+  optimize_memory_usage: True
+  noise_type: "normal"
+  noise_std: 0.2
+
+Grasp-OctreeWithColor-Gazebo-v0:
+  policy: "OctreeCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      depth: 5
+      full_depth: 2
+      channels_in: 6
+      channel_multiplier: 64
+    net_arch: [128, 96]
+  env_wrapper:
+    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
+        robot_random_joint_positions: False
+        camera_pose_rollouts_num: 0
+        ground_model_rollouts_num: 0
+        object_random_pose: True
+        object_models_rollouts_num: 0
+  n_timesteps: 1000000
+  buffer_size: 150000
+  learning_starts: 25000
+  batch_size: 64
+  learning_rate: 0.0001
+  gamma: 0.995
+  tau: 0.005
+  ent_coef: "auto"
+  target_entropy: "auto"
+  train_freq: [1, "episode"]
+  gradient_steps: 300
   optimize_memory_usage: True
   noise_type: "normal"
   noise_std: 0.2
