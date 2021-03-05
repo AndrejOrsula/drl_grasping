@@ -103,9 +103,9 @@ class Grasp(Manipulation, abc.ABC):
         # gripper_action = action['gripper_action']
         gripper_action = action[0]
         if gripper_action < -self._gripper_dead_zone:
-            self.moveit2.gripper_close()
+            self.moveit2.gripper_close(manual_plan=True)
         elif gripper_action > self._gripper_dead_zone:
-            self.moveit2.gripper_open()
+            self.moveit2.gripper_open(manual_plan=True)
         else:
             # No-op for the gripper as it is in the dead zone
             pass
