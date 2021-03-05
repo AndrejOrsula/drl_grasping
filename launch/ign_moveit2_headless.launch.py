@@ -1,4 +1,4 @@
-"""Forwarded launch of ign_moveit2 (with RViz2 enabled)"""
+"""Forwarded launch of ign_moveit2 (with RViz2 disabled by default)"""
 
 import os
 from ament_index_python.packages import get_package_share_directory
@@ -13,8 +13,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 def generate_launch_description():
     # Launch Arguments
     use_sim_time = LaunchConfiguration('use_sim_time', default=True)
-    config_rviz2 = LaunchConfiguration('config_rviz2', default=os.path.join(get_package_share_directory('drl_grasping'),
-                                                                            'launch', 'rviz.rviz'))
+    config_rviz2 = LaunchConfiguration('config_rviz2', default="")
     log_level = LaunchConfiguration('log_level', default='fatal')
 
     return LaunchDescription([
