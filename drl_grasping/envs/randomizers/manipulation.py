@@ -194,6 +194,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                      task._robot_quat_xyzw),
                                  initial_joint_positions=task._robot_initial_joint_positions)
         task.robot_name = robot.name()
+        task.robot_base_link_name = robot.get_base_link_name()
         task.robot_ee_link_name = robot.get_ee_link_name()
         task.robot_gripper_link_names = robot.get_gripper_link_names()
 

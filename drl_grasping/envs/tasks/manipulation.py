@@ -85,6 +85,7 @@ class Manipulation(task.Task, abc.ABC):
 
         # Names of important models
         self.robot_name = None
+        self.robot_base_link_name = None
         self.robot_ee_link_name = None
         self.robot_gripper_link_names = []
         self.camera_name = None
