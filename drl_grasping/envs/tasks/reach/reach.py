@@ -10,6 +10,8 @@ import numpy as np
 class Reach(Manipulation, abc.ABC):
 
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
+    _robot_arm_collision: bool = False
+    _robot_hand_collision: bool = False
     _robot_initial_joint_positions: Tuple[float, ...] = (0.0,
                                                          0.0,
                                                          0.0,

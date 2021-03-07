@@ -20,6 +20,8 @@ class Manipulation(task.Task, abc.ABC):
     _robot_model: str = 'panda'
     _robot_position: Tuple[float, float, float] = (0, 0, 0)
     _robot_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
+    _robot_arm_collision: bool = True
+    _robot_hand_collision: bool = True
     _robot_initial_joint_positions: Tuple[float, ...] = (0.0,
                                                          0.0,
                                                          0.0,

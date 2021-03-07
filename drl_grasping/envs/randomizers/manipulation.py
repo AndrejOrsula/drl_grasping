@@ -193,6 +193,8 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                  position=task._robot_position,
                                  orientation=conversions.Quaternion.to_wxyz(
                                      task._robot_quat_xyzw),
+                                 arm_collision=task._robot_arm_collision,
+                                 hand_collision=task._robot_hand_collision,
                                  initial_joint_positions=task._robot_initial_joint_positions)
         task.robot_name = robot.name()
         task.robot_base_link_name = robot.get_base_link_name()

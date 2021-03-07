@@ -12,6 +12,8 @@ import numpy as np
 class Grasp(Manipulation, abc.ABC):
 
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
+    _robot_arm_collision: bool = False
+    _robot_hand_collision: bool = True
     _ground_enable: bool = True
     _ground_position: Tuple[float, float, float] = (0.5, 0, 0)
     _ground_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
