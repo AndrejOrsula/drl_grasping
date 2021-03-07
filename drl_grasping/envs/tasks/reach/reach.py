@@ -129,7 +129,7 @@ class Reach(Manipulation, abc.ABC):
                 self._previous_distance = current_distance
 
             # Subtract a small reward each step to provide incentive to act quickly (if enabled)
-            if self._act_quick_reward < 0.0:
+            if self._act_quick_reward != 0.0:
                 reward += self._act_quick_reward
 
         if self._verbose:
