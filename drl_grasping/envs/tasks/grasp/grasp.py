@@ -28,17 +28,17 @@ class Grasp(Manipulation, abc.ABC):
 
     def __init__(self,
                  agent_rate: float,
-                 restrict_position_goal_to_workspace: bool = True,
-                 gripper_dead_zone: float = 0.25,
-                 full_3d_orientation: bool = False,
-                 shaped_reward: bool = True,
-                 object_distance_reward_scale: float = 0.025,
-                 object_height_reward_scale: float = 1.0,
-                 grasping_object_reward: float = 0.05,
-                 act_quick_reward: float = -0.001,
-                 ground_collision_reward: float = -0.05,
-                 required_object_height: float = 0.25,
-                 verbose: bool = False,
+                 restrict_position_goal_to_workspace: bool,
+                 gripper_dead_zone: float,
+                 full_3d_orientation: bool,
+                 shaped_reward: bool,
+                 object_distance_reward_scale: float,
+                 object_height_reward_scale: float,
+                 grasping_object_reward: float,
+                 act_quick_reward: float,
+                 ground_collision_reward: float,
+                 required_object_height: float,
+                 verbose: bool,
                  **kwargs):
 
         # Initialize the Task base class

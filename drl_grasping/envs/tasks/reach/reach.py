@@ -32,11 +32,11 @@ class Reach(Manipulation, abc.ABC):
 
     def __init__(self,
                  agent_rate: float,
-                 restrict_position_goal_to_workspace: bool = True,
-                 shaped_reward: bool = True,
-                 act_quick_reward: float = 0.0,
-                 required_accuracy: float = 0.05,
-                 verbose: bool = False,
+                 restrict_position_goal_to_workspace: bool,
+                 shaped_reward: bool,
+                 act_quick_reward: float,
+                 required_accuracy: float,
+                 verbose: bool,
                  **kwargs):
 
         # Initialize the Task base class

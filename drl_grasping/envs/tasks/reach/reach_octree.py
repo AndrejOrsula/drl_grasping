@@ -24,14 +24,14 @@ class ReachOctree(Reach, abc.ABC):
 
     def __init__(self,
                  agent_rate: float,
-                 restrict_position_goal_to_workspace: bool = True,
-                 shaped_reward: bool = True,
-                 act_quick_reward: float = 0.0,
-                 required_accuracy: float = 0.05,
-                 octree_depth: int = 5,
-                 octree_full_depth: int = 2,
-                 octree_include_color: bool = False,
-                 verbose: bool = False,
+                 restrict_position_goal_to_workspace: bool,
+                 shaped_reward: bool,
+                 act_quick_reward: float,
+                 required_accuracy: float,
+                 octree_depth: int,
+                 octree_full_depth: int,
+                 octree_include_color: bool,
+                 verbose: bool,
                  **kwargs):
 
         # Initialize the Task base class
