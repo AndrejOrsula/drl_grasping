@@ -154,9 +154,10 @@ class Grasp(Manipulation, abc.ABC):
             if self._shaped_reward:
                 # Give reward based on how much closer robot got relative to the closest object
                 if self._object_distance_reward_scale != 0.0:
-                    current_min_distance = self._object_distance_reward_scale * \
-                        self.get_closest_object_distance(object_positions)
-                    reward += self._previous_min_distance - current_min_distance
+                    current_min_distance = self.get_closest_object_distance(
+                        object_positions)
+                    reward += self._object_distance_reward_scale * \
+                        (self._previous_min_distance - current_min_distance)
                     self._previous_min_distance = current_min_distance
 
                 # Give reward based on increase in object's height above the ground (only positive)
