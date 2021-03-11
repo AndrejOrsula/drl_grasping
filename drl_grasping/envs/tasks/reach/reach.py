@@ -10,6 +10,8 @@ import numpy as np
 class Reach(Manipulation, abc.ABC):
 
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
+    _robot_arm_collision: bool = False
+    _robot_hand_collision: bool = False
     _robot_initial_joint_positions: Tuple[float, ...] = (0.0,
                                                          0.0,
                                                          0.0,
@@ -30,11 +32,11 @@ class Reach(Manipulation, abc.ABC):
 
     def __init__(self,
                  agent_rate: float,
-                 restrict_position_goal_to_workspace: bool = True,
-                 shaped_reward: bool = True,
-                 act_quick_reward: float = 0.0,
-                 required_accuracy: float = 0.05,
-                 verbose: bool = False,
+                 restrict_position_goal_to_workspace: bool,
+                 shaped_reward: bool,
+                 act_quick_reward: float,
+                 required_accuracy: float,
+                 verbose: bool,
                  **kwargs):
 
         # Initialize the Task base class
@@ -127,7 +129,7 @@ class Reach(Manipulation, abc.ABC):
                 self._previous_distance = current_distance
 
             # Subtract a small reward each step to provide incentive to act quickly (if enabled)
-            if self._act_quick_reward < 0.0:
+            if self._act_quick_reward != 0.0:
                 reward += self._act_quick_reward
 
         if self._verbose:

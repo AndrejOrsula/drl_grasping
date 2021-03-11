@@ -1,4 +1,6 @@
-ARG PARENT_IMAGE=nvidia/cuda:11.2.1-cudnn8-devel-ubuntu20.04
+### CUDA 11.2 does not seem to work with Pytorch on some machines (I suspect it is caused by differences in driver version, even if they are included in support matrix)
+# ARG PARENT_IMAGE=nvidia/cuda:11.2.1-cudnn8-devel-ubuntu20.04
+ARG PARENT_IMAGE=nvidia/cuda:11.0.3-cudnn8-devel-ubuntu20.04
 FROM ${PARENT_IMAGE}
 
 ### Use bash by default
@@ -61,11 +63,17 @@ RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb
     rm -rf /var/lib/apt/lists/*
 
 ### Install torch
+### Note: torch 1.8.0 does not always play nice with CUDA, restrict to 1.7.1 for now 
 RUN pip3 install \
-        torch \
-        torchvision \
+        torch==1.7.1 \
+        torchvision==0.8.2 \
         tqdm \
         yacs
+# RUN pip3 install \
+#         torch \
+#         torchvision \
+#         tqdm \
+#         yacs
 
 ### Install stable_baselines3
 RUN apt-get update && \
@@ -163,8 +171,14 @@ RUN pip3 install \
         trimesh \
         pcg_gazebo
 
+# Enable OpenGl for ignition camera sensors (required to create context)
+COPY --from=nvidia/opengl:1.2-glvnd-runtime-ubuntu20.04 /usr/local /usr/local
+ENV NVIDIA_VISIBLE_DEVICES ${NVIDIA_VISIBLE_DEVICES:-all}
+ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
+
 ARG DRL_GRASPING_GIT_BRANCH=devel
-RUN mkdir -p ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
+ARG DRL_GRASPING_DOCKER_VERSION=0.0.0
+RUN apt-get update && mkdir -p ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
     cd ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
     git clone https://github.com/AndrejOrsula/drl_grasping.git -b ${DRL_GRASPING_GIT_BRANCH} && \
     vcs import < drl_grasping/drl_grasping.repos ; \

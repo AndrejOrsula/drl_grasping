@@ -12,6 +12,8 @@ import numpy as np
 class Grasp(Manipulation, abc.ABC):
 
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
+    _robot_arm_collision: bool = False
+    _robot_hand_collision: bool = True
     _ground_enable: bool = True
     _ground_position: Tuple[float, float, float] = (0.5, 0, 0)
     _ground_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
@@ -20,23 +22,23 @@ class Grasp(Manipulation, abc.ABC):
     _object_enable: bool = True
     _workspace_centre: Tuple[float, float, float] = (0.5, 0, 0.25)
     _workspace_volume: Tuple[float, float, float] = (0.6, 0.6, 0.6)
-    _object_spawn_volume: Tuple[float, float, float] = (0.3, 0.3, 0.1)
-    _object_spawn_height: float = 0.1
+    _object_spawn_volume: Tuple[float, float, float] = (0.3, 0.3, 0.01)
+    _object_spawn_height: float = 0.05
     _object_color: Tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
 
     def __init__(self,
                  agent_rate: float,
-                 restrict_position_goal_to_workspace: bool = True,
-                 gripper_dead_zone: float = 0.25,
-                 full_3d_orientation: bool = False,
-                 shaped_reward: bool = True,
-                 object_distance_reward_scale: float = 0.025,
-                 object_height_reward_scale: float = 1.0,
-                 grasping_object_reward: float = 0.05,
-                 act_quick_reward: float = -0.001,
-                 ground_collision_reward: float = -0.05,
-                 required_object_height: float = 0.25,
-                 verbose: bool = False,
+                 restrict_position_goal_to_workspace: bool,
+                 gripper_dead_zone: float,
+                 full_3d_orientation: bool,
+                 shaped_reward: bool,
+                 object_distance_reward_scale: float,
+                 object_height_reward_scale: float,
+                 grasping_object_reward: float,
+                 act_quick_reward: float,
+                 ground_collision_reward: float,
+                 required_object_height: float,
+                 verbose: bool,
                  **kwargs):
 
         # Initialize the Task base class
@@ -103,9 +105,9 @@ class Grasp(Manipulation, abc.ABC):
         # gripper_action = action['gripper_action']
         gripper_action = action[0]
         if gripper_action < -self._gripper_dead_zone:
-            self.moveit2.gripper_close()
+            self.moveit2.gripper_close(manual_plan=True)
         elif gripper_action > self._gripper_dead_zone:
-            self.moveit2.gripper_open()
+            self.moveit2.gripper_open(manual_plan=True)
         else:
             # No-op for the gripper as it is in the dead zone
             pass
@@ -151,29 +153,35 @@ class Grasp(Manipulation, abc.ABC):
         if not self._is_done:
             if self._shaped_reward:
                 # Give reward based on how much closer robot got relative to the closest object
-                current_min_distance = self._object_distance_reward_scale * \
-                    self.get_closest_object_distance(object_positions)
-                reward += self._previous_min_distance - current_min_distance
-                self._previous_min_distance = current_min_distance
+                if self._object_distance_reward_scale != 0.0:
+                    current_min_distance = self.get_closest_object_distance(
+                        object_positions)
+                    # TODO: Consider giving only positive reward (just like in object height below)
+                    reward += self._object_distance_reward_scale * \
+                        (self._previous_min_distance - current_min_distance)
+                    self._previous_min_distance = current_min_distance
 
                 # Give reward based on increase in object's height above the ground (only positive)
-                for object_name, object_position in self.get_object_positions().items():
-                    reward += self._object_height_reward_scale * max(0.0, object_position[2] -
-                                                                     self._previous_object_heights[object_name])
-                    self._previous_object_heights[object_name] = object_position[2]
+                if self._object_height_reward_scale != 0.0:
+                    for object_name, object_position in object_positions.items():
+                        reward += self._object_height_reward_scale * max(0.0, object_position[2] -
+                                                                         self._previous_object_heights[object_name])
+                        self._previous_object_heights[object_name] = object_position[2]
 
                 # Give a small positive reward if an object is grasped
-                if len(grasped_objects) > 0:
-                    if self._verbose:
-                        print(f"Object(s) grasped: {grasped_objects}")
-                    reward += self._grasping_object_reward
+                if self._grasping_object_reward != 0.0:
+                    if len(grasped_objects) > 0:
+                        if self._verbose:
+                            print(f"Object(s) grasped: {grasped_objects}")
+                        reward += self._grasping_object_reward
 
                 # Give negative reward for collisions with ground
-                if self.check_ground_collision():
-                    reward += self._ground_collision_reward
+                if self._ground_collision_reward != 0.0:
+                    if self.check_ground_collision():
+                        reward += self._ground_collision_reward
 
             # Subtract a small reward each step to provide incentive to act quickly (if enabled)
-            if self._act_quick_reward < 0.0:
+            if self._act_quick_reward != 0.0:
                 reward += self._act_quick_reward
 
         if self._verbose:
@@ -201,12 +209,14 @@ class Grasp(Manipulation, abc.ABC):
             # Get current positions of all objects in the scene
             object_positions = self.get_object_positions()
             # Get distance to the closest object after the reset
-            self._previous_min_distance = self.get_closest_object_distance(
-                object_positions)
+            if self._object_distance_reward_scale != 0.0:
+                self._previous_min_distance = self.get_closest_object_distance(
+                    object_positions)
             # Get height of all objects in the scene after the reset
-            self._previous_object_heights.clear()
-            for object_name, object_position in object_positions.items():
-                self._previous_object_heights[object_name] = object_position[2]
+            if self._object_height_reward_scale != 0.0:
+                self._previous_object_heights.clear()
+                for object_name, object_position in object_positions.items():
+                    self._previous_object_heights[object_name] = object_position[2]
 
     def get_closest_object_distance(self, object_positions:  Dict[str, Tuple[float, float, float]]) -> float:
 

@@ -3,6 +3,7 @@ from gym_ignition.utils.scenario import get_unique_model_name
 from scenario import core as scenario
 from scenario import gazebo as scenario_gazebo
 from typing import List, Tuple
+from os import path
 
 
 class Panda(model_wrapper.ModelWrapper,
@@ -14,6 +15,9 @@ class Panda(model_wrapper.ModelWrapper,
                  position: List[float] = (0, 0, 0),
                  orientation: List[float] = (1, 0, 0, 0),
                  model_file: str = None,
+                 use_fuel: bool = True,
+                 arm_collision: bool = True,
+                 hand_collision: bool = True,
                  separate_gripper_controller: bool = True,
                  initial_joint_positions: List[float] = (0, 0, 0, -1.57, 0, 1.57, 0.79, 0, 0)):
 
@@ -25,7 +29,12 @@ class Panda(model_wrapper.ModelWrapper,
 
         # Get the default model description (URDF or SDF) allowing to pass a custom model
         if model_file is None:
-            model_file = self.get_model_file()
+            model_file = self.get_model_file(fuel=use_fuel)
+
+        if not arm_collision or not hand_collision:
+            model_file = self.disable_collision(model_file=model_file,
+                                                arm_collision=arm_collision,
+                                                hand_collision=hand_collision)
 
         # Insert the model
         ok_model = world.to_gazebo().insert_model(model_file,
@@ -389,3 +398,45 @@ class Panda(model_wrapper.ModelWrapper,
              str(self.get_initial_joint_positions()[7]),
              self.get_joint_names()[8],
              str(self.get_initial_joint_positions()[8]))
+
+    @classmethod
+    def disable_collision(self,
+                          model_file: str,
+                          arm_collision: bool,
+                          hand_collision: bool) -> str:
+
+        new_model_file = path.join(path.dirname(model_file),
+                                   'model_without_arm_collision.sdf')
+
+        # Remove collision geometry
+        with open(model_file, "r") as original_sdf_file:
+            with open(new_model_file, "w") as new_sdf_file:
+                while True:
+                    # Read a new line and make sure it is not the end of the file
+                    line = original_sdf_file.readline()
+                    if not line.rstrip():
+                        break
+
+                    # Once `<collision>` for lower links is encountered, skip that and all lines until `</collision>` is reached
+                    if not arm_collision:
+                        if '<collision name="panda_link' in line:
+                            line = original_sdf_file.readline()
+                            while not '</collision>' in line:
+                                line = original_sdf_file.readline()
+                            continue
+
+                    # Same as for arm, but check for hand and both fingers
+                    if not hand_collision:
+                        if '<collision name="panda_hand_collision">' in line \
+                            or '<collision name="panda_leftfinger_collision">' in line \
+                                or '<collision name="panda_rightfinger_collision">' in line:
+                            line = original_sdf_file.readline()
+                            while not '</collision>' in line:
+                                line = original_sdf_file.readline()
+                            continue
+
+                    # Write all other lines into the new file
+                    new_sdf_file.write(line)
+
+        # Return path to the new file
+        return new_model_file

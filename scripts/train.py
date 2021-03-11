@@ -14,11 +14,6 @@ from stable_baselines3.common.utils import set_random_seed
 from drl_grasping.utils.training.exp_manager import ExperimentManager
 from drl_grasping.utils.training.utils import ALGOS, StoreDict
 
-# Needed to get the registered "OctreeCnnPolicy"
-# TODO: investigate if import is needed
-from drl_grasping.algorithms import policies
-
-
 seaborn.set()
 
 
