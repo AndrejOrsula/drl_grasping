@@ -1,1 +1,1 @@
-from .policies import OctreeCnnFeaturesExtractor, OctreeCnnPolicy
+from . import sac, td3

@@ -1,118 +1,17 @@
+from drl_grasping.algorithms.common.features_extractor import OctreeCnnFeaturesExtractor
 from stable_baselines3.common.policies import register_policy, ContinuousCritic
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.sac.policies import SACPolicy
+from stable_baselines3.common.utils import is_vectorized_observation
+from stable_baselines3.common.vec_env.obs_dict_wrapper import ObsDictWrapper
 from stable_baselines3.sac.policies import Actor
+from stable_baselines3.sac.policies import SACPolicy
 from torch import nn
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 import gym
-import ocnn
-import torch
+import numpy as np
 import torch as th
 
-
-class OctreeConvRelu(torch.nn.Module):
-    def __init__(self, depth, channel_in, channel_out, kernel_size=[3], stride=1):
-        super(OctreeConvRelu, self).__init__()
-        self.conv = ocnn.OctreeConv(depth,
-                                    channel_in,
-                                    channel_out,
-                                    kernel_size,
-                                    stride)
-        self.relu = torch.nn.ReLU(inplace=True)
-
-    def forward(self, data_in, octree):
-        out = self.conv(data_in, octree)
-        out = self.relu(out)
-        return out
-
-
-class OctreeConvFastRelu(torch.nn.Module):
-    def __init__(self, depth, channel_in, channel_out, kernel_size=[3], stride=1):
-        super(OctreeConvFastRelu, self).__init__()
-        self.conv = ocnn.OctreeConvFast(depth,
-                                        channel_in,
-                                        channel_out,
-                                        kernel_size,
-                                        stride)
-        self.relu = torch.nn.ReLU(inplace=True)
-
-    def forward(self, data_in, octree):
-        out = self.conv(data_in, octree)
-        out = self.relu(out)
-        return out
-
-
-class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
-    """
-    :param observation_space:
-    :param depth: Depth of input octree.
-    :param full_depth: Depth at which convolutions stop and the octree is turned into voxel grid and flattened into output feature vector.
-    :param channels_in: Number of input channels.
-    :param channel_multiplier: Multiplier for the number of channels after each pooling. 
-                               With this parameter set to 1, the channels are [1, 2, 4, 8, ...] for [depth, depth-1, ..., full_depth].
-    """
-
-    def __init__(self,
-                 observation_space: gym.spaces.Box,
-                 depth: int = 5,
-                 full_depth: int = 2,
-                 channels_in: int = 3,
-                 channel_multiplier: int = 4):
-
-        self._depth = depth
-        self._channels_in = channels_in
-
-        # Channels ordered as [channels_in, depth, depth-1, ..., full_depth]
-        # I.e [channels_in, channel_multiplier*1, channel_multiplier*2, channel_multiplier*4, channel_multiplier*8,...]
-        channels = [channel_multiplier*(2**i) for i in range(depth-full_depth)]
-        channels.insert(0, channels_in)
-
-        # The number of extracted features equals the channels at full_depth, times the number of cells in its voxel grid (O=3n)
-        features_dim = channels[-1]*(2 ** (3 * full_depth))
-
-        # Chain up parent constructor now that the dimension of the extracted features is known
-        super(OctreeCnnFeaturesExtractor, self).__init__(observation_space,
-                                                         features_dim)
-
-        # Create all Octree convolution and pooling layers in depth-descending order [depth, depth-1, ..., full_depth]
-        # Input to the first conv layer is the input Octree at depth=depth
-        # Output from the last pool layer is feature map at depth=full_depth
-        OctreeConv, OctreePool = OctreeConvFastRelu, ocnn.OctreeMaxPool
-        self.convs = torch.nn.ModuleList([OctreeConv(depth-i, channels[i], channels[i+1])
-                                          for i in range(depth-full_depth)])
-        self.pools = torch.nn.ModuleList([OctreePool(depth-i)
-                                          for i in range(depth-full_depth)])
-
-        # Layer that converts octree at depth=full_depth into a full voxel grid (zero padding) such that it has a fixed size
-        self.octree2voxel = ocnn.FullOctree2Voxel(full_depth)
-        # Layer that flattens the voxel grid into a feature vector, this is the last layer of feature extractor that should feed into FC layers
-        self.flatten = torch.nn.Flatten()
-
-    def forward(self, octree):
-
-        # Create a true Octree batch from the input
-        # TODO: Use custom replay buffer thet creates batch properly. This would avoid 'CPU -> CUDA ->' CPU -> CUDA transfer
-        octree_batch = ocnn.octree_batch(torch.split(octree.cpu(), 1)).cuda()
-
-        # Extract features from the octree at the finest depth
-        data = ocnn.octree_property(octree_batch, 'feature', self._depth)
-
-        # Make sure the number of input channels matches the argument passed to constructor
-        assert data.size(1) == self._channels_in
-
-        # Pass the data through all convolutional and polling layers
-        for i in range(len(self.convs)):
-            data = self.convs[i](data, octree_batch)
-            data = self.pools[i](data, octree_batch)
-
-        # Convert octree at full_depth into a voxel grid
-        data = self.octree2voxel(data)
-
-        # Flatten into a feature vector
-        data = self.flatten(data)
-
-        return data
-
+import ocnn
 
 class ActorOctreeCnn(Actor):
     """
@@ -335,6 +234,63 @@ class OctreeCnnPolicy(SACPolicy):
         critic_kwargs = self._update_features_extractor(
             self.critic_kwargs, features_extractor)
         return ContinuousCriticOctreeCnn(**critic_kwargs).to(self.device)
+
+    def predict(
+        self,
+        observation: np.ndarray,
+        state: Optional[np.ndarray] = None,
+        mask: Optional[np.ndarray] = None,
+        deterministic: bool = False,
+    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+        """
+        Overriden to create proper Octree batch.
+        Get the policy action and state from an observation (and optional state).
+
+        :param observation: the input observation
+        :param state: The last states (can be None, used in recurrent policies)
+        :param mask: The last masks (can be None, used in recurrent policies)
+        :param deterministic: Whether or not to return deterministic actions.
+        :return: the model's action and the next state
+            (used in recurrent policies)
+        """
+        # TODO (GH/1): add support for RNN policies
+        # if state is None:
+        #     state = self.initial_state
+        # if mask is None:
+        #     mask = [False for _ in range(self.n_envs)]
+        if isinstance(observation, dict):
+            observation = ObsDictWrapper.convert_dict(observation)
+        else:
+            observation = np.array(observation)
+
+        vectorized_env = is_vectorized_observation(
+            observation, self.observation_space)
+
+        observation = ocnn.octree_batch(
+            [th.from_numpy(observation)]).to(self.device)
+
+        with th.no_grad():
+            actions = self._predict(observation, deterministic=deterministic)
+        # Convert to numpy
+        actions = actions.cpu().numpy()
+
+        if isinstance(self.action_space, gym.spaces.Box):
+            if self.squash_output:
+                # Rescale to proper domain when using squashing
+                actions = self.unscale_action(actions)
+            else:
+                # Actions could be on arbitrary scale, so clip the actions to avoid
+                # out of bound error (e.g. if sampling from a Gaussian distribution)
+                actions = np.clip(
+                    actions, self.action_space.low, self.action_space.high)
+
+        if not vectorized_env:
+            if state is not None:
+                raise ValueError(
+                    "Error: The environment must be vectorized when using recurrent policies.")
+            actions = actions[0]
+
+        return actions, state
 
 
 register_policy("OctreeCnnPolicy", OctreeCnnPolicy)
