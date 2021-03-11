@@ -19,9 +19,6 @@ class ReachOctree(Reach, abc.ABC):
                              float, float] = (-0.0402991, -0.0166924, 0.9230002, 0.3823192)
     _camera_ros2_bridge_points: bool = True
 
-    # TODO: replace with variable-sized replay buffer
-    _octree_max_size = 25000
-
     def __init__(self,
                  agent_rate: float,
                  restrict_position_goal_to_workspace: bool,
@@ -31,6 +28,7 @@ class ReachOctree(Reach, abc.ABC):
                  octree_depth: int,
                  octree_full_depth: int,
                  octree_include_color: bool,
+                 octree_max_size: int,
                  verbose: bool,
                  **kwargs):
 
@@ -63,6 +61,9 @@ class ReachOctree(Reach, abc.ABC):
                                             use_sim_time=True,
                                             debug_draw=False,
                                             node_name=f'drl_grasping_octree_creator_{self.id}')
+
+        # Additional parameters
+        self._octree_max_size = octree_max_size
 
     def create_observation_space(self) -> ObservationSpace:
 

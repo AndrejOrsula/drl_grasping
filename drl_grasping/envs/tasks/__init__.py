@@ -6,7 +6,7 @@ from .grasp import Grasp, GraspOctree
 # Reach
 REACH_MAX_EPISODE_STEPS: int = 100
 REACH_AGENT_RATE: float = 2.5
-REACH_PHYSICS_RATE: float = 200.0
+REACH_PHYSICS_RATE: float = 100.0
 REACH_RTF: float = 15.0
 register(
     id='Reach-Gazebo-v0',
@@ -65,6 +65,7 @@ register(
             'octree_depth': 5,
             'octree_full_depth': 2,
             'octree_include_color': False,
+            'octree_max_size': 20000,
             'verbose': False,
             })
 register(
@@ -82,13 +83,14 @@ register(
             'octree_depth': 5,
             'octree_full_depth': 2,
             'octree_include_color': True,
+            'octree_max_size': 25000,
             'verbose': False,
             })
 
 # Grasp
 GRASP_MAX_EPISODE_STEPS: int = 250
 GRASP_AGENT_RATE: float = 2.5
-GRASP_PHYSICS_RATE: float = 250.0
+GRASP_PHYSICS_RATE: float = 200.0
 GRASP_RTF: float = 10.0
 register(
     id='Grasp-Octree-Gazebo-v0',
@@ -102,15 +104,16 @@ register(
             'gripper_dead_zone': 0.25,
             'full_3d_orientation': False,
             'shaped_reward': True,
-            'object_distance_reward_scale': 0.025,
+            'object_distance_reward_scale': 0.1,
             'object_height_reward_scale': 1.0,
             'grasping_object_reward': 0.05,
-            'act_quick_reward': -0.001,
-            'ground_collision_reward': -0.05,
+            'act_quick_reward': 0.0,
+            'ground_collision_reward': 0.0,
             'required_object_height': 0.25,
             'octree_depth': 5,
             'octree_full_depth': 2,
             'octree_include_color': False,
+            'octree_max_size': 30000,
             'verbose': False,
             })
 register(
@@ -125,14 +128,15 @@ register(
             'gripper_dead_zone': 0.25,
             'full_3d_orientation': False,
             'shaped_reward': True,
-            'object_distance_reward_scale': 0.025,
+            'object_distance_reward_scale': 0.1,
             'object_height_reward_scale': 1.0,
             'grasping_object_reward': 0.05,
-            'act_quick_reward': -0.001,
-            'ground_collision_reward': -0.05,
+            'act_quick_reward': 0.0,
+            'ground_collision_reward': 0.0,
             'required_object_height': 0.25,
             'octree_depth': 5,
             'octree_full_depth': 2,
             'octree_include_color': True,
+            'octree_max_size': 40000,
             'verbose': False,
             })

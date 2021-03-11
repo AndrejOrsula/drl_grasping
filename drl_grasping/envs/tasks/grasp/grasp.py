@@ -22,8 +22,8 @@ class Grasp(Manipulation, abc.ABC):
     _object_enable: bool = True
     _workspace_centre: Tuple[float, float, float] = (0.5, 0, 0.25)
     _workspace_volume: Tuple[float, float, float] = (0.6, 0.6, 0.6)
-    _object_spawn_volume: Tuple[float, float, float] = (0.3, 0.3, 0.1)
-    _object_spawn_height: float = 0.1
+    _object_spawn_volume: Tuple[float, float, float] = (0.3, 0.3, 0.01)
+    _object_spawn_height: float = 0.05
     _object_color: Tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
 
     def __init__(self,
@@ -156,6 +156,7 @@ class Grasp(Manipulation, abc.ABC):
                 if self._object_distance_reward_scale != 0.0:
                     current_min_distance = self.get_closest_object_distance(
                         object_positions)
+                    # TODO: Consider giving only positive reward (just like in object height below)
                     reward += self._object_distance_reward_scale * \
                         (self._previous_min_distance - current_min_distance)
                     self._previous_min_distance = current_min_distance

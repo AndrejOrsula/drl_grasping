@@ -14,16 +14,12 @@ class GraspOctree(Grasp, abc.ABC):
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
     _camera_enable: bool = True
     _camera_type: str = 'rgbd_camera'
-    _camera_width: int = 100
-    _camera_height: int = 100
-    _camera_update_rate: int = 6
+    _camera_width: int = 128
+    _camera_height: int = 128
     _camera_position: Tuple[float, float, float] = (1.1, -0.75, 0.35)
     _camera_quat_xyzw: Tuple[float, float,
                              float, float] = (-0.0402991, -0.0166924, 0.9230002, 0.3823192)
     _camera_ros2_bridge_points: bool = True
-
-    # TODO: replace with variable-sized replay buffer
-    _octree_max_size = 30000
 
     def __init__(self,
                  agent_rate: float,
@@ -40,6 +36,7 @@ class GraspOctree(Grasp, abc.ABC):
                  octree_depth: int,
                  octree_full_depth: int,
                  octree_include_color: bool,
+                 octree_max_size: int,
                  verbose: bool,
                  **kwargs):
 
@@ -78,6 +75,9 @@ class GraspOctree(Grasp, abc.ABC):
                                             use_sim_time=True,
                                             debug_draw=False,
                                             node_name=f'drl_grasping_octree_creator_{self.id}')
+
+        # Additional parameters
+        self._octree_max_size = octree_max_size
 
     def create_observation_space(self) -> ObservationSpace:
 
