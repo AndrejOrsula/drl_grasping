@@ -12,10 +12,6 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, VecEnvWrapper
 from drl_grasping.utils.training import ALGOS, create_test_env, get_latest_run_id, get_saved_hyperparams
 from drl_grasping.utils.training.utils import StoreDict
 
-# Needed to get the registered "OctreeCnnPolicy"
-# TODO: investigate if import is needed
-from drl_grasping.algorithms import policies
-
 def main(args=None):
 
     if args.exp_id == 0:
