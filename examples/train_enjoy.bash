@@ -22,6 +22,7 @@ ENV_ID="Reach-Gazebo-v0"
 
 ## Algorithm to use
 ALGO="sac"
+# ALGO="td3"
 
 ## Path to trained agent (to continue training)
 # TRAINED_AGENT=""${ENV_ID}"_1/rl_model_100000_steps.zip"

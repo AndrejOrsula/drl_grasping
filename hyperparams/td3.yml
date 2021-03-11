@@ -13,12 +13,12 @@ Reach-Gazebo-v0:
   learning_rate: 0.0001
   gamma: 0.98
   tau: 0.02
-  ent_coef: "auto"
-  target_entropy: "auto"
+  target_policy_noise: 0.2
+  target_noise_clip: 0.5
   train_freq: [1, "episode"]
   gradient_steps: 200
   noise_type: "normal"
-  noise_std: 0.05
+  noise_std: 0.1
 
 Reach-ColorImage-Gazebo-v0:
   policy: "CnnPolicy"
@@ -35,12 +35,12 @@ Reach-ColorImage-Gazebo-v0:
   learning_rate: 0.0001
   gamma: 0.98
   tau: 0.02
-  ent_coef: "auto"
-  target_entropy: "auto"
+  target_policy_noise: 0.2
+  target_noise_clip: 0.5
   train_freq: [1, "episode"]
   gradient_steps: 200
   noise_type: "normal"
-  noise_std: 0.05
+  noise_std: 0.1
 
 Reach-Octree-Gazebo-v0:
   policy: "OctreeCnnPolicy"
@@ -64,12 +64,12 @@ Reach-Octree-Gazebo-v0:
   learning_rate: 0.0001
   gamma: 0.98
   tau: 0.02
-  ent_coef: "auto"
-  target_entropy: "auto"
+  target_policy_noise: 0.2
+  target_noise_clip: 0.5
   train_freq: [1, "episode"]
   gradient_steps: 200
   noise_type: "normal"
-  noise_std: 0.05
+  noise_std: 0.1
 
 Reach-OctreeWithColor-Gazebo-v0:
   policy: "OctreeCnnPolicy"
@@ -93,12 +93,12 @@ Reach-OctreeWithColor-Gazebo-v0:
   learning_rate: 0.0001
   gamma: 0.98
   tau: 0.02
-  ent_coef: "auto"
-  target_entropy: "auto"
+  target_policy_noise: 0.2
+  target_noise_clip: 0.5
   train_freq: [1, "episode"]
   gradient_steps: 200
   noise_type: "normal"
-  noise_std: 0.05
+  noise_std: 0.1
 
 # Grasp task
 Grasp-Octree-Gazebo-v0:
@@ -126,12 +126,12 @@ Grasp-Octree-Gazebo-v0:
   learning_rate: 0.0001
   gamma: 0.99
   tau: 0.01
-  ent_coef: "auto"
-  target_entropy: "auto"
+  target_policy_noise: 0.2
+  target_noise_clip: 0.5
   train_freq: [1, "episode"]
   gradient_steps: 250
   noise_type: "normal"
-  noise_std: 0.1
+  noise_std: 0.25
 
 Grasp-OctreeWithColor-Gazebo-v0:
   policy: "OctreeCnnPolicy"
@@ -158,9 +158,9 @@ Grasp-OctreeWithColor-Gazebo-v0:
   learning_rate: 0.0001
   gamma: 0.99
   tau: 0.01
-  ent_coef: "auto"
-  target_entropy: "auto"
+  target_policy_noise: 0.3
+  target_noise_clip: 0.5
   train_freq: [1, "episode"]
   gradient_steps: 250
   noise_type: "normal"
-  noise_std: 0.1
+  noise_std: 0.25
