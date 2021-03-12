@@ -33,7 +33,7 @@ class Reach(Manipulation, abc.ABC):
     def __init__(self,
                  agent_rate: float,
                  restrict_position_goal_to_workspace: bool,
-                 shaped_reward: bool,
+                 sparse_reward: bool,
                  act_quick_reward: float,
                  required_accuracy: float,
                  verbose: bool,
@@ -47,7 +47,7 @@ class Reach(Manipulation, abc.ABC):
                               **kwargs)
 
         # Additional parameters
-        self._shaped_reward: bool = shaped_reward
+        self._sparse_reward: bool = sparse_reward
         self._act_quick_reward: float = act_quick_reward
         self._required_accuracy: float = required_accuracy
 
@@ -118,19 +118,18 @@ class Reach(Manipulation, abc.ABC):
 
         # Return reward of 1.0 if target is reached and mark the episode done
         if current_distance < self._required_accuracy:
-            reward += 1.0
             self._is_done = True
+            if self._sparse_reward:
+                reward += 1.0
 
-        # If the episode is not done, give a shaped/act-quick reward (if enabled)
-        if not self._is_done:
-            if self._shaped_reward:
-                # Give reward based on how much closer robot got relative to the target
-                reward += self._previous_distance - current_distance
-                self._previous_distance = current_distance
+        # Give reward based on how much closer robot got relative to the target for dense reward
+        if not self._sparse_reward:
+            reward += self._previous_distance - current_distance
+            self._previous_distance = current_distance
 
-            # Subtract a small reward each step to provide incentive to act quickly (if enabled)
-            if self._act_quick_reward != 0.0:
-                reward += self._act_quick_reward
+        # Subtract a small reward each step to provide incentive to act quickly (if enabled)
+        if self._act_quick_reward != 0.0:
+            reward += self._act_quick_reward
 
         if self._verbose:
             print(f"reward: {reward}")
@@ -148,14 +147,14 @@ class Reach(Manipulation, abc.ABC):
 
     def reset_task(self):
 
-        if self._verbose:
-            print(f"\nreset task")
-
         self._is_done = False
 
-        if self._shaped_reward:
-            # Compute and store the original distance if rewards should be normalized
+        # Compute and store the distance after reset if using dense reward
+        if not self._sparse_reward:
             self._previous_distance = self.get_distance_to_target()
+
+        if self._verbose:
+            print(f"\ntask reset")
 
     def get_distance_to_target(self) -> Tuple[float, float, float]:
 

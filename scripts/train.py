@@ -36,7 +36,6 @@ def main(args=None):
         args.seed = np.random.randint(2 ** 32 - 1, dtype="int64").item()
 
     # Set the random seed across platforms
-    # TODO: Set Gazebo seed
     set_random_seed(args.seed)
 
     # Setting num threads to 1 makes things run faster on cpu
