@@ -1,12 +1,13 @@
 from drl_grasping.envs.tasks.manipulation import Manipulation
+from drl_grasping.envs.tasks.grasp.curriculum import GraspCurriculum
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
-from typing import Tuple, List
-from typing import Tuple, Union, Dict
+from typing import Tuple, List, Union, Dict
 import abc
 import gym
 import itertools
 import numpy as np
+import sys
 
 
 class Grasp(Manipulation, abc.ABC):
@@ -31,13 +32,17 @@ class Grasp(Manipulation, abc.ABC):
                  restrict_position_goal_to_workspace: bool,
                  gripper_dead_zone: float,
                  full_3d_orientation: bool,
-                 shaped_reward: bool,
-                 object_distance_reward_scale: float,
-                 object_height_reward_scale: float,
-                 grasping_object_reward: float,
+                 sparse_reward: bool,
+                 required_reach_distance: float,
+                 required_lift_height: float,
                  act_quick_reward: float,
-                 ground_collision_reward: float,
-                 required_object_height: float,
+                 curriculum_enabled: bool,
+                 curriculum_success_rate_threshold: float,
+                 curriculum_success_rate_rolling_average_n: int,
+                 curriculum_stage_reward_multiplier: float,
+                 curriculum_restart_every_n_steps: int,
+                 curriculum_min_workspace_scale: float,
+                 curriculum_scale_negative_reward: bool,
                  verbose: bool,
                  **kwargs):
 
@@ -48,24 +53,24 @@ class Grasp(Manipulation, abc.ABC):
                               verbose=verbose,
                               **kwargs)
 
+        self.curriculum = GraspCurriculum(task=self,
+                                          enabled=curriculum_enabled,
+                                          sparse_reward=sparse_reward,
+                                          required_reach_distance=required_reach_distance,
+                                          required_lift_height=required_lift_height,
+                                          act_quick_reward=act_quick_reward,
+                                          success_rate_threshold=curriculum_success_rate_threshold,
+                                          success_rate_rolling_average_n=curriculum_success_rate_rolling_average_n,
+                                          stage_reward_multiplier=curriculum_stage_reward_multiplier,
+                                          restart_every_n_steps=curriculum_restart_every_n_steps,
+                                          min_workspace_scale=curriculum_min_workspace_scale,
+                                          scale_negative_rewards=curriculum_scale_negative_reward,
+                                          verbose=verbose)
+
         # Additional parameters
         self._gripper_dead_zone: float = gripper_dead_zone
         self._full_3d_orientation: bool = full_3d_orientation
-        self._shaped_reward: bool = shaped_reward
-        self._object_distance_reward_scale: float = object_distance_reward_scale
-        self._object_height_reward_scale: float = object_height_reward_scale
-        self._grasping_object_reward: float = grasping_object_reward
-        self._act_quick_reward: float = act_quick_reward
-        self._ground_collision_reward: float = ground_collision_reward
-        self._required_object_height: float = required_object_height
 
-        # Flag indicating if the task is done (performance - get_reward + is_done)
-        self._is_done: bool = False
-
-        # Distance to closest object in the previous step (or after reset)
-        self._previous_min_distance: float = None
-        # Heights of objects in the scene in the previous step (or after reset)
-        self._previous_object_heights: Dict[str, float] = {}
 
     def create_action_space(self) -> ActionSpace:
 
@@ -136,41 +141,8 @@ class Grasp(Manipulation, abc.ABC):
 
     def get_reward(self) -> Reward:
 
-        reward = 0.0
+        reward = self.curriculum.get_reward()
 
-        # Get positions of all objects in the scene
-        object_positions = self.get_object_positions()
-        # Get list of grasped objects (in contact with gripper links)
-        grasped_objects = self.get_grasped_objects()
-
-        # Return reward of 1.0 if any object was elevated above certain height and mark the episode done
-        for grasped_object in grasped_objects:
-            if object_positions[grasped_object][2] > self._required_object_height:
-                reward += 1.0
-                self._is_done = True
-
-        # If the episode is not done, give a shaped/act-quick reward (if enabled)
-        if not self._is_done:
-            if self._shaped_reward:
-                # Give reward based on how much closer robot got relative to the closest object
-                if self._object_distance_reward_scale != 0.0:
-                    current_min_distance = self.get_closest_object_distance(
-                        object_positions)
-                    # TODO: Consider giving only positive reward (just like in object height below)
-                    reward += self._object_distance_reward_scale * \
-                        (self._previous_min_distance - current_min_distance)
-                    self._previous_min_distance = current_min_distance
-
-                # Give reward based on increase in object's height above the ground (only positive)
-                if self._object_height_reward_scale != 0.0:
-                    for object_name, object_position in object_positions.items():
-                        reward += self._object_height_reward_scale * max(0.0, object_position[2] -
-                                                                         self._previous_object_heights[object_name])
-                        self._previous_object_heights[object_name] = object_position[2]
-
-                # Give a small positive reward if an object is grasped
-                if self._grasping_object_reward != 0.0:
-                    if len(grasped_objects) > 0:
                         if self._verbose:
                             print(f"Object(s) grasped: {grasped_objects}")
                         reward += self._grasping_object_reward
@@ -191,46 +163,27 @@ class Grasp(Manipulation, abc.ABC):
 
     def is_done(self) -> bool:
 
-        done = self._is_done
+        done = self.curriculum.is_done()
 
         if self._verbose:
             print(f"done: {done}")
 
         return done
 
+    def get_info(self) -> Dict:
+
+        info = {}
+
+        info.update(self.curriculum.get_info())
+
+        return info
+
     def reset_task(self):
 
+        self.curriculum.reset_task()
+
         if self._verbose:
-            print(f"\nreset task")
-
-        self._is_done = False
-
-        if self._shaped_reward:
-            # Get current positions of all objects in the scene
-            object_positions = self.get_object_positions()
-            # Get distance to the closest object after the reset
-            if self._object_distance_reward_scale != 0.0:
-                self._previous_min_distance = self.get_closest_object_distance(
-                    object_positions)
-            # Get height of all objects in the scene after the reset
-            if self._object_height_reward_scale != 0.0:
-                self._previous_object_heights.clear()
-                for object_name, object_position in object_positions.items():
-                    self._previous_object_heights[object_name] = object_position[2]
-
-    def get_closest_object_distance(self, object_positions:  Dict[str, Tuple[float, float, float]]) -> float:
-
-        min_distance = 1.0
-
-        ee_position = self.get_ee_position()
-        for object_position in object_positions.values():
-            distance = np.linalg.norm([ee_position[0] - object_position[0],
-                                       ee_position[1] - object_position[1],
-                                       ee_position[2] - object_position[2]])
-            if distance < min_distance:
-                min_distance = distance
-
-        return min_distance
+            print(f"\ntask reset")
 
     def get_object_positions(self) -> Dict[str, Tuple[float, float, float]]:
 
@@ -253,10 +206,46 @@ class Grasp(Manipulation, abc.ABC):
         # Return position of the object's link
         return object_model.get_link(link_name=link_name).position()
 
+    def get_closest_object_distance(self, object_positions:  Dict[str, Tuple[float, float, float]]) -> float:
+
+        min_distance = sys.float_info.max
+
+        ee_position = self.get_ee_position()
+        for object_position in object_positions.values():
+            distance = np.linalg.norm([ee_position[0] - object_position[0],
+                                       ee_position[1] - object_position[1],
+                                       ee_position[2] - object_position[2]])
+            if distance < min_distance:
+                min_distance = distance
+
+        return min_distance
+
+    def get_touched_objects(self) -> List[str]:
+        """
+        Returns list of all objects that are in contact with any finger.
+        """
+
+        robot = self.world.get_model(self.robot_name)
+        touched_objects = []
+
+        for gripper_link_name in self.robot_gripper_link_names:
+            finger = robot.to_gazebo().get_link(link_name=gripper_link_name)
+            finger_contacts = finger.contacts()
+
+            # Add model to list of touched objects if in contact
+            for contact in finger_contacts:
+                # Keep only the model name (disregard the link of object that is in collision)
+                model_name = contact.body_b.split('::', 1)[0]
+                if model_name not in touched_objects and \
+                        any(object_name in model_name for object_name in self.object_names):
+                    touched_objects.append(model_name)
+
+        return touched_objects
+
     def get_grasped_objects(self) -> List[str]:
         """
         Returns list of all currently grasped objects.
-        Grasped object must be in contact with all gripper links (fingers).
+        Grasped object must be in contact with all gripper links (fingers) and their contant normals must be dissimilar.
         """
 
         robot = self.world.get_model(self.robot_name)
@@ -280,7 +269,7 @@ class Grasp(Manipulation, abc.ABC):
                         grasp_candidates[model_name].append(contact.points)
 
         # Determine what grasp candidates are indeed grasped objects
-        # First make sure it has concact with all fingers
+        # First make sure it has contact with all fingers
         # Then make sure that their normals are dissimilar
         grasped_objects = []
         for model_name, contact_points_list in grasp_candidates.items():
@@ -321,3 +310,34 @@ class Grasp(Manipulation, abc.ABC):
             if self.robot_name in contact.body_b and not self.robot_base_link_name in contact.body_b:
                 return True
         return False
+
+    def check_all_objects_outside_workspace(self, object_positions:  Dict[str, Tuple[float, float, float]]) -> bool:
+        """
+        Returns true if all objects are outside the workspace
+        """
+
+        ws_min_bound = \
+            (self._workspace_centre[0] - self._workspace_volume[0]/2,
+             self._workspace_centre[1] - self._workspace_volume[1]/2,
+             self._workspace_centre[2] - self._workspace_volume[2]/2)
+        ws_max_bound = \
+            (self._workspace_centre[0] + self._workspace_volume[0]/2,
+             self._workspace_centre[1] + self._workspace_volume[1]/2,
+             self._workspace_centre[2] + self._workspace_volume[2]/2)
+
+        return all([object_position[0] < ws_min_bound[0] or
+                    object_position[1] < ws_min_bound[1] or
+                    object_position[2] < ws_min_bound[2] or
+                    object_position[0] > ws_max_bound[0] or
+                    object_position[1] > ws_max_bound[1] or
+                    object_position[2] > ws_max_bound[2]
+                    for object_position in object_positions.values()])
+
+    def update_workspace_size(self, scale: float):
+
+        self._workspace_volume = (scale*self._original_workspace_volume[0],
+                                  scale*self._original_workspace_volume[1],
+                                  self._original_workspace_volume[2])
+        self._object_spawn_volume = (self._object_spawn_volume_proportion*self._workspace_volume[0],
+                                     self._object_spawn_volume_proportion*self._workspace_volume[1],
+                                     self._object_spawn_volume[2])
