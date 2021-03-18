@@ -51,21 +51,37 @@ def _get_samples_with_support_for_octree(self,
     if not self.contains_octree_obs:
         return old_get_samples(self, batch_inds=batch_inds, env=env)
 
-    obs = ocnn.octree_batch(th.split(th.from_numpy(self.observations[batch_inds, 0, :]),
-                                     1))
+    obs_octree_list = []
+    obs_batch = self.observations[batch_inds, 0, :]
+    for obs_i in obs_batch:
+        octree_size = np.frombuffer(buffer=obs_i[-4:],
+                                    dtype='uint32',
+                                    count=1)
+        octree_tensor = th.from_numpy(obs_i[:octree_size[0]])
+        obs_octree_list.append(octree_tensor)
+    obs = ocnn.octree_batch(obs_octree_list)
+
+    next_obs_octree_list = []
     if self.optimize_memory_usage:
-        next_obs = ocnn.octree_batch(th.split(th.from_numpy(self.observations[(batch_inds + 1) % self.buffer_size, 0, :]),
-                                              1))
+        next_obs_batch = self.observations[(
+            batch_inds + 1) % self.buffer_size, 0, :]
     else:
-        next_obs = ocnn.octree_batch(th.split(th.from_numpy(self.next_observations[batch_inds, 0, :]),
-                                              1))
+        next_obs_batch = self.next_observations[batch_inds, 0, :]
+    for next_obs_i in next_obs_batch:
+        octree_size = np.frombuffer(buffer=next_obs_i[-4:],
+                                    dtype='uint32',
+                                    count=1)
+        octree_tensor = th.from_numpy(next_obs_i[:octree_size[0]])
+        next_obs_octree_list.append(octree_tensor)
+    next_obs = ocnn.octree_batch(next_obs_octree_list)
 
     return ReplayBufferSamples(
         observations=obs.to(self.device),
         actions=self.to_torch(self.actions[batch_inds, 0, :]),
         next_observations=next_obs.to(self.device),
         dones=self.to_torch(self.dones[batch_inds]),
-        rewards=self.to_torch(self._normalize_reward(self.rewards[batch_inds], env)),
+        rewards=self.to_torch(self._normalize_reward(
+            self.rewards[batch_inds], env)),
     )
 
 

@@ -57,7 +57,7 @@ def _store_transition_not_done_if_truncated(
     else:
         next_obs = new_obs_
 
-    # NOTE: The monkey patch is on the following block of code
+    # NOTE: The monkey patch is inside the following block of code
     done_ = np.array([False]) if infos[0].get(
         "TimeLimit.truncated", False) else done
     replay_buffer.add(self._last_original_obs, next_obs,

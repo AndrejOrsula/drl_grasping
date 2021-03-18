@@ -83,15 +83,24 @@ class ReachOctree(Reach, abc.ABC):
         # Contrust octree from this point cloud
         octree = self.octree_creator(point_cloud).numpy()
 
-        # Pad octree with zeros to have a consistent length
-        # TODO: Customize replay buffer to support variable sized observations
-        if octree.shape[0] > self._octree_max_size:
-            print(
-                f"ERROR: Octree is larger than the maximum allowed size (exceeded with {octree.shape[0]})")
+        octree_size = octree.shape[0]
+        if octree_size > self._octree_max_size:
+            print(f"ERROR: Octree is larger than the maximum "
+                  "allowed size (exceeded with {octree_size})")
         octree = np.pad(octree,
-                        (0, self._octree_max_size - octree.shape[0]),
+                        (0, self._octree_max_size - octree_size),
                         'constant',
                         constant_values=0)
+
+        # Write the original length into the padded octree for reference
+        octree[-4:] = np.ndarray(buffer=np.array([octree_size],
+                                                 dtype='uint32').tobytes(),
+                                 shape=(4,),
+                                 dtype='uint8')
+        # To get it back:
+        # octree_size = np.frombuffer(buffer=octree[-4:],
+        #                             dtype='uint32',
+        #                             count=1)
 
         # Create the observation
         observation = Observation(octree)

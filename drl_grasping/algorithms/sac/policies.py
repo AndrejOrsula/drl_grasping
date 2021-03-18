@@ -13,6 +13,7 @@ import torch as th
 
 import ocnn
 
+
 class ActorOctreeCnn(Actor):
     """
     Actor network (policy) for SAC.
@@ -204,6 +205,7 @@ class OctreeCnnPolicy(SACPolicy):
         optimizer_kwargs: Optional[Dict[str, Any]] = None,
         n_critics: int = 2,
         share_features_extractor: bool = True,
+        debug_write_octree: bool = False,
     ):
         super(OctreeCnnPolicy, self).__init__(
             observation_space,
@@ -224,6 +226,8 @@ class OctreeCnnPolicy(SACPolicy):
             n_critics,
             share_features_extractor,
         )
+
+        self._debug_write_octree = debug_write_octree
 
     def make_actor(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> Actor:
         actor_kwargs = self._update_features_extractor(
@@ -253,11 +257,6 @@ class OctreeCnnPolicy(SACPolicy):
         :return: the model's action and the next state
             (used in recurrent policies)
         """
-        # TODO (GH/1): add support for RNN policies
-        # if state is None:
-        #     state = self.initial_state
-        # if mask is None:
-        #     mask = [False for _ in range(self.n_envs)]
         if isinstance(observation, dict):
             observation = ObsDictWrapper.convert_dict(observation)
         else:
@@ -266,8 +265,17 @@ class OctreeCnnPolicy(SACPolicy):
         vectorized_env = is_vectorized_observation(
             observation, self.observation_space)
 
-        observation = ocnn.octree_batch(
-            [th.from_numpy(observation)]).to(self.device)
+        # Get original octree size
+        octree_size = np.frombuffer(buffer=observation[-4:],
+                                    dtype='uint32',
+                                    count=1)
+        # Convert to tensor
+        octree = th.from_numpy(observation[:octree_size[0]])
+        if self._debug_write_octree:
+            ocnn.write_octree(octree, 'octree.octree')
+
+        # Make batch outo of tensor
+        observation = ocnn.octree_batch([octree]).to(self.device)
 
         with th.no_grad():
             actions = self._predict(observation, deterministic=deterministic)
