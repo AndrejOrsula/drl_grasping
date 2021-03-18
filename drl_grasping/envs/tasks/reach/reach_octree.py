@@ -14,10 +14,31 @@ class ReachOctree(Reach, abc.ABC):
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
     _camera_enable: bool = True
     _camera_type: str = 'rgbd_camera'
+    _camera_width: int = 256
+    _camera_height: int = 256
+    _camera_update_rate: int = 10
+    _camera_horizontal_fov: float = 0.9
+    _camera_vertical_fov: float = 0.9
     _camera_position: Tuple[float, float, float] = (1.1, -0.75, 0.45)
     _camera_quat_xyzw: Tuple[float, float,
                              float, float] = (-0.0402991, -0.0166924, 0.9230002, 0.3823192)
     _camera_ros2_bridge_points: bool = True
+
+    _workspace_centre: Tuple[float, float, float] = (0.45, 0, 0.25)
+    _workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
+
+    _octree_min_bound: Tuple[float, float, float] = (0.15, -0.3, 0.0)
+    _octree_max_bound: Tuple[float, float, float] = (0.75, 0.3, 0.6)
+
+    _object_spawn_centre: Tuple[float, float, float] = \
+        (_workspace_centre[0],
+         _workspace_centre[1],
+         _workspace_centre[2])
+    _object_spawn_volume_proportion: float = 0.75
+    _object_spawn_volume: Tuple[float, float, float] = \
+        (_object_spawn_volume_proportion*_workspace_volume[0],
+         _object_spawn_volume_proportion*_workspace_volume[1],
+         _object_spawn_volume_proportion*_workspace_volume[2])
 
     def __init__(self,
                  agent_rate: float,
@@ -47,14 +68,8 @@ class ReachOctree(Reach, abc.ABC):
                                            is_point_cloud=True,
                                            node_name=f'drl_grasping_point_cloud_sub_{self.id}')
 
-        min_bound = (self._workspace_centre[0] - self._workspace_volume[0]/2,
-                     self._workspace_centre[1] - self._workspace_volume[1]/2,
-                     self._workspace_centre[2] - self._workspace_volume[2]/2)
-        max_bound = (self._workspace_centre[0] + self._workspace_volume[0]/2,
-                     self._workspace_centre[1] + self._workspace_volume[1]/2,
-                     self._workspace_centre[2] + self._workspace_volume[2]/2)
-        self.octree_creator = OctreeCreator(min_bound=min_bound,
-                                            max_bound=max_bound,
+        self.octree_creator = OctreeCreator(min_bound=self._octree_min_bound,
+                                            max_bound=self._octree_max_bound,
                                             depth=octree_depth,
                                             full_depth=octree_full_depth,
                                             include_color=octree_include_color,

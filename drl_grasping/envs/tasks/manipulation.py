@@ -7,7 +7,7 @@ from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
 from itertools import count
 from scipy.spatial.transform import Rotation
-from typing import Tuple, Union
+from typing import List, Tuple, Union
 import abc
 import gym
 import numpy as np
@@ -32,6 +32,9 @@ class Manipulation(task.Task, abc.ABC):
                                                          0.04,
                                                          0.04)
 
+    _workspace_centre: Tuple[float, float, float] = (0.5, 0, 0.25)
+    _workspace_volume: Tuple[float, float, float] = (1.0, 1.0, 1.0)
+
     _camera_enable: bool = False
     _camera_type: str = 'rgbd_camera'
     _camera_render_engine: str = 'ogre2'
@@ -50,23 +53,29 @@ class Manipulation(task.Task, abc.ABC):
     _camera_ros2_bridge_points: bool = False
 
     _ground_enable: bool = False
-    _ground_position: Tuple[float, float, float] = (0.5, 0, 0)
+    _ground_position: Tuple[float, float, float] = (0.0, 0, 0)
     _ground_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-    _ground_size: Tuple[float, float] = (0.5, 0.5)
+    _ground_size: Tuple[float, float] = (2.0, 2.0)
 
     _object_enable: bool = False
+    # 'box' [x, y, z], 'sphere' [radius], 'cylinder' [radius, height]
     _object_type: str = 'box'
-    _workspace_centre: Tuple[float, float, float] = (0.5, 0, 0)
-    _workspace_volume: Tuple[float, float, float] = (0.75, 0.75, 0.75)
-    _object_spawn_volume: Tuple[float, float, float] = (0.5, 0.5, 0.05)
-    _object_spawn_height: float = 0.025
-    _object_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-    _object_size: Tuple[float, float, float] = (0.05, 0.05, 0.05)
+    _object_dimensions: List[float] = [0.05, 0.05, 0.05]
     _object_mass: float = 0.1
     _object_collision: bool = True
     _object_visual: bool = True
     _object_static: bool = False
     _object_color: Tuple[float, float, float, float] = (0.8, 0.8, 0.8, 1.0)
+    _object_spawn_centre: Tuple[float, float, float] = \
+        (_workspace_centre[0],
+         _workspace_centre[1],
+         _workspace_centre[2])
+    _object_spawn_volume_proportion: float = 0.75
+    _object_spawn_volume: Tuple[float, float, float] = \
+        (_object_spawn_volume_proportion*_workspace_volume[0],
+         _object_spawn_volume_proportion*_workspace_volume[1],
+         _object_spawn_volume_proportion*_workspace_volume[2])
+    _object_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
 
     _insert_scene_broadcaster_plugin: bool = True
     _insert_user_commands_plugin: bool = False
@@ -189,10 +198,13 @@ class Manipulation(task.Task, abc.ABC):
                 else:
                     target_quat_xyzw = conversions.Quaternion.to_xyzw(absolute)
             elif '6d' == representation:
-                vectors = tuple(absolute[x:x + 3] for x, _ in enumerate(absolute) if x % 3 == 0) 
-                target_quat_xyzw = orientation_6d_to_quat(vectors[0], vectors[1])
+                vectors = tuple(absolute[x:x + 3]
+                                for x, _ in enumerate(absolute) if x % 3 == 0)
+                target_quat_xyzw = orientation_6d_to_quat(
+                    vectors[0], vectors[1])
             elif 'z' == representation:
-                target_quat_xyzw = Rotation.from_euler('xyz', [np.pi, 0, absolute]).as_quat()
+                target_quat_xyzw = Rotation.from_euler(
+                    'xyz', [np.pi, 0, absolute]).as_quat()
 
         elif relative is not None:
             # Get current orientation
@@ -202,8 +214,10 @@ class Manipulation(task.Task, abc.ABC):
             # For 'z' representation, result should always point down
             # Therefore, create a new quatertnion that contains only yaw component
             if 'z' == representation:
-                current_yaw = Rotation.from_quat(current_quat_xyzw).as_euler('xyz')[2]
-                current_quat_xyzw = Rotation.from_euler('xyz', [np.pi, 0, current_yaw]).as_quat()
+                current_yaw = Rotation.from_quat(
+                    current_quat_xyzw).as_euler('xyz')[2]
+                current_quat_xyzw = Rotation.from_euler(
+                    'xyz', [np.pi, 0, current_yaw]).as_quat()
 
             # Convert relative orientation representation to quaternion
             relative_quat_xyzw = None
@@ -214,11 +228,14 @@ class Manipulation(task.Task, abc.ABC):
                     relative_quat_xyzw = \
                         conversions.Quaternion.to_xyzw(relative)
             elif '6d' == representation:
-                vectors = tuple(relative[x:x + 3] for x, _ in enumerate(relative) if x % 3 == 0) 
-                relative_quat_xyzw = orientation_6d_to_quat(vectors[0], vectors[1])
+                vectors = tuple(relative[x:x + 3]
+                                for x, _ in enumerate(relative) if x % 3 == 0)
+                relative_quat_xyzw = orientation_6d_to_quat(
+                    vectors[0], vectors[1])
             elif 'z' == representation:
                 relative *= z_relative_orientation_scaling_factor
-                relative_quat_xyzw = Rotation.from_euler('xyz', [0, 0, relative]).as_quat()
+                relative_quat_xyzw = Rotation.from_euler(
+                    'xyz', [0, 0, relative]).as_quat()
 
             # Compute target position (combine quaternions)
             target_quat_xyzw = quat_mul(current_quat_xyzw, relative_quat_xyzw)

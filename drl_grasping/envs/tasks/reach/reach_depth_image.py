@@ -15,6 +15,11 @@ class ReachDepthImage(Reach, abc.ABC):
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
     _camera_enable: bool = True
     _camera_type: str = 'depth_camera'
+    _camera_width: int = 128
+    _camera_height: int = 128
+    _camera_update_rate: int = 10
+    _camera_horizontal_fov: float = 1.0
+    _camera_vertical_fov: float = 1.0
     _camera_position: Tuple[float, float, float] = (1.1, -0.75, 0.45)
     _camera_quat_xyzw: Tuple[float, float,
                              float, float] = (-0.0402991, -0.0166924, 0.9230002, 0.3823192)

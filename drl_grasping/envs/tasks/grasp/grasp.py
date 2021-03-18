@@ -15,17 +15,42 @@ class Grasp(Manipulation, abc.ABC):
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
     _robot_arm_collision: bool = False
     _robot_hand_collision: bool = True
+    _robot_initial_joint_positions: Tuple[float, ...] = (0.0,
+                                                         0.0,
+                                                         0.0,
+                                                         -1.57,
+                                                         0.0,
+                                                         1.57,
+                                                         0.79,
+                                                         0.04,
+                                                         0.04)
+
+    _workspace_centre: Tuple[float, float, float] = (0.45, 0, 0.2)
+    _workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
+
     _ground_enable: bool = True
-    _ground_position: Tuple[float, float, float] = (0.5, 0, 0)
+    _ground_position: Tuple[float, float, float] = (0.0, 0, 0)
     _ground_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-    _ground_size: Tuple[float, float] = (1.2, 1.2)
+    _ground_size: Tuple[float, float] = (2.0, 2.0)
 
     _object_enable: bool = True
-    _workspace_centre: Tuple[float, float, float] = (0.5, 0, 0.25)
-    _workspace_volume: Tuple[float, float, float] = (0.6, 0.6, 0.6)
-    _object_spawn_volume: Tuple[float, float, float] = (0.3, 0.3, 0.01)
-    _object_spawn_height: float = 0.05
+    # 'box' [x, y, z], 'sphere' [radius], 'cylinder' [radius, height]
+    _object_type: str = 'box'
+    _object_dimensions: List[float] = [0.05, 0.05, 0.05]
+    _object_mass: float = 0.1
+    _object_collision: bool = True
+    _object_visual: bool = True
+    _object_static: bool = False
     _object_color: Tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
+    _object_spawn_centre: Tuple[float, float, float] = \
+        (_workspace_centre[0],
+         _workspace_centre[1],
+         0.05)
+    _object_spawn_volume_proportion: float = 0.75
+    _object_spawn_volume: Tuple[float, float, float] = \
+        (_object_spawn_volume_proportion*_workspace_volume[0],
+         _object_spawn_volume_proportion*_workspace_volume[1],
+         0.0)
 
     def __init__(self,
                  agent_rate: float,
@@ -71,6 +96,8 @@ class Grasp(Manipulation, abc.ABC):
         self._gripper_dead_zone: float = gripper_dead_zone
         self._full_3d_orientation: bool = full_3d_orientation
 
+
+        self._original_workspace_volume = self._workspace_volume
 
     def create_action_space(self) -> ActionSpace:
 
@@ -142,19 +169,6 @@ class Grasp(Manipulation, abc.ABC):
     def get_reward(self) -> Reward:
 
         reward = self.curriculum.get_reward()
-
-                        if self._verbose:
-                            print(f"Object(s) grasped: {grasped_objects}")
-                        reward += self._grasping_object_reward
-
-                # Give negative reward for collisions with ground
-                if self._ground_collision_reward != 0.0:
-                    if self.check_ground_collision():
-                        reward += self._ground_collision_reward
-
-            # Subtract a small reward each step to provide incentive to act quickly (if enabled)
-            if self._act_quick_reward != 0.0:
-                reward += self._act_quick_reward
 
         if self._verbose:
             print(f"reward: {reward}")

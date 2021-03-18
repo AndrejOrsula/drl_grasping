@@ -1,7 +1,7 @@
 from drl_grasping.envs.tasks.manipulation import Manipulation
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
-from typing import Tuple
+from typing import List, Tuple
 import abc
 import gym
 import numpy as np
@@ -21,14 +21,25 @@ class Reach(Manipulation, abc.ABC):
                                                          0.79,
                                                          0.0,
                                                          0.0)
+    _workspace_centre: Tuple[float, float, float] = (0.45, 0, 0.25)
+    _workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
+
     _object_enable: bool = True
-    _workspace_centre:  Tuple[float, float, float] = (0.5, 0, 0.25)
-    _workspace_volume: Tuple[float, float, float] = (0.6, 0.6, 0.6)
-    _object_spawn_volume: Tuple[float, float, float] = (0.3, 0.3, 0.3)
-    _object_spawn_height: float = 0.0
+    _object_type: str = 'box'
+    _object_dimensions: List[float] = [0.05, 0.05, 0.05]
     _object_collision: bool = False
+    _object_visual: bool = True
     _object_static: bool = True
     _object_color: Tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
+    _object_spawn_centre: Tuple[float, float, float] = \
+        (_workspace_centre[0],
+         _workspace_centre[1],
+         _workspace_centre[2])
+    _object_spawn_volume_proportion: float = 0.75
+    _object_spawn_volume: Tuple[float, float, float] = \
+        (_object_spawn_volume_proportion*_workspace_volume[0],
+         _object_spawn_volume_proportion*_workspace_volume[1],
+         _object_spawn_volume_proportion*_workspace_volume[2])
 
     def __init__(self,
                  agent_rate: float,
