@@ -16,6 +16,7 @@ class RandomGround(model_wrapper.ModelWrapper):
                  orientation: List[float] = (1, 0, 0, 0),
                  size: List[float] = (1.0, 1.0),
                  collision_thickness: float = 0.05,
+                 friction: float = 1.0,
                  texture_dir: str = None,
                  np_random=None):
 
@@ -69,6 +70,17 @@ class RandomGround(model_wrapper.ModelWrapper):
                                 <size>{size[0]} {size[1]} {collision_thickness}</size>
                             </box>
                         </geometry>
+                        <surface>
+                            <friction>
+                                <ode>
+                                    <mu>{friction}</mu>
+                                    <mu2>{friction}</mu2>
+                                    <fdir1>0 0 0</fdir1>
+                                    <slip1>0.0</slip1>
+                                    <slip2>0.0</slip2>
+                                </ode>
+                            </friction>
+                        </surface>
                     </collision>
                     <visual name="{model_name}_visual">
                         <geometry>
