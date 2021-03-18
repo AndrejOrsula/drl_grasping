@@ -38,8 +38,9 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                  camera_noise_stddev: float = None,
                  ground_model_rollouts_num: int = 0,
                  object_random_pose: bool = False,
+                 object_random_use_mesh_models: bool = False,
                  object_models_rollouts_num: int = 0,
-                 object_random_model_count: int = 2,
+                 object_random_model_count: int = 1,
                  visualise_workspace: bool = False,
                  visualise_spawn_volume: bool = False,
                  verbose: bool = False):
@@ -59,6 +60,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         self._ground_model_rollouts_num = ground_model_rollouts_num
         self._ground_model_rollout_counter = ground_model_rollouts_num
         self._object_random_pose = object_random_pose
+        self._object_random_use_mesh_models = object_random_use_mesh_models
         self._object_models_rollouts_num = object_models_rollouts_num
         self._object_models_rollout_counter = object_models_rollouts_num
 
@@ -275,21 +277,41 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                            task: SupportedTasks,
                            gazebo: scenario.GazeboSimulator):
 
-        object_position = list(task._workspace_centre)
-        object_position[2] += task._object_spawn_height
-
         object_model = None
         if 'box' == task._object_type:
             object_model = models.Box(world=task.world,
-                                      position=object_position,
+                                      position=task._object_spawn_centre,
                                       orientation=conversions.Quaternion.to_wxyz(
                                           task._object_quat_xyzw),
-                                      size=task._object_size,
+                                      size=task._object_dimensions,
                                       mass=task._object_mass,
                                       collision=task._object_collision,
                                       visual=task._object_visual,
                                       static=task._object_static,
                                       color=task._object_color)
+        elif 'sphere' == task._object_type:
+            object_model = models.Sphere(world=task.world,
+                                         position=task._object_spawn_centre,
+                                         orientation=conversions.Quaternion.to_wxyz(
+                                             task._object_quat_xyzw),
+                                         radius=task._object_dimensions[0],
+                                         mass=task._object_mass,
+                                         collision=task._object_collision,
+                                         visual=task._object_visual,
+                                         static=task._object_static,
+                                         color=task._object_color)
+        elif 'cylinder' == task._object_type:
+            object_model = models.Cylinder(world=task.world,
+                                           position=task._object_spawn_centre,
+                                           orientation=conversions.Quaternion.to_wxyz(
+                                               task._object_quat_xyzw),
+                                           radius=task._object_dimensions[0],
+                                           length=task._object_dimensions[1],
+                                           mass=task._object_mass,
+                                           collision=task._object_collision,
+                                           visual=task._object_visual,
+                                           static=task._object_static,
+                                           color=task._object_color)
         task.object_names.append(object_model.name())
 
         # Execute a paused run to process model insertion
@@ -321,7 +343,10 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         # Note: No need to randomize pose of new models because they are already spawned randomly
         if task._object_enable:
             if self.object_models_expired():
-                self.randomize_object_models(task=task)
+                if self._object_random_use_mesh_models:
+                    self.randomize_object_models(task=task)
+                else:
+                    self.randomize_object_primitives(task=task)
             elif self.object_poses_randomizer_enabled():
                 self.object_random_pose(task=task)
             elif not self.object_models_randomizer_enabled():
@@ -344,9 +369,9 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
 
         robot = task.world.to_gazebo().get_model(task.robot_name)
         if not robot.to_gazebo().reset_joint_positions(joint_positions):
-            raise RuntimeError("Failed to reset the robot joint position")
+            raise RuntimeError("Failed to reset robot joint positions")
         if not robot.to_gazebo().reset_joint_velocities([0.0] * len(joint_positions)):
-            raise RuntimeError("Failed to reset the robot joint velocities")
+            raise RuntimeError("Failed to reset robot joint velocities")
 
         # Send new positions also to the controller
         finger_count = models.Panda.get_finger_count()
@@ -357,9 +382,9 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
 
         robot = task.world.to_gazebo().get_model(task.robot_name)
         if not robot.to_gazebo().reset_joint_positions(task._robot_initial_joint_positions):
-            raise RuntimeError("Failed to reset the robot joint position")
+            raise RuntimeError("Failed to reset robot joint positions")
         if not robot.to_gazebo().reset_joint_velocities([0.0] * len(task._robot_initial_joint_positions)):
-            raise RuntimeError("Failed to reset the robot joint velocities")
+            raise RuntimeError("Failed to reset robot joint velocities")
 
         # Send new positions also to the controller
         finger_count = models.Panda.get_finger_count()
@@ -442,11 +467,8 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
 
         assert(len(task.object_names) == 1)
 
-        object_position = list(task._workspace_centre)
-        object_position[2] += task._object_spawn_height
-
         obj = task.world.to_gazebo().get_model(task.object_names[0])
-        obj.to_gazebo().reset_base_pose(object_position,
+        obj.to_gazebo().reset_base_pose(task._object_spawn_centre,
                                         conversions.Quaternion.to_wxyz(task._object_quat_xyzw))
         obj.to_gazebo().reset_base_world_velocity(
             [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
@@ -463,9 +485,8 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
 
         # Insert new models with random pose
         while len(self.task.object_names) < self._object_random_model_count:
-            position, quat_random = self.get_random_object_pose(centre=task._workspace_centre,
+            position, quat_random = self.get_random_object_pose(centre=task._object_spawn_centre,
                                                                 volume=task._object_spawn_volume,
-                                                                height=task._object_spawn_height,
                                                                 np_random=task.np_random)
             try:
                 model = models.RandomObject(world=task.world,
@@ -477,25 +498,48 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                 # TODO (low priority): Automatically blacklist a model if Gazebo does not accept it
                 pass
 
+    def randomize_object_primitives(self,
+                                    task: SupportedTasks):
+
+        # Remove all existing models
+        if len(self.task.object_names) > 0:
+            for object_name in self.task.object_names:
+                if not task.world.to_gazebo().remove_model(object_name):
+                    raise RuntimeError(f"Failed to remove {object_name}")
+            self.task.object_names.clear()
+
+        # Insert new primitives with random pose
+        while len(self.task.object_names) < self._object_random_model_count:
+            position, quat_random = self.get_random_object_pose(centre=task._object_spawn_centre,
+                                                                volume=task._object_spawn_volume,
+                                                                np_random=task.np_random)
+            try:
+                model = models.RandomPrimitive(world=task.world,
+                                               position=position,
+                                               orientation=quat_random,
+                                               np_random=task.np_random)
+                self.task.object_names.append(model.name())
+            except:
+                pass
+
     def object_random_pose(self,
                            task: SupportedTasks):
 
         for object_name in self.task.object_names:
-            position, quat_random = self.get_random_object_pose(centre=task._workspace_centre,
+            position, quat_random = self.get_random_object_pose(centre=task._object_spawn_centre,
                                                                 volume=task._object_spawn_volume,
-                                                                height=task._object_spawn_height,
                                                                 np_random=task.np_random)
             obj = task.world.to_gazebo().get_model(object_name)
             obj.to_gazebo().reset_base_pose(position, quat_random)
             obj.to_gazebo().reset_base_world_velocity(
                 [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
 
-    def get_random_object_pose(self, centre, volume, height, np_random):
+    def get_random_object_pose(self, centre, volume, np_random):
 
         position = [
             centre[0] + np_random.uniform(-volume[0]/2, volume[0]/2),
             centre[1] + np_random.uniform(-volume[1]/2, volume[1]/2),
-            centre[2] + np_random.uniform(-volume[2]/2, volume[2]/2) + height,
+            centre[2] + np_random.uniform(-volume[2]/2, volume[2]/2),
         ]
         quat = np_random.uniform(-1, 1, 4)
         quat /= np.linalg.norm(quat)
@@ -658,7 +702,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         # Insert translucent boxes visible only in simulation with no physical interactions
         models.Box(world=task.world,
                    name="object_spawn_volume",
-                   position=task._workspace_centre,
+                   position=task._object_spawn_centre,
                    orientation=(0, 0, 0, 1),
                    size=task._object_spawn_volume,
                    collision=False,
@@ -668,9 +712,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                    color=color)
         models.Box(world=task.world,
                    name="object_spawn_volume_with_height",
-                   position=(task._workspace_centre[0],
-                             task._workspace_centre[1],
-                             task._workspace_centre[2] + task._object_spawn_height),
+                   position=task._object_spawn_centre,
                    orientation=(0, 0, 0, 1),
                    size=task._object_spawn_volume,
                    collision=False,
