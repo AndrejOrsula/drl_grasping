@@ -39,4 +39,13 @@ def generate_launch_description():
             launch_arguments=[('use_sim_time', use_sim_time),
                               ('config_rviz2', config_rviz2),
                               ('log_level', log_level)]),
+
+        # JointTrajectory bridge for gripper (ROS2 -> IGN)
+        Node(package='ros_ign_bridge',
+             executable='parameter_bridge',
+             name='parameter_bridge_gripper_trajectory',
+             output='screen',
+             arguments=['/gripper_trajectory@trajectory_msgs/msg/JointTrajectory]ignition.msgs.JointTrajectory',
+                        '--ros-args', '--log-level', log_level],
+             parameters=[{'use_sim_time': use_sim_time}])
     ])
