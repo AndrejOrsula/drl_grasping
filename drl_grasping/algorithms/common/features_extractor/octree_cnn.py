@@ -21,8 +21,13 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
                  full_depth: int = 2,
                  channels_in: int = 3,
                  channel_multiplier: int = 4,
+                 features_dim: int = 512,
                  fast_conv: bool = True,
                  batch_normalization: bool = False):
+
+        # Chain up parent constructor
+        super(OctreeCnnFeaturesExtractor, self).__init__(observation_space,
+                                                         features_dim)
 
         self._depth = depth
         self._channels_in = channels_in
@@ -31,13 +36,6 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         # I.e [channels_in, channel_multiplier*1, channel_multiplier*2, channel_multiplier*4, channel_multiplier*8,...]
         channels = [channel_multiplier*(2**i) for i in range(depth-full_depth)]
         channels.insert(0, channels_in)
-
-        # The number of extracted features equals the channels at full_depth, times the number of cells in its voxel grid (O=3n)
-        features_dim = channels[-1]*(2 ** (3 * full_depth))
-
-        # Chain up parent constructor now that the dimension of the extracted features is known
-        super(OctreeCnnFeaturesExtractor, self).__init__(observation_space,
-                                                         features_dim)
 
         # Create all Octree convolution and pooling layers in depth-descending order [depth, depth-1, ..., full_depth]
         # Input to the first conv layer is the input Octree at depth=depth
@@ -63,6 +61,12 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         # Layer that flattens the voxel grid into a feature vector, this is the last layer of feature extractor that should feed into FC layers
         self.flatten = torch.nn.Flatten()
 
+        # The number of flattened features equals the channels at full_depth, times the number of cells in its voxel grid (O=3n)
+        flatten_dim = channels[-1]*(2 ** (3 * full_depth))
+        # Linear layer of the extractor (and the last layer)
+        self.linear = torch.nn.Sequential(torch.nn.Linear(flatten_dim, features_dim),
+                                          torch.nn.ReLU())
+
     def forward(self, octree):
         """
         Note: input octree must be batch of octrees (created with ocnn)
@@ -72,7 +76,8 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         data = ocnn.octree_property(octree, 'feature', self._depth)
 
         # Make sure the number of input channels matches the argument passed to constructor
-        assert data.size(1) == self._channels_in
+        assert data.size(1) == self._channels_in, \
+            f"Input octree has invalid number of channels. Got {data.size(2)}, expected {self._channels_in}"
 
         # Pass the data through all convolutional and polling layers
         for i in range(len(self.convs)):
@@ -84,5 +89,8 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
 
         # Flatten into a feature vector
         data = self.flatten(data)
+
+        # Feed through linear layer
+        data = self.linear(data)
 
         return data
