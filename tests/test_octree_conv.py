@@ -1,9 +1,13 @@
+#!/usr/bin/env python3
+
 from drl_grasping.perception import OctreeCreator
 from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2
 import ocnn
 import rclpy
 import torch
+
+# Note: Environment must already be running in background before starting this test. It can easily be combined with ./test_env.py (with env that has octree observations)
 
 
 class OctreeCreatorTest(Node):
@@ -58,8 +62,6 @@ class OctreeCreatorTest(Node):
         conv2.cuda()
         out2 = conv2(data, octree_batch)
 
-        print("Success1")
-
     def test_padded(self, octree: torch.Tensor):
 
         # Configuration
@@ -89,8 +91,6 @@ class OctreeCreatorTest(Node):
         conv2 = ocnn.OctreeConvFast(depth, channels, num_outputs)
         conv2.cuda()
         out2 = conv2(data, octree_batch)
-
-        print("Success2")
 
 
 def main(args=None):

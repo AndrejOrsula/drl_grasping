@@ -6,19 +6,20 @@ from gym_ignition.utils import logger
 import functools
 import gym
 
+## Reach
 # env_id="Reach-Gazebo-v0"
 # env_id="Reach-ColorImage-Gazebo-v0"
-# env_id="Reach-DepthImage-Gazebo-v0"
 # env_id="Reach-Octree-Gazebo-v0"
-
+# env_id="Reach-OctreeWithColor-Gazebo-v0"
+## Grasp
 # env_id="Grasp-Gazebo-v0"
-# env_id="Grasp-ColorImage-Gazebo-v0"
-# env_id="Grasp-DepthImage-Gazebo-v0"
-env_id="Grasp-Octree-Gazebo-v0"
+# env_id="Grasp-Octree-Gazebo-v0"
+env_id = "Grasp-OctreeWithColor-Gazebo-v0"
 
 
 def make_env_from_id(env_id: str, **kwargs) -> gym.Env:
     return gym.make(env_id, **kwargs)
+
 
 def main(args=None):
 
@@ -29,8 +30,9 @@ def main(args=None):
     make_env = functools.partial(make_env_from_id, env_id=env_id)
 
     # Wrap environment with randomizer
-    env = ManipulationGazeboEnvRandomizer(env=make_env, object_random_pose=True)
-    
+    env = ManipulationGazeboEnvRandomizer(
+        env=make_env, object_random_pose=True)
+
     # Initialize random seed
     env.seed(42)
 
