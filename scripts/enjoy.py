@@ -12,6 +12,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, VecEnvWrapper
 from drl_grasping.utils.training import ALGOS, create_test_env, get_latest_run_id, get_saved_hyperparams
 from drl_grasping.utils.training.utils import StoreDict
 
+
 def main(args=None):
 
     if args.exp_id == 0:
@@ -116,9 +117,7 @@ def main(args=None):
         if not args.no_render:
             env.render("human")
 
-        # TODO: had to change this for some reason
-        # episode_reward += reward[0]
-        episode_reward += reward
+        episode_reward += reward[0]
         ep_len += 1
 
         if args.n_envs == 1:
@@ -134,36 +133,27 @@ def main(args=None):
                 state = None
 
             # Reset also when the goal is achieved when using HER
-            # TODO: had to change this for some reason
-            # if done and infos[0].get("is_success") is not None:
-            if done and infos.get("is_success") is not None:
+            if done and infos[0].get("is_success") is not None:
                 if args.verbose > 1:
-                    # TODO: had to change this for some reason
-                    # print("Success?", infos[0].get("is_success", False))
-                    print("Success?", infos.get("is_success", False))
+                    print("Success?", infos[0].get("is_success", False))
                 # Alternatively, you can add a check to wait for the end of the episode
                 if done:
                     obs = env.reset()
-                # TODO: had to change this for some reason
-                # if infos[0].get("is_success") is not None:
-                if infos.get("is_success") is not None:    
+                if infos[0].get("is_success") is not None:
                     successes.append(infos[0].get("is_success", False))
                     episode_reward, ep_len = 0.0, 0
-
-            # TODO: Added
-            if done:
-                obs = env.reset()
 
     if args.verbose > 0 and len(successes) > 0:
         print(f"Success rate: {100 * np.mean(successes):.2f}%")
 
     if args.verbose > 0 and len(episode_rewards) > 0:
         print(f"{len(episode_rewards)} Episodes")
-        print(f"Mean reward: {np.mean(episode_rewards):.2f} +/- {np.std(episode_rewards):.2f}")
+        print(f"Mean reward: {np.mean(episode_rewards):.2f} "
+              "+/- {np.std(episode_rewards):.2f}")
 
     if args.verbose > 0 and len(episode_lengths) > 0:
-        print(
-            f"Mean episode length: {np.mean(episode_lengths):.2f} +/- {np.std(episode_lengths):.2f}")
+        print(f"Mean episode length: {np.mean(episode_lengths):.2f} "
+              "+/- {np.std(episode_lengths):.2f}")
 
     # Workaround for https://github.com/openai/gym/issues/893
     if not args.no_render:

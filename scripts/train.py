@@ -101,8 +101,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    # TODO: fix parameters and place scripts elsewhere
-
     # Environment and its parameters
     parser.add_argument("--env", type=str,
                         default="Reach-Gazebo-v0",
@@ -139,7 +137,7 @@ if __name__ == "__main__":
 
     # Saving of model
     parser.add_argument("--save-freq", type=int,
-                        default=5000,
+                        default=10000,
                         help="Save the model every n steps (if negative, no checkpoint)")
     parser.add_argument("--save-replay-buffer", action="store_true",
                         default=True,
