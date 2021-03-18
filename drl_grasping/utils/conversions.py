@@ -4,102 +4,38 @@ import sensor_msgs
 import geometry_msgs
 import numpy
 import open3d
-import struct
 import pyoctree
-
-__POINT_FIELD_DTYPES = {}
-__POINT_FIELD_DTYPES[sensor_msgs.msg.PointField.INT8] = ('b', 1)
-__POINT_FIELD_DTYPES[sensor_msgs.msg.PointField.UINT8] = ('B', 1)
-__POINT_FIELD_DTYPES[sensor_msgs.msg.PointField.INT16] = ('h', 2)
-__POINT_FIELD_DTYPES[sensor_msgs.msg.PointField.UINT16] = ('H', 2)
-__POINT_FIELD_DTYPES[sensor_msgs.msg.PointField.INT32] = ('i', 4)
-__POINT_FIELD_DTYPES[sensor_msgs.msg.PointField.UINT32] = ('I', 4)
-__POINT_FIELD_DTYPES[sensor_msgs.msg.PointField.FLOAT32] = ('f', 4)
-__POINT_FIELD_DTYPES[sensor_msgs.msg.PointField.FLOAT64] = ('d', 8)
 
 
 def pointcloud2_to_open3d(ros_point_cloud2: sensor_msgs.msg.PointCloud2,
-                          include_rgb: bool = True,
-                          fix_uint8_rgb: bool = True) -> open3d.geometry.PointCloud:
-
-    # Assert that all fields are present and ordered as they should be
-    assert('x' == ros_point_cloud2.fields[0].name)
-    assert('y' == ros_point_cloud2.fields[1].name)
-    assert('z' == ros_point_cloud2.fields[2].name)
-    if include_rgb:
-        assert('rgb' == ros_point_cloud2.fields[3].name)
-        if fix_uint8_rgb:
-            # TODO: There is an issue somewhere in Ignition Gazebo rgbd_camera or
-            # ros_ign conversion to PointCloud2 (incorrect datatype, count and it has extra length)
-            ros_point_cloud2.fields[3].datatype = sensor_msgs.msg.PointField.UINT8
-            ros_point_cloud2.fields[3].count = 3
+                          include_rgb: bool = True) -> open3d.geometry.PointCloud:
 
     # Create output Open3D PointCloud
     open3d_pc = open3d.geometry.PointCloud()
 
-    # Parse points from PointCloud2 into Open3D PointCloud
+    size = ros_point_cloud2.width*ros_point_cloud2.height
+    xyz_dtype = '>f4' if ros_point_cloud2.is_bigendian else '<f4'
+    xyz = numpy.ndarray(shape=(size, 3),
+                        dtype=xyz_dtype,
+                        buffer=ros_point_cloud2.data,
+                        offset=0,
+                        strides=(ros_point_cloud2.point_step, 4))
+
+    valid_points = numpy.isfinite(xyz).any(axis=1)
+    open3d_pc.points = open3d.utility.Vector3dVector(
+        xyz[valid_points].astype(numpy.float64))
+
     if include_rgb:
-        # Note: Color stored as BGR instead of RGB
-        for (x, y, z, b, g, r) in _read_points(ros_point_cloud2,
-                                               field_names=('x', 'y', 'z',
-                                                            'rgb'),
-                                               only_finite=True):
-            open3d_pc.points.append([x, y, z])
-            open3d_pc.colors.append([r / 255, g / 255, b / 255])
-    else:
-        for xyz in _read_points(ros_point_cloud2,
-                                field_names=('x', 'y', 'z'),
-                                only_finite=True):
-            open3d_pc.points.append(xyz)
+        bgr = numpy.ndarray(shape=(size, 3),
+                            dtype=numpy.uint8,
+                            buffer=ros_point_cloud2.data,
+                            offset=ros_point_cloud2.fields[3].offset,
+                            strides=(ros_point_cloud2.point_step, 1))
+        open3d_pc.colors = open3d.utility.Vector3dVector(
+            (bgr[valid_points][:, [2, 1, 0]] / 255).astype(numpy.float64))
 
     # Return the converted Open3D PointCloud
     return open3d_pc
-
-
-def _read_points(cloud, field_names=None, only_finite=True):
-    # Original source: http://docs.ros.org/en/melodic/api/sensor_msgs/html/point__cloud2_8py_source.html
-
-    fmt = _get_struct_fmt(cloud.is_bigendian, cloud.fields, field_names)
-    unpack_from = struct.Struct(fmt).unpack_from
-
-    if only_finite:
-        for v in range(cloud.height):
-            offset = cloud.row_step * v
-            for u in range(cloud.width):
-                p = unpack_from(cloud.data, offset)
-                has_nan_or_inf = False
-                for pv in p:
-                    if not numpy.isfinite(pv):
-                        has_nan_or_inf = True
-                        break
-                if not has_nan_or_inf:
-                    yield p
-                offset += cloud.point_step
-    else:
-        for v in range(cloud.height):
-            offset = cloud.row_step * v
-            for u in range(cloud.width):
-                yield unpack_from(cloud.data, offset)
-                offset += cloud.point_step
-
-
-def _get_struct_fmt(is_bigendian, fields, field_names=None):
-
-    fmt = '>' if is_bigendian else '<'
-
-    offset = 0
-    for field in (f for f in sorted(fields, key=lambda f: f.offset) if field_names is None or f.name in field_names):
-        if offset < field.offset:
-            fmt += 'x' * (field.offset - offset)
-            offset = field.offset
-        if field.datatype not in __POINT_FIELD_DTYPES:
-            print("Skipping unknown PointField datatype [%d]" % field.datatype)
-        else:
-            datatype_fmt, datatype_length = __POINT_FIELD_DTYPES[field.datatype]
-            fmt += field.count * datatype_fmt
-            offset += field.count * datatype_length
-
-    return fmt
 
 
 def transform_to_matrix(transform: geometry_msgs.msg.Transform) -> numpy.ndarray:
