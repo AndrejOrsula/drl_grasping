@@ -1,42 +1,32 @@
-import argparse
-import csv
-import json
-import os
-import time
-import warnings
 from collections import OrderedDict
-from pprint import pprint
-from typing import Any, Callable, Dict, List, Optional, Tuple
-
-import gym
-import numpy as np
-import optuna
-import yaml
 from optuna.integration.skopt import SkoptSampler
-from optuna.pruners import BasePruner, MedianPruner, SuccessiveHalvingPruner
+from optuna.pruners import BasePruner, MedianPruner, SuccessiveHalvingPruner, NopPruner
 from optuna.samplers import BaseSampler, RandomSampler, TPESampler
+from pprint import pprint
 from stable_baselines3.common.base_class import BaseAlgorithm
-from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback, EvalCallback
-from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
-# from stable_baselines3.common.preprocessing import is_image_space, is_image_space_channels_first
-from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike  # noqa: F401
 from stable_baselines3.common.utils import constant_fn
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv, VecFrameStack, VecNormalize, VecTransposeImage
 from stable_baselines3.common.vec_env.obs_dict_wrapper import ObsDictWrapper
-
-# For custom activation fn
-from torch import nn as nn  # noqa: F401
+from torch import nn as nn
+from typing import Any, Callable, Dict, List, Optional, Tuple
+import argparse
+import gym
+import numpy as np
+import optuna
+import os
+import time
+import warnings
+from stable_baselines3.common.preprocessing import is_image_space, is_image_space_channels_first
+import yaml
 
 # Register custom envs
 from drl_grasping.utils.training.callbacks import SaveVecNormalizeCallback, TrialEvalCallback, CheckpointCallbackWithReplayBuffer
 from drl_grasping.utils.training.hyperparams_opt import HYPERPARAMS_SAMPLER
 from drl_grasping.utils.training.utils import ALGOS, get_callback_list, get_latest_run_id, get_wrapper_class, linear_schedule
 
-
-# TODO: To detect NaN values (which otherwise might corrupt the entire network), wrap in `VecCheckNan`
-# env = VecCheckNan(env, raise_exception=True)
 
 class ExperimentManager(object):
     """
@@ -528,7 +518,7 @@ class ExperimentManager(object):
 
                 monitor_path = log_dir if log_dir is not None else None
                 if monitor_path is not None:
-                        os.makedirs(log_dir, exist_ok=True)
+                    os.makedirs(log_dir, exist_ok=True)
                 env = Monitor(env, filename=monitor_path, **monitor_kwargs)
                 return env
             return _init
@@ -548,12 +538,12 @@ class ExperimentManager(object):
             if self.verbose > 0:
                 print(f"Stacking {n_stack} frames")
 
-        # # Wrap if needed to re-order channels
-        # # (switch from channel last to channel first convention)
-        # if is_image_space(env.observation_space) and not is_image_space_channels_first(env.observation_space):
-        #     if self.verbose > 0:
-        #         print("Wrapping into a VecTransposeImage")
-        #     env = VecTransposeImage(env)
+        # Wrap if needed to re-order channels
+        # (switch from channel last to channel first convention)
+        if is_image_space(env.observation_space) and not is_image_space_channels_first(env.observation_space):
+            if self.verbose > 0:
+                print("Wrapping into a VecTransposeImage")
+            env = VecTransposeImage(env)
 
         # check if wrapper for dict support is needed
         if self.algo == "her":
@@ -622,8 +612,7 @@ class ExperimentManager(object):
                 n_startup_trials=self.n_startup_trials, n_warmup_steps=self.n_evaluations // 3)
         elif pruner_method == "none":
             # Do not prune
-            pruner = MedianPruner(
-                n_startup_trials=self.n_trials, n_warmup_steps=self.n_evaluations)
+            pruner = NopPruner()
         else:
             raise ValueError(f"Unknown pruner: {pruner_method}")
         return pruner
@@ -637,9 +626,6 @@ class ExperimentManager(object):
         if self.algo == "her":
             trial.model_class = self._hyperparams.get("model_class", None)
 
-        # Create env to train on
-        # env = self.create_envs(self.n_envs, no_log=False)
-
         # Hack to use DDPG/TD3 noise sampler
         trial.n_actions = self.__hyperparams_optimization_env.action_space.shape[0]
 
@@ -650,7 +636,8 @@ class ExperimentManager(object):
 
         model = ALGOS[self.algo](
             env=self.__hyperparams_optimization_env,
-            tensorboard_log=None,
+            # Note: Here I enabled tensorboard logs
+            tensorboard_log=self.tensorboard_log,
             # Note: Here I differ and I seed the trial. I want all trials to have the same starting conditions
             seed=self.seed,
             verbose=self.verbose,
@@ -669,25 +656,30 @@ class ExperimentManager(object):
             n_eval_episodes=self.n_eval_episodes,
             eval_freq=eval_freq_,
             deterministic=self.deterministic_eval,
+            verbose=self.verbose,
         )
 
         try:
             model.learn(self.n_timesteps, callback=eval_callback)
-            # Free memory
-            # model.env.close()
+            # Reset env
             self.__hyperparams_optimization_env.reset()
         except AssertionError as e:
-            # Sometimes, random hyperparams can generate NaN
-            # Free memory
-            # model.env.close()
+            # Reset env
             self.__hyperparams_optimization_env.reset()
+            print('Trial stopped:', e)
             # Prune hyperparams that generate NaNs
-            print(e)
+            raise optuna.exceptions.TrialPruned()
+        except Exception as err:
+            exception_type = type(err).__name__
+            print('Trial stopped due to raised exception:', exception_type, err)
+            # Prune also all other exceptions
             raise optuna.exceptions.TrialPruned()
         is_pruned = eval_callback.is_pruned
         reward = eval_callback.last_mean_reward
 
-        # del model.env
+        print(f"\nFinished a trial with reward={reward}, is_pruned={is_pruned} "
+              f"for hyperparameters: {kwargs}")
+
         del model
 
         if is_pruned:
@@ -707,12 +699,6 @@ class ExperimentManager(object):
                 "when you want to do distributed hyperparameter optimization."
             )
 
-        if self.tensorboard_log is not None:
-            warnings.warn(
-                "Tensorboard log is deactivated when running hyperparameter optimization")
-            self.tensorboard_log = None
-
-        # TODO: eval each hyperparams several times to account for noisy evaluation
         sampler = self._create_sampler(self.sampler)
         pruner = self._create_pruner(self.pruner)
 

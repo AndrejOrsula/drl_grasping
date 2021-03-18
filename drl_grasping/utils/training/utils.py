@@ -1,14 +1,11 @@
+from torch import nn as nn
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import argparse
 import glob
+import gym
 import importlib
 import os
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-
-import gym
-import stable_baselines3 as sb3  # noqa: F401
-import torch as th  # noqa: F401
 import yaml
-# from sb3_contrib import QRDQN, TQC
 
 # Note: Import monkey patch of OffPolicyAlgorithm before stable_baselines3 OffPolicyAlgorithm
 from drl_grasping.algorithms.common import off_policy_algorithm
@@ -17,12 +14,9 @@ from drl_grasping.algorithms import sac
 
 from stable_baselines3 import A2C, DDPG, DQN, HER, PPO, SAC, TD3
 from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike  # noqa: F401
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv, VecFrameStack, VecNormalize
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv, VecFrameStack
 
-# For custom activation fn
-from torch import nn as nn  # noqa: F401 pylint: disable=unused-import
 
 ALGOS = {
     "a2c": A2C,
@@ -32,9 +26,6 @@ ALGOS = {
     "her": HER,
     "sac": SAC,
     "td3": TD3,
-    # # SB3 Contrib,
-    # "qrdqn": QRDQN,
-    # "tqc": TQC,
 }
 
 
@@ -99,8 +90,10 @@ def get_wrapper_class(hyperparams: Dict[str, Any]) -> Optional[Callable[[gym.Env
                 kwargs = wrapper_dict[wrapper_name]
             else:
                 kwargs = {}
-            wrapper_module = importlib.import_module(get_module_name(wrapper_name))
-            wrapper_class = getattr(wrapper_module, get_class_name(wrapper_name))
+            wrapper_module = importlib.import_module(
+                get_module_name(wrapper_name))
+            wrapper_class = getattr(
+                wrapper_module, get_class_name(wrapper_name))
             wrapper_classes.append(wrapper_class)
             wrapper_kwargs.append(kwargs)
 
@@ -168,8 +161,10 @@ def get_callback_list(hyperparams: Dict[str, Any]) -> List[BaseCallback]:
                 kwargs = callback_dict[callback_name]
             else:
                 kwargs = {}
-            callback_module = importlib.import_module(get_module_name(callback_name))
-            callback_class = getattr(callback_module, get_class_name(callback_name))
+            callback_module = importlib.import_module(
+                get_module_name(callback_name))
+            callback_class = getattr(
+                callback_module, get_class_name(callback_name))
             callbacks.append(callback_class(**kwargs))
 
     return callbacks
@@ -214,37 +209,30 @@ def create_test_env(
         vec_env_cls = SubprocVecEnv
         # start_method = 'spawn' for thread safe
 
-    # TODO: I removed the vec env from here, otherwire randomizer was not able to wrap properly
+    # Note: custom to support Gazebo Runtime wrapping
+    def make_env():
+        def _init():
+            env = env_wrapper(env=env_id, **env_kwargs)
+            env.seed(seed)
+            env.action_space.seed(seed)
 
+            monitor_path = log_dir if log_dir is not None else None
+            if monitor_path is not None:
+                os.makedirs(log_dir, exist_ok=True)
+            env = Monitor(env, filename=monitor_path)
+            return env
+        return _init
 
-    # env = make_vec_env(
-    #     env_id,
-    #     n_envs=n_envs,
-    #     monitor_dir=log_dir,
-    #     seed=seed,
-    #     wrapper_class=env_wrapper,
-    #     env_kwargs=env_kwargs,
-    #     vec_env_cls=vec_env_cls,
-    #     vec_env_kwargs=vec_env_kwargs,
-    # )
-
-    env = env_wrapper(env=env_id, **env_kwargs)
-    env.seed(seed)
+    if vec_env_cls is None:
+        vec_env_cls = DummyVecEnv
+    env = vec_env_cls([make_env()], **vec_env_kwargs)
 
     # Load saved stats for normalizing input and rewards
     # And optionally stack frames
     if stats_path is not None:
         if hyperparams["normalize"]:
-            print("Loading running average")
-            print(f"with params: {hyperparams['normalize_kwargs']}")
-            path_ = os.path.join(stats_path, "vecnormalize.pkl")
-            if os.path.exists(path_):
-                env = VecNormalize.load(path_, env)
-                # Deactivate training and reward normalization
-                env.training = False
-                env.norm_reward = False
-            else:
-                raise ValueError(f"VecNormalize stats {path_} not found")
+            env.training = False
+            env.norm_reward = False
 
         n_stack = hyperparams.get("frame_stack", 0)
         if n_stack > 0:
@@ -323,7 +311,8 @@ def get_saved_hyperparams(stats_path: str, norm_reward: bool = False, test_mode:
         if os.path.isfile(config_file):
             # Load saved hyperparameters
             with open(os.path.join(stats_path, "config.yml"), "r") as f:
-                hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)  # pytype: disable=module-attr
+                # pytype: disable=module-attr
+                hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)
             hyperparams["normalize"] = hyperparams.get("normalize", False)
         else:
             obs_rms_path = os.path.join(stats_path, "obs_rms.pkl")
@@ -336,7 +325,8 @@ def get_saved_hyperparams(stats_path: str, norm_reward: bool = False, test_mode:
                 if test_mode:
                     normalize_kwargs["norm_reward"] = norm_reward
             else:
-                normalize_kwargs = {"norm_obs": hyperparams["normalize"], "norm_reward": norm_reward}
+                normalize_kwargs = {
+                    "norm_obs": hyperparams["normalize"], "norm_reward": norm_reward}
             hyperparams["normalize_kwargs"] = normalize_kwargs
     return hyperparams, stats_path
 
@@ -351,7 +341,8 @@ class StoreDict(argparse.Action):
 
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs
-        super(StoreDict, self).__init__(option_strings, dest, nargs=nargs, **kwargs)
+        super(StoreDict, self).__init__(
+            option_strings, dest, nargs=nargs, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         arg_dict = {}
