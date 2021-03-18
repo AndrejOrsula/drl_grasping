@@ -1,4 +1,4 @@
-# Note: Until nvidia runtime [GPU] is supported with compose, instead use `docker run` that achieves exactly this setup
+# Note: Until nvidia runtime [GPU] is supported with compose, please use the provided ./run.bash script instead (e.g. `./run.bash andrejorsula/drl_grasping:cuda_11.0.3 /bin/bash`)
 # Issue to follow: https://github.com/docker/compose/issues/6691
 version: "3.0"
 
@@ -14,7 +14,7 @@ services:
       dockerfile: Dockerfile
       context: .
       args:
-        PARENT_IMAGE: nvidia/cuda:11.2.1-cudnn8-devel-ubuntu20.04
+        PARENT_IMAGE: nvidia/cuda:11.0.3-cudnn8-devel-ubuntu20.04
         PYTHON3_VERSION: "3.8"
         ROS2_DISTRO: foxy
         IGNITION_VERSION: dome
@@ -23,7 +23,7 @@ services:
     network_mode: host
     ipc: host
 
-    # The following does not currently work. See note at the beginning of the file
+    # Neither of the following currently works, please see the note at the beginning of this file
     # runtime: nvidia
     # deploy:
     #   resources:
