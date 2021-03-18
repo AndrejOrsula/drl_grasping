@@ -31,7 +31,7 @@ def sample_sac_params(trial: optuna.Trial,
     ent_coef = "auto_0.5_0.1"
     target_entropy = "auto"
 
-    noise_std = trial.suggest_loguniform("noise_std", low=0.0, high=0.2)
+    noise_std = trial.suggest_loguniform("noise_std", low=0.01, high=0.2)
     action_noise = NormalActionNoise(mean=np.zeros(trial.n_actions),
                                      sigma=np.ones(trial.n_actions)*noise_std)
 
@@ -106,7 +106,7 @@ def sample_td3_params(trial: optuna.Trial,
         "target_policy_noise", low=0.0, high=0.5)
     target_noise_clip = 0.5
 
-    noise_std = trial.suggest_loguniform("noise_std", low=0.0, high=0.5)
+    noise_std = trial.suggest_loguniform("noise_std", low=0.025, high=0.5)
     action_noise = NormalActionNoise(mean=np.zeros(trial.n_actions),
                                      sigma=np.ones(trial.n_actions)*noise_std)
 
