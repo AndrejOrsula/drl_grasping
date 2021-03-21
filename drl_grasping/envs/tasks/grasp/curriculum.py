@@ -50,9 +50,6 @@ class GraspCurriculum():
     Curriculum learning implementation for grasp task that provides termination (success/fail) and reward for each stage of the task.
     """
 
-    # TODO: (Maybe) Add curriculum learning also for the goals that need to be reached at each stage (e.g. specify as range that would be adjusted according to the success rate)
-    # This might just make it unnecessarily complicated with little benefit, since it would be very similar to having a dense (shaped) reward
-
     def __init__(self,
                  task,
                  enabled: bool,
@@ -66,6 +63,8 @@ class GraspCurriculum():
                  restart_every_n_steps: int,
                  min_workspace_scale: float,
                  scale_negative_rewards: bool,
+                 reach_dense_reward_multiplier: float = 1.0,
+                 lift_dense_reward_multiplier: float = 10.0,
                  verbose: bool = False):
 
         # Grasp task/environment that will be used to extract information from the scene
@@ -80,6 +79,8 @@ class GraspCurriculum():
         self._restart_every_n_steps = restart_every_n_steps
         self._min_workspace_scale = min_workspace_scale
         self._scale_negative_rewards = scale_negative_rewards
+        self._reach_dense_reward_multiplier = reach_dense_reward_multiplier
+        self._lift_dense_reward_multiplier = lift_dense_reward_multiplier
         self._verbose = verbose
 
         # Requirements
@@ -112,6 +113,7 @@ class GraspCurriculum():
         # Counter of steps
         self._reset_step_counter = self._restart_every_n_steps
 
+        # If true, an info signal is send to the algorithm indicating that the task/environment needs exploration again
         self._restart_exploration = False
 
     def update_success_rate(self, is_success: bool):
@@ -187,7 +189,7 @@ class GraspCurriculum():
 
         # Data used in multiple stages is pushed to kwargs
         kwargs = {}
-        # object_positions are needed for ALL (+ REACH and LIFT)
+        # object_positions are needed for ALL, REACH and LIFT
         kwargs['object_positions'] = self.task.get_object_positions()
 
         # Iterate over all stages that the reward needs to be computed for
@@ -265,6 +267,7 @@ class GraspCurriculum():
         for stage in range(GraspStage.first().value, GraspStage.last().value + 1):
             self._stage_completed[GraspStage(stage)] = False
 
+        # Update internals for sparse rewards
         if not self._sparse_reward:
             # Get current positions of all objects in the scene
             object_positions = self.task.get_object_positions()
@@ -285,7 +288,7 @@ class GraspCurriculum():
         current_min_distance = self.task.get_closest_object_distance(
             object_positions)
         if current_min_distance < self._required_reach_distance:
-            self._is_success = True if GraspStage.REACH == self._stage else self._is_success
+            self._is_success = True if GraspStage.REACH.value >= self._stage.value else self._is_success
             self._stage_completed[GraspStage.REACH] = True
             if self._sparse_reward:
                 return 1.0
@@ -295,7 +298,8 @@ class GraspCurriculum():
             return 0.0
         else:
             # Dense reward
-            reward = self._previous_min_distance - current_min_distance
+            reward = self._reach_dense_reward_multiplier * \
+                (self._previous_min_distance - current_min_distance)
             self._previous_min_distance = current_min_distance
             return reward
 
@@ -304,7 +308,7 @@ class GraspCurriculum():
 
         touched_objects = self.task.get_touched_objects()
         if len(touched_objects) > 0:
-            self._is_success = True if GraspStage.TOUCH == self._stage else self._is_success
+            self._is_success = True if GraspStage.TOUCH.value >= self._stage.value else self._is_success
             self._stage_completed[GraspStage.TOUCH] = True
             return 1.0
         else:
@@ -315,7 +319,7 @@ class GraspCurriculum():
 
         grasped_objects = kwargs['grasped_objects']
         if len(grasped_objects) > 0:
-            self._is_success = True if GraspStage.GRASP == self._stage else self._is_success
+            self._is_success = True if GraspStage.GRASP.value >= self._stage.value else self._is_success
             self._stage_completed[GraspStage.GRASP] = True
             if self._verbose:
                 print(f"Object(s) grasped: {grasped_objects}")
@@ -334,14 +338,14 @@ class GraspCurriculum():
         object_positions = kwargs['object_positions']
         for grasped_object in grasped_objects:
             if object_positions[grasped_object][2] > self._required_lift_height:
-                self._is_success = True if GraspStage.LIFT == self._stage else self._is_success
+                self._is_success = True if GraspStage.LIFT.value >= self._stage.value else self._is_success
                 self._stage_completed[GraspStage.LIFT] = True
                 if self._sparse_reward:
                     reward += 1.0
 
             if not self._sparse_reward:
-                reward += object_positions[grasped_object][2] - \
-                    self._previous_object_heights[grasped_object]
+                reward += self._lift_dense_reward_multiplier * (object_positions[grasped_object][2] -
+                                                                self._previous_object_heights[grasped_object])
 
         if not self._sparse_reward:
             # Update all object heights
