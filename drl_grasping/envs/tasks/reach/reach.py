@@ -59,7 +59,7 @@ class Reach(Manipulation, abc.ABC):
 
         # Additional parameters
         self._sparse_reward: bool = sparse_reward
-        self._act_quick_reward: float = act_quick_reward
+        self._act_quick_reward = act_quick_reward if act_quick_reward >= 0.0 else -act_quick_reward
         self._required_accuracy: float = required_accuracy
 
         # Flag indicating if the task is done (performance - get_reward + is_done)
@@ -127,7 +127,7 @@ class Reach(Manipulation, abc.ABC):
         # Compute the current distance to the target
         current_distance = self.get_distance_to_target()
 
-        # Return reward of 1.0 if target is reached and mark the episode done
+        # Mark the episode done if target is reached
         if current_distance < self._required_accuracy:
             self._is_done = True
             if self._sparse_reward:
@@ -139,8 +139,7 @@ class Reach(Manipulation, abc.ABC):
             self._previous_distance = current_distance
 
         # Subtract a small reward each step to provide incentive to act quickly (if enabled)
-        if self._act_quick_reward != 0.0:
-            reward += self._act_quick_reward
+        reward -= self._act_quick_reward
 
         if self._verbose:
             print(f"reward: {reward}")
