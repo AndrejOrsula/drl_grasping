@@ -21,6 +21,10 @@ ALGO="sac"
 ## Path to trained agent (to continue training)
 # TRAINED_AGENT=""${ENV_ID}"_1/rl_model_100000_steps.zip"
 
+## Continuous evaluation (-1 to disable)
+EVAL_FREQUENCY=-1
+EVAL_EPISODES=5
+
 ## Path the parent training directory
 TRAINING_DIR="training"
 ## Path to logs
@@ -58,7 +62,7 @@ else
 fi
 
 ## Arguments
-TRAIN_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" "${EXTRA_ARGS}""
+TRAIN_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --eval-freq "${EVAL_FREQUENCY}" --eval-episodes "${EVAL_EPISODES}" "${EXTRA_ARGS}""
 ## Add trained agent to args in order to continue training
 if [ ! -z "${TRAINED_AGENT}" ]; then
     TRAIN_ARGS=""${TRAIN_ARGS}" --trained-agent "${LOG_DIR}"/"${ALGO}"/"${TRAINED_AGENT}""

@@ -161,24 +161,24 @@ if __name__ == "__main__":
     parser.add_argument("-optimize", "--optimize-hyperparameters", action="store_true",
                         default=False,
                         help="Run hyperparameters search")
-    parser.add_argument("--n-trials", type=int,
-                        default=10,
-                        help="Number of trials for optimizing hyperparameters")
-    parser.add_argument("--n-jobs", type=int,
-                        default=1,
-                        help="Number of parallel jobs when optimizing hyperparameters")
     parser.add_argument("--sampler", type=str, choices=["random", "tpe", "skopt"],
                         default="tpe",
                         help="Sampler to use when optimizing hyperparameters")
     parser.add_argument("--pruner", type=str, choices=["halving", "median", "none"],
                         default="median",
                         help="Pruner to use when optimizing hyperparameters")
+    parser.add_argument("--n-trials", type=int,
+                        default=10,
+                        help="Number of trials for optimizing hyperparameters")
     parser.add_argument("--n-startup-trials", type=int,
                         default=5,
                         help="Number of trials before using optuna sampler")
     parser.add_argument("--n-evaluations", type=int,
-                        default=1,
+                        default=2,
                         help="Number of evaluations for hyperparameter optimization")
+    parser.add_argument("--n-jobs", type=int,
+                        default=1,
+                        help="Number of parallel jobs when optimizing hyperparameters")
     parser.add_argument("--storage", type=str,
                         default=None,
                         help="Database storage path if distributed optimization should be used")
