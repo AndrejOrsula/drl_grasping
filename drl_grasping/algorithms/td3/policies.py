@@ -1,4 +1,5 @@
 from drl_grasping.algorithms.common.features_extractor import OctreeCnnFeaturesExtractor
+from drl_grasping.algorithms.common.octree_replay_buffer import preprocess_stacked_octree_batch
 from stable_baselines3.common.policies import register_policy, ContinuousCritic
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.utils import is_vectorized_observation
@@ -221,20 +222,15 @@ class OctreeCnnPolicy(TD3Policy):
         vectorized_env = is_vectorized_observation(
             observation, self.observation_space)
 
-        # Get original octree size
-        octree_size = np.frombuffer(buffer=observation[-4:],
-                                    dtype='uint32',
-                                    count=1)
-        # Convert to tensor
-        octree = th.from_numpy(observation[:octree_size[0]])
         if self._debug_write_octree:
-            ocnn.write_octree(octree, 'octree.octree')
+            ocnn.write_octree(observation[-1], 'octree.octree')
 
-        # Make batch outo of tensor
-        observation = ocnn.octree_batch([octree]).to(self.device)
+        # Make batch out of tensor (consisting of n-stacked frames)
+        octree_batch = preprocess_stacked_octree_batch(observation)
 
         with th.no_grad():
-            actions = self._predict(observation, deterministic=deterministic)
+            actions = self._predict(octree_batch.to(self.device),
+                                    deterministic=deterministic)
         # Convert to numpy
         actions = actions.cpu().numpy()
 

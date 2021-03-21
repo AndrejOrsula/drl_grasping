@@ -1,3 +1,4 @@
+from collections import deque
 from drl_grasping.envs.tasks.reach import Reach
 from drl_grasping.perception import CameraSubscriber
 from drl_grasping.perception import OctreeCreator
@@ -49,6 +50,7 @@ class ReachOctree(Reach, abc.ABC):
                  octree_depth: int,
                  octree_full_depth: int,
                  octree_include_color: bool,
+                 octree_n_stacked: int,
                  octree_max_size: int,
                  verbose: bool,
                  **kwargs):
@@ -78,7 +80,11 @@ class ReachOctree(Reach, abc.ABC):
                                             node_name=f'drl_grasping_octree_creator_{self.id}')
 
         # Additional parameters
+        self._octree_n_stacked = octree_n_stacked
         self._octree_max_size = octree_max_size
+
+        # List of all octrees
+        self.__stacked_octrees = deque([], maxlen=self._octree_n_stacked)
 
     def create_observation_space(self) -> ObservationSpace:
 
@@ -87,7 +93,8 @@ class ReachOctree(Reach, abc.ABC):
         # TODO: Customize replay buffer to support variable sized observations
         return gym.spaces.Box(low=0,
                               high=255,
-                              shape=(self._octree_max_size,),
+                              shape=(self._octree_n_stacked,
+                                     self._octree_max_size),
                               dtype=np.uint8)
 
     def get_observation(self) -> Observation:
@@ -98,6 +105,8 @@ class ReachOctree(Reach, abc.ABC):
         # Contrust octree from this point cloud
         octree = self.octree_creator(point_cloud).numpy()
 
+        # Pad octree with zeros to have a consistent length
+        # TODO: Customize replay buffer to support variable sized observations
         octree_size = octree.shape[0]
         if octree_size > self._octree_max_size:
             print(f"ERROR: Octree is larger than the maximum "
@@ -117,11 +126,21 @@ class ReachOctree(Reach, abc.ABC):
         #                             dtype='uint32',
         #                             count=1)
 
+        self.__stacked_octrees.append(octree)
+        # For the first buffer after reset, fill with identical observations until deque is full
+        while not self._octree_n_stacked == len(self.__stacked_octrees):
+            self.__stacked_octrees.append(octree)
+
         # Create the observation
-        observation = Observation(octree)
+        observation = Observation(np.array(self.__stacked_octrees))
 
         if self._verbose:
             print(f"\nobservation: {observation}")
 
         # Return the observation
         return observation
+
+    def reset_task(self):
+
+        self.__stacked_octrees.clear()
+        Reach.reset_task(self)

@@ -15,8 +15,26 @@ from gym import spaces
 import ocnn
 
 
-old_init = ReplayBuffer.__init__
-old_get_samples = ReplayBuffer._get_samples
+def preprocess_stacked_octree_batch(observation: th.Tensor) -> th.Tensor:
+    # Note: Primordial magic is happening here,
+    #       but there's no reason to tremble in fear.
+    #       For you own good don't question it too much,
+    #       it's just an optimised stacked octree batch...
+
+    octrees = []
+    for octree in observation.reshape(-1, observation.shape[-1]):
+        # Get original octree size
+        octree_size = np.frombuffer(buffer=octree[-4:],
+                                    dtype='uint32',
+                                    count=1)
+        # Convert to tensor and append to list
+        octrees.append(th.from_numpy(octree[:octree_size[0]]))
+    # Make batch out of tensor (consisting of n-stacked frames)
+    return ocnn.octree_batch(octrees)
+
+
+__old__init__ = ReplayBuffer.__init__
+__old_get_samples__ = ReplayBuffer._get_samples
 
 
 def __init___with_checking_for_octree(self,
@@ -26,18 +44,18 @@ def __init___with_checking_for_octree(self,
                                       device: Union[th.device, str] = "cpu",
                                       n_envs: int = 1,
                                       optimize_memory_usage: bool = False):
-    old_init(self,
-             buffer_size=buffer_size,
-             observation_space=observation_space,
-             action_space=action_space,
-             device=device,
-             n_envs=n_envs,
-             optimize_memory_usage=optimize_memory_usage)
+    __old__init__(self,
+                  buffer_size=buffer_size,
+                  observation_space=observation_space,
+                  action_space=action_space,
+                  device=device,
+                  n_envs=n_envs,
+                  optimize_memory_usage=optimize_memory_usage)
 
     # Determine if octrees are used
     # Note: This is not 100% reliable as there could be other observations that do the same (outside of this repo)
     self.contains_octree_obs = False
-    if isinstance(observation_space, spaces.Box) and len(observation_space.shape) == 1:
+    if isinstance(observation_space, spaces.Box) and len(observation_space.shape) == 2:
         if np.uint8 == observation_space.dtype and \
             np.all(0 == observation_space.low) and \
                 np.all(255 == observation_space.high):
@@ -49,31 +67,19 @@ def _get_samples_with_support_for_octree(self,
                                          env: Optional[VecNormalize] = None) -> ReplayBufferSamples:
 
     if not self.contains_octree_obs:
-        return old_get_samples(self, batch_inds=batch_inds, env=env)
+        return __old_get_samples__(self, batch_inds=batch_inds, env=env)
 
-    obs_octree_list = []
-    obs_batch = self.observations[batch_inds, 0, :]
-    for obs_i in obs_batch:
-        octree_size = np.frombuffer(buffer=obs_i[-4:],
-                                    dtype='uint32',
-                                    count=1)
-        octree_tensor = th.from_numpy(obs_i[:octree_size[0]])
-        obs_octree_list.append(octree_tensor)
-    obs = ocnn.octree_batch(obs_octree_list)
+    # Current observations
+    obs = self.observations[batch_inds, 0, :]
+    obs = preprocess_stacked_octree_batch(obs)
 
-    next_obs_octree_list = []
+    # Next observations
     if self.optimize_memory_usage:
-        next_obs_batch = self.observations[(
+        next_obs = self.observations[(
             batch_inds + 1) % self.buffer_size, 0, :]
     else:
-        next_obs_batch = self.next_observations[batch_inds, 0, :]
-    for next_obs_i in next_obs_batch:
-        octree_size = np.frombuffer(buffer=next_obs_i[-4:],
-                                    dtype='uint32',
-                                    count=1)
-        octree_tensor = th.from_numpy(next_obs_i[:octree_size[0]])
-        next_obs_octree_list.append(octree_tensor)
-    next_obs = ocnn.octree_batch(next_obs_octree_list)
+        next_obs = self.next_observations[batch_inds, 0, :]
+    next_obs = preprocess_stacked_octree_batch(next_obs)
 
     return ReplayBufferSamples(
         observations=obs.to(self.device),

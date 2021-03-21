@@ -65,6 +65,7 @@ register(
             'octree_depth': 5,
             'octree_full_depth': 2,
             'octree_include_color': False,
+            'octree_n_stacked': 2,
             'octree_max_size': 20000,
             'verbose': False,
             })
@@ -83,6 +84,7 @@ register(
             'octree_depth': 5,
             'octree_full_depth': 2,
             'octree_include_color': True,
+            'octree_n_stacked': 2,
             'octree_max_size': 25000,
             'verbose': False,
             })
@@ -115,6 +117,7 @@ register(
             'octree_depth': 5,
             'octree_full_depth': 2,
             'octree_include_color': False,
+            'octree_n_stacked': 2,
             'octree_max_size': 30000,
             'verbose': False,
             })
@@ -143,6 +146,7 @@ register(
             'octree_depth': 5,
             'octree_full_depth': 2,
             'octree_include_color': True,
+            'octree_n_stacked': 2,
             'octree_max_size': 40000,
             'verbose': False,
             })

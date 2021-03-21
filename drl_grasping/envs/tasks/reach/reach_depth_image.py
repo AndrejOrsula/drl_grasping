@@ -7,7 +7,7 @@ import abc
 import gym
 import numpy as np
 
-# TODO: This environment currently does not work with the default CnnPolicy (observation does not match its expectations)
+# TODO: ReachDepthImage environment currently does not currently have a working CnnPolicy
 
 
 class ReachDepthImage(Reach, abc.ABC):

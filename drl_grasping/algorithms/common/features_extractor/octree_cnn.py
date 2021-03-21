@@ -13,6 +13,7 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
     :param channels_in: Number of input channels.
     :param channel_multiplier: Multiplier for the number of channels after each pooling. 
                                With this parameter set to 1, the channels are [1, 2, 4, 8, ...] for [depth, depth-1, ..., full_depth].
+    :param features_dim: Dimension of output feature vector. Note that this number is multiplied by the number of stacked octrees inside one observation.
     """
 
     def __init__(self,
@@ -25,17 +26,19 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
                  fast_conv: bool = True,
                  batch_normalization: bool = False):
 
-        # Chain up parent constructor
-        super(OctreeCnnFeaturesExtractor, self).__init__(observation_space,
-                                                         features_dim)
-
         self._depth = depth
         self._channels_in = channels_in
+        self.n_stacks = observation_space.shape[0]
+
+        # Chain up parent constructor
+        super(OctreeCnnFeaturesExtractor, self).__init__(observation_space,
+                                                         self.n_stacks*features_dim)
 
         # Channels ordered as [channels_in, depth, depth-1, ..., full_depth]
         # I.e [channels_in, channel_multiplier*1, channel_multiplier*2, channel_multiplier*4, channel_multiplier*8,...]
         channels = [channel_multiplier*(2**i) for i in range(depth-full_depth)]
         channels.insert(0, channels_in)
+        channels[-1] *= self.n_stacks
 
         # Create all Octree convolution and pooling layers in depth-descending order [depth, depth-1, ..., full_depth]
         # Input to the first conv layer is the input Octree at depth=depth
@@ -93,4 +96,4 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         # Feed through linear layer
         data = self.linear(data)
 
-        return data
+        return torch.cat(data.chunk(self.n_stacks), dim=1)

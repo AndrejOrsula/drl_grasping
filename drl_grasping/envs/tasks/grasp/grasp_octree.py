@@ -1,3 +1,4 @@
+from collections import deque
 from drl_grasping.envs.tasks.grasp import Grasp
 from drl_grasping.perception import CameraSubscriber
 from drl_grasping.perception import OctreeCreator
@@ -27,6 +28,7 @@ class GraspOctree(Grasp, abc.ABC):
     _workspace_centre: Tuple[float, float, float] = (0.45, 0, 0.2)
     _workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
 
+    # A small offset to include ground inside the observations
     _octree_ground_offset: float = 0.01
     _octree_min_bound: Tuple[float, float, float] = (0.15,
                                                      -0.3,
@@ -64,6 +66,7 @@ class GraspOctree(Grasp, abc.ABC):
                  octree_depth: int,
                  octree_full_depth: int,
                  octree_include_color: bool,
+                 octree_n_stacked: int,
                  octree_max_size: int,
                  verbose: bool,
                  **kwargs):
@@ -103,7 +106,11 @@ class GraspOctree(Grasp, abc.ABC):
                                             node_name=f'drl_grasping_octree_creator_{self.id}')
 
         # Additional parameters
+        self._octree_n_stacked = octree_n_stacked
         self._octree_max_size = octree_max_size
+
+        # List of all octrees
+        self.__stacked_octrees = deque([], maxlen=self._octree_n_stacked)
 
     def create_observation_space(self) -> ObservationSpace:
 
@@ -112,7 +119,8 @@ class GraspOctree(Grasp, abc.ABC):
         # TODO: Customize replay buffer to support variable sized observations
         return gym.spaces.Box(low=0,
                               high=255,
-                              shape=(self._octree_max_size,),
+                              shape=(self._octree_n_stacked,
+                                     self._octree_max_size),
                               dtype=np.uint8)
 
     def get_observation(self) -> Observation:
@@ -144,11 +152,21 @@ class GraspOctree(Grasp, abc.ABC):
         #                             dtype='uint32',
         #                             count=1)
 
+        self.__stacked_octrees.append(octree)
+        # For the first buffer after reset, fill with identical observations until deque is full
+        while not self._octree_n_stacked == len(self.__stacked_octrees):
+            self.__stacked_octrees.append(octree)
+
         # Create the observation
-        observation = Observation(octree)
+        observation = Observation(np.array(self.__stacked_octrees))
 
         if self._verbose:
             print(f"\nobservation: {observation}")
 
         # Return the observation
         return observation
+
+    def reset_task(self):
+
+        self.__stacked_octrees.clear()
+        Grasp.reset_task(self)
