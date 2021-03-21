@@ -9,7 +9,6 @@ from itertools import count
 from scipy.spatial.transform import Rotation
 from typing import List, Tuple, Union
 import abc
-import gym
 import numpy as np
 
 
@@ -53,7 +52,7 @@ class Manipulation(task.Task, abc.ABC):
     _camera_ros2_bridge_points: bool = False
 
     _ground_enable: bool = False
-    _ground_position: Tuple[float, float, float] = (0.0, 0, 0)
+    _ground_position: Tuple[float, float, float] = (0, 0, 0)
     _ground_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
     _ground_size: Tuple[float, float] = (2.0, 2.0)
 
@@ -154,7 +153,7 @@ class Manipulation(task.Task, abc.ABC):
         target_pos = None
 
         if absolute is not None:
-            # If absolute position is selected, simple use the action as the target
+            # If absolute position is selected, directly use the action as target
             target_pos = absolute
         elif relative is not None:
             # Scale relative action to metric units

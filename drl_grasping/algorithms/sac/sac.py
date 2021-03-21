@@ -11,7 +11,7 @@ import numpy as np
 import torch as th
 
 
-old_store_transition = SAC._store_transition
+__old_store_transition__ = SAC._store_transition
 
 
 def _setup_model_store_init_and_reset_ent_coef(self) -> None:
@@ -68,13 +68,13 @@ def _store_transition_allow_exploration_reset(
         infos: List[Dict[str, Any]]):
 
     # Chain up original implementation
-    old_store_transition(self,
-                         replay_buffer=replay_buffer,
-                         buffer_action=buffer_action,
-                         new_obs=new_obs,
-                         reward=reward,
-                         done=done,
-                         infos=infos)
+    __old_store_transition__(self,
+                             replay_buffer=replay_buffer,
+                             buffer_action=buffer_action,
+                             new_obs=new_obs,
+                             reward=reward,
+                             done=done,
+                             infos=infos)
 
     if infos[0].get("curriculum.restart_exploration", False):
         if self.ent_coef_optimizer is not None:

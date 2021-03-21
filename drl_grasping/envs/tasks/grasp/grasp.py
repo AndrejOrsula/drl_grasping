@@ -29,7 +29,7 @@ class Grasp(Manipulation, abc.ABC):
     _workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
 
     _ground_enable: bool = True
-    _ground_position: Tuple[float, float, float] = (0.0, 0, 0)
+    _ground_position: Tuple[float, float, float] = (0, 0, 0)
     _ground_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
     _ground_size: Tuple[float, float] = (2.0, 2.0)
 
