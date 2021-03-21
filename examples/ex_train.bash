@@ -50,7 +50,7 @@ terminate_subprocesses() {
     echo "INFO: Caught signal, killing all subprocesses..."
     pkill -P "${subprocess_pid_ign_moveit2}"
 }
-trap 'terminate_subprocesses' SIGINT SIGTERM EXIT
+trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
 
 ## Locate scripts directory
 if [ -f ""$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)")"/scripts" ]; then
