@@ -52,26 +52,32 @@ class GraspCurriculum():
 
     def __init__(self,
                  task,
-                 enabled: bool,
+                 enable_stages: bool,
+                 enable_workspace_scale: bool,
                  sparse_reward: bool,
                  required_reach_distance: float,
                  required_lift_height: float,
                  act_quick_reward: float,
                  success_rate_threshold: float,
                  success_rate_rolling_average_n: int,
-                 stage_reward_multiplier: float,
                  restart_every_n_steps: int,
                  min_workspace_scale: float,
+                 stage_reward_multiplier: float,
+                 stage_increase_rewards: bool,
                  scale_negative_rewards: bool,
-                 reach_dense_reward_multiplier: float = 1.0,
-                 lift_dense_reward_multiplier: float = 10.0,
+                 reward_multiplier: float,
+                 reach_dense_reward_multiplier: float,
+                 lift_dense_reward_multiplier: float,
+                 skip_grasp_stage: bool,
+                 restart_exploration_at_start: bool,
                  verbose: bool = False):
 
         # Grasp task/environment that will be used to extract information from the scene
         self.task = task
 
         # Parameters
-        self._enabled = enabled
+        self._enable_stages = enable_stages
+        self._enable_workspace_scale = enable_workspace_scale
         self._sparse_reward = sparse_reward
         self._success_rate_threshold = success_rate_threshold
         self._success_rate_moving_average_n = success_rate_rolling_average_n
@@ -79,9 +85,20 @@ class GraspCurriculum():
         self._restart_every_n_steps = restart_every_n_steps
         self._min_workspace_scale = min_workspace_scale
         self._scale_negative_rewards = scale_negative_rewards
+        self._stage_increase_rewards = stage_increase_rewards
+        self._reward_multiplier = reward_multiplier
         self._reach_dense_reward_multiplier = reach_dense_reward_multiplier
         self._lift_dense_reward_multiplier = lift_dense_reward_multiplier
+        self._skip_grasp_stage = skip_grasp_stage
         self._verbose = verbose
+
+        # Make sure parameter combinations are valid
+        if self._stage_increase_rewards and self._stage_reward_multiplier < 1.0:
+            raise Exception("GraspCurriculum: Stage reward multiplier must be >= 1.0 "
+                            "if rewards increase with next stages")
+        elif not self._stage_increase_rewards and self._stage_reward_multiplier > 1.0:
+            raise Exception("GraspCurriculum: Stage reward multiplier must be <= 1.0 "
+                            "if rewards derease for previous stages")
 
         # Requirements
         self._required_reach_distance = required_reach_distance
@@ -91,7 +108,7 @@ class GraspCurriculum():
         self._act_quick_reward = act_quick_reward if act_quick_reward >= 0.0 else -act_quick_reward
 
         # Current stage of curriculum
-        self._stage: GraspStage = GraspStage.first() if self._enabled else GraspStage.last()
+        self._stage: GraspStage = GraspStage.first() if self._enable_stages else GraspStage.last()
         # Dict of bools determining if stage has been completed in the current episode (dict excludes the last stage)
         self._stage_completed: Dict[GraspStage, bool] = {GraspStage(stage): False
                                                          for stage in range(GraspStage.first().value,
@@ -109,12 +126,15 @@ class GraspCurriculum():
         # Heights of objects in the scene in the previous step (or after reset)
         # Used for LIFT sub-task
         self._previous_object_heights: Dict[str, float] = {}
+        # Remaining height increase of objects, used to create a maximum possible reward obtained through lift.
+        # This prevents the agent from picking and dropping the objects in order to optimize reward
+        self._remaining_height_increase = self._required_lift_height
 
         # Counter of steps
         self._reset_step_counter = self._restart_every_n_steps
 
         # If true, an info signal is send to the algorithm indicating that the task/environment needs exploration again
-        self._restart_exploration = False
+        self._restart_exploration = restart_exploration_at_start
 
     def update_success_rate(self, is_success: bool):
         """
@@ -128,9 +148,10 @@ class GraspCurriculum():
             print(f"Average success rate (n={self._success_rate_moving_average_n}) "
                   f"= {self._success_rate}")
 
-        scale = max(self._min_workspace_scale,
-                    self._success_rate / self._success_rate_threshold)
-        self.task.update_workspace_size(scale)
+        if self._enable_workspace_scale:
+            scale = max(self._min_workspace_scale,
+                        self._success_rate / self._success_rate_threshold)
+            self.task.update_workspace_size(scale)
 
     def maybe_next_stage(self) -> bool:
         """
@@ -141,11 +162,20 @@ class GraspCurriculum():
             return False
 
         if self._success_rate > self._success_rate_threshold:
+
+            # Determine the next stage
+            next_stage = self._stage.next()
+            if self._skip_grasp_stage and GraspStage.GRASP == next_stage:
+                print(f"Skipping {GraspStage.GRASP} stage and "
+                      "combining it with the next stage")
+                next_stage = next_stage.next()
+
             print("Curriculum stage change:\n"
                   f"\tAverage success rate ({self._success_rate}) is now higher than the threshold ({self._success_rate_threshold}). "
-                  f"Moving onto the next stage ({self._stage.next()}). "
+                  f"Moving onto the next stage ({next_stage}). "
                   f"Success rate reset to {0.0}.")
-            self._stage = self._stage.next()
+
+            self._stage = next_stage
             self._success_rate = 0.0
             self._restart_exploration = True
             return True
@@ -196,11 +226,15 @@ class GraspCurriculum():
         for stage in range(first_stage_to_process, GraspStage.last().value + 1):
 
             # grasped_objects are needed for GRASP and LIFT, add once reached
-            if GraspStage.GRASP == GraspStage(stage):
+            if stage >= GraspStage.GRASP.value and not 'grasped_objects' in kwargs:
                 kwargs['grasped_objects'] = self.task.get_grasped_objects()
 
             # Reward multiplier based on stage
-            reward_multiplier = self._stage_reward_multiplier**(stage-1)
+            if self._stage_increase_rewards:
+                reward_multiplier = self._stage_reward_multiplier**(stage-1)
+            else:
+                reward_multiplier = self._stage_reward_multiplier**(
+                    self._stage.value-stage)
 
             # Compute and add the reward for this stage
             reward += reward_multiplier * \
@@ -212,10 +246,13 @@ class GraspCurriculum():
 
         # Compute also (negative) reward that is common in each episode
         reward_multiplier = 1.0
-        if self._scale_negative_rewards:
+        if self._scale_negative_rewards and self._stage_increase_rewards:
             reward_multiplier = self._stage_reward_multiplier**(
                 self._stage.value - 1)
         reward += reward_multiplier * self._get_reward_ALL(**kwargs)
+
+        # Scale the total reward if desired
+        reward *= self._reward_multiplier
 
         return reward
 
@@ -281,6 +318,8 @@ class GraspCurriculum():
             self._previous_object_heights.clear()
             for object_name, object_position in object_positions.items():
                 self._previous_object_heights[object_name] = object_position[2]
+            # Reset remaining height increase
+            self._remaining_height_increase = self._required_lift_height
 
     def _get_reward_REACH(self, **kwargs) -> float:
 
@@ -344,8 +383,14 @@ class GraspCurriculum():
                     reward += 1.0
 
             if not self._sparse_reward:
-                reward += self._lift_dense_reward_multiplier * (object_positions[grasped_object][2] -
-                                                                self._previous_object_heights[grasped_object])
+                height_increase = object_positions[grasped_object][2] - \
+                    self._previous_object_heights[grasped_object]
+                self._remaining_height_increase -= height_increase
+                if self._remaining_height_increase > 0.0:
+                    reward += self._lift_dense_reward_multiplier * height_increase
+                else:
+                    reward += self._lift_dense_reward_multiplier * \
+                        max(0.0, height_increase+self._remaining_height_increase)
 
         if not self._sparse_reward:
             # Update all object heights
