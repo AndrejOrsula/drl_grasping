@@ -61,13 +61,20 @@ class Grasp(Manipulation, abc.ABC):
                  required_reach_distance: float,
                  required_lift_height: float,
                  act_quick_reward: float,
-                 curriculum_enabled: bool,
+                 curriculum_enable_stages: bool,
+                 curriculum_enable_workspace_scale: bool,
                  curriculum_success_rate_threshold: float,
                  curriculum_success_rate_rolling_average_n: int,
-                 curriculum_stage_reward_multiplier: float,
                  curriculum_restart_every_n_steps: int,
                  curriculum_min_workspace_scale: float,
+                 curriculum_stage_reward_multiplier: float,
+                 curriculum_stage_increase_rewards: bool,
                  curriculum_scale_negative_reward: bool,
+                 curriculum_reward_multiplier: float,
+                 curriculum_reach_dense_reward_multiplier: float,
+                 curriculum_lift_dense_reward_multiplier: float,
+                 curriculum_skip_grasp_stage: bool,
+                 curriculum_restart_exploration_at_start: bool,
                  verbose: bool,
                  **kwargs):
 
@@ -79,23 +86,29 @@ class Grasp(Manipulation, abc.ABC):
                               **kwargs)
 
         self.curriculum = GraspCurriculum(task=self,
-                                          enabled=curriculum_enabled,
+                                          enable_stages=curriculum_enable_stages,
+                                          enable_workspace_scale=curriculum_enable_workspace_scale,
                                           sparse_reward=sparse_reward,
                                           required_reach_distance=required_reach_distance,
                                           required_lift_height=required_lift_height,
                                           act_quick_reward=act_quick_reward,
                                           success_rate_threshold=curriculum_success_rate_threshold,
                                           success_rate_rolling_average_n=curriculum_success_rate_rolling_average_n,
-                                          stage_reward_multiplier=curriculum_stage_reward_multiplier,
                                           restart_every_n_steps=curriculum_restart_every_n_steps,
                                           min_workspace_scale=curriculum_min_workspace_scale,
+                                          stage_reward_multiplier=curriculum_stage_reward_multiplier,
+                                          stage_increase_rewards=curriculum_stage_increase_rewards,
                                           scale_negative_rewards=curriculum_scale_negative_reward,
+                                          reward_multiplier=curriculum_reward_multiplier,
+                                          reach_dense_reward_multiplier=curriculum_reach_dense_reward_multiplier,
+                                          lift_dense_reward_multiplier=curriculum_lift_dense_reward_multiplier,
+                                          skip_grasp_stage=curriculum_skip_grasp_stage,
+                                          restart_exploration_at_start=curriculum_restart_exploration_at_start,
                                           verbose=verbose)
 
         # Additional parameters
         self._gripper_dead_zone: float = gripper_dead_zone
         self._full_3d_orientation: bool = full_3d_orientation
-
 
         self._original_workspace_volume = self._workspace_volume
 

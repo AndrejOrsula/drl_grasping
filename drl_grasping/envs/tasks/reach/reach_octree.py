@@ -110,7 +110,7 @@ class ReachOctree(Reach, abc.ABC):
         octree_size = octree.shape[0]
         if octree_size > self._octree_max_size:
             print(f"ERROR: Octree is larger than the maximum "
-                  "allowed size (exceeded with {octree_size})")
+                  f"allowed size (exceeded with {octree_size})")
         octree = np.pad(octree,
                         (0, self._octree_max_size - octree_size),
                         'constant',
