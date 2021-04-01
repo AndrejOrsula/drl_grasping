@@ -267,7 +267,7 @@ class OctreeCnnPolicy(SACPolicy):
             observation, self.observation_space)
 
         if self._debug_write_octree:
-            ocnn.write_octree(observation[-1], 'octree.octree')
+            ocnn.write_octree(th.from_numpy(observation[-1]), 'octree.octree')
 
         # Make batch out of tensor (consisting of n-stacked frames)
         octree_batch = preprocess_stacked_octree_batch(observation)
