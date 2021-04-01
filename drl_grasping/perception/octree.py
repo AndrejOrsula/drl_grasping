@@ -13,7 +13,6 @@ import rclpy
 import tf2_ros
 import torch
 
-
 class OctreeCreator(Node):
     def __init__(self,
                  robot_frame_id: str = "panda_link0",
@@ -78,7 +77,9 @@ class OctreeCreator(Node):
                                                     th_distance=th_distance,
                                                     extrapolate=extrapolate,
                                                     save_pts=save_pts,
-                                                    key2xyz=key2xyz)
+                                                    key2xyz=key2xyz,
+                                                    bb_min=min_bound,
+                                                    bb_max=max_bound)
 
         # Spin executor in another thread
         self._executor = MultiThreadedExecutor(2)
