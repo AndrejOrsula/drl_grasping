@@ -1,6 +1,7 @@
 import ocnn
 import torch
 
+
 class OctreeConvRelu(torch.nn.Module):
     def __init__(self, depth, channel_in, channel_out, kernel_size=[3], stride=1):
         super(OctreeConvRelu, self).__init__()
@@ -68,6 +69,32 @@ class OctreeConvFastBnRelu(torch.nn.Module):
 
     def forward(self, data_in, octree):
         out = self.conv(data_in, octree)
+        out = self.bn(out)
+        out = self.relu(out)
+        return out
+
+
+class OctreeConv1x1Relu(torch.nn.Module):
+    def __init__(self, channel_in, channel_out, use_bias=True):
+        super(OctreeConv1x1Relu, self).__init__()
+        self.conv1x1 = ocnn.OctreeConv1x1(channel_in, channel_out, use_bias)
+        self.relu = torch.nn.ReLU(inplace=True)
+
+    def forward(self, data_in):
+        out = self.conv1x1(data_in)
+        out = self.relu(out)
+        return out
+
+
+class OctreeConv1x1BnRelu(torch.nn.Module):
+    def __init__(self, channel_in, channel_out, use_bias=True, bn_eps=0.001, bn_momentum=0.01):
+        super(OctreeConv1x1BnRelu, self).__init__()
+        self.conv1x1 = ocnn.OctreeConv1x1(channel_in, channel_out, use_bias)
+        self.bn = torch.nn.BatchNorm2d(channel_out, bn_eps, bn_momentum)
+        self.relu = torch.nn.ReLU(inplace=True)
+
+    def forward(self, data_in):
+        out = self.conv1x1(data_in)
         out = self.bn(out)
         out = self.relu(out)
         return out
