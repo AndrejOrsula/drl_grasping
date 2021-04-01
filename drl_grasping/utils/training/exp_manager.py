@@ -144,23 +144,23 @@ class ExperimentManager(object):
         hyperparams, self.env_wrapper, self.callbacks = self._preprocess_hyperparams(
             hyperparams)
 
+        # Create env to have access to action space for action noise
+        self._env = self.create_envs(self.n_envs, no_log=False)
+
         self.create_log_folder()
         self.create_callbacks()
 
-        # Create env to have access to action space for action noise
-        env = self.create_envs(self.n_envs, no_log=False)
-
-        self._hyperparams = self._preprocess_action_noise(hyperparams, env)
+        self._hyperparams = self._preprocess_action_noise(
+            hyperparams, self._env)
 
         if self.continue_training:
-            model = self._load_pretrained_agent(self._hyperparams, env)
+            model = self._load_pretrained_agent(self._hyperparams, self._env)
         elif self.optimize_hyperparameters:
-            self.__hyperparams_optimization_env = env
             return None
         else:
             # Train an agent from scratch
             model = ALGOS[self.algo](
-                env=env,
+                env=self._env,
                 tensorboard_log=self.tensorboard_log,
                 seed=self.seed,
                 verbose=self.verbose,
@@ -428,7 +428,7 @@ class ExperimentManager(object):
             save_vec_normalize = SaveVecNormalizeCallback(
                 save_freq=1, save_path=self.params_path)
             eval_callback = EvalCallback(
-                self.create_envs(1, eval_env=True),
+                env=self._env,
                 callback_on_new_best=save_vec_normalize,
                 best_model_save_path=self.save_path,
                 n_eval_episodes=self.n_eval_episodes,
@@ -627,15 +627,20 @@ class ExperimentManager(object):
             trial.model_class = self._hyperparams.get("model_class", None)
 
         # Hack to use DDPG/TD3 noise sampler
-        trial.n_actions = self.__hyperparams_optimization_env.action_space.shape[0]
+        trial.n_actions = self._env.action_space.shape[0]
 
         # Sample candidate hyperparameters
         kwargs.update(HYPERPARAMS_SAMPLER[self.algo](trial))
-
         print(f"\nRunning a new trial with hyperparameters: {kwargs}")
 
+        # Write hyperparameters into a file
+        trial_params_path = os.path.join(self.params_path, "optimization")
+        os.makedirs(trial_params_path, exist_ok=True)
+        with open(os.path.join(trial_params_path, f"hyperparameters_trial_{trial.number}.yml"), "w") as f:
+            yaml.dump(kwargs, f)
+
         model = ALGOS[self.algo](
-            env=self.__hyperparams_optimization_env,
+            env=self._env,
             # Note: Here I enabled tensorboard logs
             tensorboard_log=self.tensorboard_log,
             # Note: Here I differ and I seed the trial. I want all trials to have the same starting conditions
@@ -662,10 +667,10 @@ class ExperimentManager(object):
         try:
             model.learn(self.n_timesteps, callback=eval_callback)
             # Reset env
-            self.__hyperparams_optimization_env.reset()
+            self._env.reset()
         except AssertionError as e:
             # Reset env
-            self.__hyperparams_optimization_env.reset()
+            self._env.reset()
             print('Trial stopped:', e)
             # Prune hyperparams that generate NaNs
             raise optuna.exceptions.TrialPruned()
