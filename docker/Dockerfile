@@ -3,6 +3,11 @@
 ARG PARENT_IMAGE=nvidia/cuda:11.0.3-cudnn8-devel-ubuntu20.04
 FROM ${PARENT_IMAGE}
 
+# Enable OpenGl for ignition camera sensors (required to create context)
+COPY --from=nvidia/opengl:1.2-glvnd-runtime-ubuntu20.04 /usr/local /usr/local
+ENV NVIDIA_VISIBLE_DEVICES ${NVIDIA_VISIBLE_DEVICES:-all}
+ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
+
 ### Use bash by default
 SHELL ["/bin/bash", "-c"]
 
@@ -94,11 +99,11 @@ WORKDIR ${DRL_GRASPING_DEPS_DIR}
 
 ### Build O-CNN
 RUN cd ${DRL_GRASPING_DEPS_DIR} && \
-    git clone https://github.com/microsoft/O-CNN.git && \
+    git clone https://github.com/AndrejOrsula/O-CNN.git && \
     cd ${DRL_GRASPING_DEPS_DIR}/O-CNN/pytorch && \
     python3 setup.py install --build_octree && \
     cd ../octree/build && \
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_PYTHON=ON -DABI=ON -DKEY64=ON && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_OPENMP=ON -DUSE_PYTHON=ON -DABI=ON -DKEY64=ON && \
     cmake --build . --config Release
 
 ### Build gym_ignition (with its iDynTree dependency)
@@ -171,13 +176,8 @@ RUN pip3 install \
         trimesh \
         pcg_gazebo
 
-# Enable OpenGl for ignition camera sensors (required to create context)
-COPY --from=nvidia/opengl:1.2-glvnd-runtime-ubuntu20.04 /usr/local /usr/local
-ENV NVIDIA_VISIBLE_DEVICES ${NVIDIA_VISIBLE_DEVICES:-all}
-ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
-
 ARG DRL_GRASPING_GIT_BRANCH=devel
-ARG DRL_GRASPING_DOCKER_VERSION=0.1.0
+ARG DRL_GRASPING_DOCKER_VERSION=0.3.0
 RUN apt-get update && mkdir -p ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
     cd ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
     git clone https://github.com/AndrejOrsula/drl_grasping.git -b ${DRL_GRASPING_GIT_BRANCH} && \
@@ -185,7 +185,7 @@ RUN apt-get update && mkdir -p ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
     cd .. && \
     source /opt/ros/${ROS2_DISTRO}/setup.bash && \
     source ${DRL_GRASPING_DEPS_DIR}/moveit2/install/local_setup.bash && \
-    rosdep install -r --from-paths . --ignore-src --rosdistro ${ROS_DISTRO} -y && \
+    rosdep install -r --from-paths src -i -y --rosdistro ${ROS_DISTRO} && \
     colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release && \
     rm -rf /var/lib/apt/lists/*
 
