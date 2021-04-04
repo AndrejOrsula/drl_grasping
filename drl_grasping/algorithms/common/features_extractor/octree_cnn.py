@@ -22,6 +22,7 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
                  full_depth: int = 2,
                  channels_in: int = 3,
                  channel_multiplier: int = 8,
+                 full_depth_conv1d: bool = False,
                  full_depth_channels: int = 4,
                  features_dim: int = 64,
                  fast_conv: bool = True,
@@ -59,20 +60,22 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         self.pools = torch.nn.ModuleList([OctreePool(depth-i)
                                           for i in range(depth-full_depth)])
 
-        ## Linear layers applied to octree (Conv1D is used here to preserve spatial information)
-        ## Note: Works, but with worse performance and does not fully solve the problem
-        # if batch_normalization:
-        #     OctreeConv1D = OctreeConv1x1BnRelu
-        # else:
-        #     OctreeConv1D = OctreeConv1x1Relu
-        # self.convs1d = torch.nn.ModuleList([OctreeConv1D(channels[-1], features_dim),
-        #                                     OctreeConv1D(features_dim, full_depth_channels)])
-
         # Last convolution at depth=full_depth, which is not follewed by pooling
         # This layer is used to significantly reduce the channels, decresing number of parameters required in the next linear layer(s)
-        self.full_depth_conv = OctreeConv(full_depth,
-                                          channels[-1],
-                                          full_depth_channels)
+        self._full_depth_conv1d = full_depth_conv1d
+        if self._full_depth_conv1d:
+            # Use 1D convolution (Conv1D instead of linear is used here to preserve spatial information)
+            if batch_normalization:
+                OctreeConv1D = OctreeConv1x1BnRelu
+            else:
+                OctreeConv1D = OctreeConv1x1Relu
+            self.full_depth_conv = OctreeConv1D(channels[-1],
+                                                full_depth_channels)
+        else:
+            # Use 3D convolution (same as previous modules)
+            self.full_depth_conv = OctreeConv(full_depth,
+                                              channels[-1],
+                                              full_depth_channels)
 
         # Layer that converts octree at depth=full_depth into a full voxel grid (zero padding) such that it has a fixed size
         self.octree2voxel = ocnn.FullOctree2Voxel(full_depth)
@@ -83,8 +86,11 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         flatten_dim = full_depth_channels*full_depth_voxel_count
 
         # Last linear layer of the extractor, applied to all (flattened) voxels at full depth
-        self.linear = torch.nn.Sequential(torch.nn.Linear(flatten_dim, features_dim),
-                                          torch.nn.ReLU())
+        if batch_normalization:
+            OctreeLinear = LinearBnRelu
+        else:
+            OctreeLinear = LinearRelu
+        self.linear = OctreeLinear(flatten_dim, features_dim)
 
         number_of_learnable_parameters = sum(p.numel() for p in self.parameters()
                                              if p.requires_grad)
@@ -108,12 +114,13 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
             data = self.convs[i](data, octree)
             data = self.pools[i](data, octree)
 
-        ## Pass through 1D convs on octree
-        # for i in range(len(self.convs1d)):
-        #     data = self.convs1d[i](data)
-
         # Last convolution at full_depth
-        data = self.full_depth_conv(data, octree)
+        if self._full_depth_conv1d:
+            # Conv1D
+            data = self.full_depth_conv(data)
+        else:
+            # Conv3D
+            data = self.full_depth_conv(data, octree)
 
         # Convert octree at full_depth into a voxel grid
         data = self.octree2voxel(data)

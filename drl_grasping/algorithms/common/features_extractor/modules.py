@@ -98,3 +98,28 @@ class OctreeConv1x1BnRelu(torch.nn.Module):
         out = self.bn(out)
         out = self.relu(out)
         return out
+
+
+class LinearRelu(torch.nn.Module):
+    def __init__(self, channel_in, channel_out, use_bias=True):
+        super(LinearRelu, self).__init__()
+        self.fc = torch.nn.Linear(channel_in, channel_out, use_bias)
+        self.relu = torch.nn.ReLU(inplace=True)
+
+    def forward(self, data_in):
+        out = self.fc(data_in)
+        out = self.relu(out)
+        return out
+
+
+class LinearBnRelu(torch.nn.Module):
+    def __init__(self, channel_in, channel_out, use_bias=True, bn_eps=0.001, bn_momentum=0.01):
+        super(LinearBnRelu, self).__init__()
+        self.fc = torch.nn.Linear(channel_in, channel_out, use_bias)
+        self.bn = torch.nn.BatchNorm1d(channel_out, bn_eps, bn_momentum)
+        self.relu = torch.nn.ReLU(inplace=True)
+
+    def forward(self, data_in):
+        out = self.fc(data_in)
+        out = self.relu(out)
+        return out
