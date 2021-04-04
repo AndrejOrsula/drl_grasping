@@ -15,11 +15,12 @@ SEED="42"
 ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 
 ## Algorithm to use
-ALGO="sac"
+# ALGO="sac"
 # ALGO="td3"
+ALGO="tqc"
 
 ## Path to trained agent (to continue training)
-# TRAINED_AGENT=""${ENV_ID}"_1/rl_model_100000_steps.zip"
+# TRAINED_AGENT=""${ENV_ID}"_1/rl_model_0000_steps.zip"
 
 ## Continuous evaluation (-1 to disable)
 EVAL_FREQUENCY=-1

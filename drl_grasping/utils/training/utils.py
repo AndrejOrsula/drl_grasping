@@ -11,8 +11,11 @@ import yaml
 from drl_grasping.algorithms.common import off_policy_algorithm
 # Note: Import monkey patch of SAC before stable_baselines3 SAC
 from drl_grasping.algorithms import sac
+# Note: Import monkey patch of TQC before stable_baselines3 TQC
+from drl_grasping.algorithms import tqc
 
 from stable_baselines3 import A2C, DDPG, DQN, HER, PPO, SAC, TD3
+from sb3_contrib import QRDQN, TQC
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv, VecFrameStack
@@ -26,6 +29,9 @@ ALGOS = {
     "her": HER,
     "sac": SAC,
     "td3": TD3,
+    # SB3 Contrib,
+    "qrdqn": QRDQN,
+    "tqc": TQC,
 }
 
 
