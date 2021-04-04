@@ -70,14 +70,14 @@ class RandomPrimitive(model_wrapper.ModelWrapper):
         else:
             primitive = np_random.choice(['box', 'cylinder', 'sphere'])
 
-        mass = np_random.uniform(0.1, 1.5)
+        mass = np_random.uniform(0.05, 0.25)
         friction = np_random.uniform(0.75, 1.5)
         color = list(np_random.uniform(0.0, 1.0, (3,)))
         color.append(1.0)
 
         if 'box' == primitive:
             return Box.get_sdf(model_name=model_name,
-                               size=list(np_random.uniform(0.02, 0.075, (3,))),
+                               size=list(np_random.uniform(0.04, 0.07, (3,))),
                                mass=mass,
                                static=static,
                                collision=collision,

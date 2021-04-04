@@ -107,10 +107,10 @@ class ModelCollectionRandomizer():
         return model_paths
 
     def random_model(self,
-                     min_scale=0.05,
-                     max_scale=0.25,
-                     min_mass=0.1,
-                     max_mass=1.5,
+                     min_scale=0.15,
+                     max_scale=0.2,
+                     min_mass=0.05,
+                     max_mass=0.25,
                      min_friction=0.75,
                      max_friction=1.5,
                      decimation_fraction_of_visual=0.025,
