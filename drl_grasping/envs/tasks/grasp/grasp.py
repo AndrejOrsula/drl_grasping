@@ -338,19 +338,23 @@ class Grasp(Manipulation, abc.ABC):
                 return True
         return False
 
-    def check_all_objects_outside_workspace(self, object_positions:  Dict[str, Tuple[float, float, float]]) -> bool:
+    def check_all_objects_outside_workspace(self,
+                                            object_positions: Dict[str, Tuple[float, float, float]],
+                                            extra_padding: float = 0.025) -> bool:
         """
         Returns true if all objects are outside the workspace
         """
 
         ws_min_bound = \
-            (self._workspace_centre[0] - self._workspace_volume[0]/2,
-             self._workspace_centre[1] - self._workspace_volume[1]/2,
-             self._workspace_centre[2] - self._workspace_volume[2]/2)
+            (self._workspace_centre[0] - self._workspace_volume[0]/2 - extra_padding,
+             self._workspace_centre[1] -
+             self._workspace_volume[1]/2 - extra_padding,
+             self._workspace_centre[2] - self._workspace_volume[2]/2 - extra_padding)
         ws_max_bound = \
-            (self._workspace_centre[0] + self._workspace_volume[0]/2,
-             self._workspace_centre[1] + self._workspace_volume[1]/2,
-             self._workspace_centre[2] + self._workspace_volume[2]/2)
+            (self._workspace_centre[0] + self._workspace_volume[0]/2 + extra_padding,
+             self._workspace_centre[1] +
+             self._workspace_volume[1]/2 + extra_padding,
+             self._workspace_centre[2] + self._workspace_volume[2]/2 + extra_padding)
 
         return all([object_position[0] < ws_min_bound[0] or
                     object_position[1] < ws_min_bound[1] or
