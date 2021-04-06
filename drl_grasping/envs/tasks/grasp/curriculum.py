@@ -279,7 +279,8 @@ class GraspCurriculum():
             self._reset_step_counter -= 1
             self.maybe_restart_to_first_stage()
 
-        info = {'curriculum.restart_exploration': self._restart_exploration}
+        info = {'is_success': self._is_success,
+                'curriculum.restart_exploration': self._restart_exploration}
         self._restart_exploration = False
 
         return info
