@@ -428,7 +428,7 @@ class ExperimentManager(object):
             save_vec_normalize = SaveVecNormalizeCallback(
                 save_freq=1, save_path=self.params_path)
             eval_callback = EvalCallback(
-                env=self._env,
+                eval_env=self._env,
                 callback_on_new_best=save_vec_normalize,
                 best_model_save_path=self.save_path,
                 n_eval_episodes=self.n_eval_episodes,
