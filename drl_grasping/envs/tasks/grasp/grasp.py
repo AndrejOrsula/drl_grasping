@@ -114,6 +114,9 @@ class Grasp(Manipulation, abc.ABC):
 
         self._original_workspace_volume = self._workspace_volume
 
+        # Indicates whether gripper is opened or closed
+        self._gripper_state = 1.0
+
     def create_action_space(self) -> ActionSpace:
 
         if self._full_3d_orientation:
@@ -153,8 +156,10 @@ class Grasp(Manipulation, abc.ABC):
         gripper_action = action[0]
         if gripper_action < -self._gripper_dead_zone:
             self.moveit2.gripper_close(manual_plan=True)
+            self._gripper_state = -1.0
         elif gripper_action > self._gripper_dead_zone:
             self.moveit2.gripper_open(manual_plan=True)
+            self._gripper_state = 1.0
         else:
             # No-op for the gripper as it is in the dead zone
             pass
@@ -210,6 +215,8 @@ class Grasp(Manipulation, abc.ABC):
     def reset_task(self):
 
         self.curriculum.reset_task()
+
+        self._gripper_state = 1.0
 
         if self._verbose:
             print(f"\ntask reset")

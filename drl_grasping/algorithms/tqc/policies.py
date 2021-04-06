@@ -261,10 +261,11 @@ class OctreeCnnPolicy(TQCPolicy):
             ocnn.write_octree(th.from_numpy(observation[-1]), 'octree.octree')
 
         # Make batch out of tensor (consisting of n-stacked frames)
-        octree_batch = preprocess_stacked_octree_batch(observation)
+        octree_batch = preprocess_stacked_octree_batch(
+            observation, self.device)
 
         with th.no_grad():
-            actions = self._predict(octree_batch.to(self.device),
+            actions = self._predict(octree_batch,
                                     deterministic=deterministic)
         # Convert to numpy
         actions = actions.cpu().numpy()
