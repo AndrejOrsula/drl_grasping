@@ -14,7 +14,7 @@ class GraspOctree(Grasp, abc.ABC):
 
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
     _camera_enable: bool = True
-    _camera_type: str = 'rgbd_camera'
+    _camera_type: str = 'auto'
     _camera_width: int = 256
     _camera_height: int = 256
     _camera_update_rate: int = 10
@@ -107,6 +107,11 @@ class GraspOctree(Grasp, abc.ABC):
                        verbose=verbose,
                        **kwargs)
 
+        if octree_include_color:
+            self._camera_type = 'rgbd_camera'
+        else:
+            self._camera_type = 'depth_camera'
+
         # Perception (RGB-D camera - point cloud)
         self.camera_sub = CameraSubscriber(topic=f'/{self._camera_type}/points',
                                            is_point_cloud=True,
@@ -119,6 +124,7 @@ class GraspOctree(Grasp, abc.ABC):
                                             include_color=octree_include_color,
                                             use_sim_time=True,
                                             debug_draw=False,
+                                            debug_write_octree=False,
                                             node_name=f'drl_grasping_octree_creator_{self.id}')
 
         # Additional parameters
