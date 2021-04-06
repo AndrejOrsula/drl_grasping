@@ -188,6 +188,8 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         for object_name in self.task.object_names:
             obj = task.world.get_model(object_name).to_gazebo()
             for contact in obj.contacts():
+                if task.ground_name in contact.body_b:
+                    continue 
                 depth = np.mean([point.depth for point in contact.points])
                 if depth > allowed_penetration_depth:
                     is_ok = False
