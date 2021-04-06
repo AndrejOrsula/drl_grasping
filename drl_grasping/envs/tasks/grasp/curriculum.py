@@ -65,6 +65,7 @@ class GraspCurriculum():
                  stage_reward_multiplier: float,
                  stage_increase_rewards: bool,
                  scale_negative_rewards: bool,
+                 n_ground_collisions_till_termination: int,
                  reward_multiplier: float,
                  reach_dense_reward_multiplier: float,
                  lift_dense_reward_multiplier: float,
@@ -85,6 +86,7 @@ class GraspCurriculum():
         self._restart_every_n_steps = restart_every_n_steps
         self._min_workspace_scale = min_workspace_scale
         self._scale_negative_rewards = scale_negative_rewards
+        self._n_ground_collisions_till_termination = n_ground_collisions_till_termination
         self._stage_increase_rewards = stage_increase_rewards
         self._reward_multiplier = reward_multiplier
         self._reach_dense_reward_multiplier = reach_dense_reward_multiplier
@@ -108,7 +110,8 @@ class GraspCurriculum():
         self._act_quick_reward = act_quick_reward if act_quick_reward >= 0.0 else -act_quick_reward
 
         # Current stage of curriculum
-        self._stage: GraspStage = GraspStage.first() if self._enable_stages else GraspStage.last()
+        self._stage: GraspStage = GraspStage.first(
+        ) if self._enable_stages else GraspStage.last()
         # Dict of bools determining if stage has been completed in the current episode (dict excludes the last stage)
         self._stage_completed: Dict[GraspStage, bool] = {GraspStage(stage): False
                                                          for stage in range(GraspStage.first().value,
@@ -119,6 +122,8 @@ class GraspCurriculum():
         self._is_success: bool = False
         # Flag that determines if the current episode got terminated due to failure
         self._is_failure: bool = False
+        # Variable keeping track of how many times did agent collide with ground during the current episode
+        self._ground_collision_counter: int = 0
 
         # Distance to closest object in the previous step (or after reset)
         # Used for REACH sub-task
@@ -304,6 +309,7 @@ class GraspCurriculum():
         self._is_failure = False
         for stage in range(GraspStage.first().value, GraspStage.last().value + 1):
             self._stage_completed[GraspStage(stage)] = False
+        self._ground_collision_counter = 0
 
         # Update internals for sparse rewards
         if not self._sparse_reward:
@@ -405,21 +411,22 @@ class GraspCurriculum():
         # Subtract a small reward each step to provide incentive to act quickly
         reward = -self._act_quick_reward
 
-        # Terminate and return reward of -1.0 if robot collides with the ground plane
+        # Return reward of -1.0 if robot collides with the ground plane (and terminate when desired)
         if self.task.check_ground_collision():
-            self._is_failure = True
             reward -= 1.0
+            self._ground_collision_counter += 1
+            self._is_failure = self._ground_collision_counter >= self._n_ground_collisions_till_termination
             if self._verbose:
-                print("Robot collided with the ground plane. Terminating episode...")
+                print("Robot collided with the ground plane.")
             return reward
 
         # If all objects are outside of workspace, terminate and return -1.0
         object_positions = kwargs['object_positions']
         if self.task.check_all_objects_outside_workspace(object_positions):
-            self._is_failure = True
             reward -= 1.0
+            self._is_failure = True
             if self._verbose:
-                print("All objects are outside of the workspace. Terminating episode...")
+                print("All objects are outside of the workspace.")
             return reward
 
         return reward
