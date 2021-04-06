@@ -35,6 +35,7 @@ class OctreeCreator(Node):
                  key2xyz: bool = False,
                  use_sim_time: bool = True,
                  debug_draw: bool = False,
+                 debug_write_octree: bool = False,
                  node_name: str = 'drl_grasping_octree_creator'):
 
         # Initialise node
@@ -64,6 +65,7 @@ class OctreeCreator(Node):
         self._depth = depth
         self._full_depth = full_depth
         self._debug_draw = debug_draw
+        self._debug_write_octree = debug_write_octree
 
         # Create a converter between points and octree
         self._points_to_octree = ocnn.Points2Octree(depth=depth,
@@ -115,8 +117,14 @@ class OctreeCreator(Node):
                                                  point_show_normal=True)
 
         # Construct octree from such point cloud
-        return self.construct_octree(open3d_point_cloud,
+        octree = self.construct_octree(open3d_point_cloud,
                                      include_color=self._include_color)
+
+        # Write if needed
+        if self._debug_write_octree:
+            ocnn.write_octree(octree, 'octree.octree')
+
+        return octree
 
     def preprocess_point_cloud(self, open3d_point_cloud: open3d.geometry.PointCloud,
                                camera_frame_id: str,
