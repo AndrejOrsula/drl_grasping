@@ -121,5 +121,6 @@ class LinearBnRelu(torch.nn.Module):
 
     def forward(self, data_in):
         out = self.fc(data_in)
+        out = self.bn(out)
         out = self.relu(out)
         return out
