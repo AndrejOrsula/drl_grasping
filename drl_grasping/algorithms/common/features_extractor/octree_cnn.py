@@ -105,14 +105,14 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         """
 
         aux_obs = octree['aux_obs']
-        octree = octree['aux_obs']
+        octree = octree['octree']
 
         # Extract features from the octree at the finest depth
         data = ocnn.octree_property(octree, 'feature', self._depth)
 
         # Make sure the number of input channels matches the argument passed to constructor
         assert data.size(1) == self._channels_in, \
-            f"Input octree has invalid number of channels. Got {data.size(2)}, expected {self._channels_in}"
+            f"Input octree has invalid number of channels. Got {data.size(1)}, expected {self._channels_in}"
 
         # Pass the data through all convolutional and polling layers
         for i in range(len(self.convs)):
@@ -139,8 +139,10 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         # Get a view that merges stacks into a single feature vector (original batches remain separated)
         data = data.view(-1, self.n_stacks*data.shape[-1])
 
-        # Concatenate auxiliary observations (if any)
         if self._aux_obs_dim != 0:
+            # Get a view that merges aux feature stacks into a single feature vector (original batches remain separated)
+            aux_obs = aux_obs.view(-1, self.n_stacks*self._aux_obs_dim)
+            # Concatenate auxiliary observations (if any)
             data = torch.cat((data, aux_obs), dim=1)
 
         return data

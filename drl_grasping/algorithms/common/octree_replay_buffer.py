@@ -33,13 +33,13 @@ def preprocess_stacked_octree_batch(observation: th.Tensor, device) -> Dict[str,
     octree_batch = ocnn.octree_batch(octrees)
 
     # Get number of auxiliary observations encoded as float32 and parse them
-    n_aux_obs_f32 = np.frombuffer(buffer=octree[0, 0, -8:-4],
-                                  dtype='uint32',
-                                  count=1)
+    n_aux_obs_f32 = int(np.frombuffer(buffer=observation[0, 0, -8:-4],
+                                      dtype='uint32',
+                                      count=1))
     aux_obs = th.from_numpy(
         np.frombuffer(buffer=observation[:, :, -(4*n_aux_obs_f32+8):-8].reshape(-1),
                       dtype='float32',
-                      count=n_aux_obs_f32).reshape(observation.shape[:2] + (n_aux_obs_f32,)))
+                      count=n_aux_obs_f32*observation.shape[0]*observation.shape[1]).reshape(observation.shape[:2] + (n_aux_obs_f32,)))
 
     return {'octree': octree_batch.to(device),
             'aux_obs': aux_obs.to(device)}

@@ -169,5 +169,6 @@ register(
             'octree_include_color': True,
             'octree_n_stacked': 2,
             'octree_max_size': 100000,
+            'proprieceptive_observations': False,
             'verbose': False,
             })
