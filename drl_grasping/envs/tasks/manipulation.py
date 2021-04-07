@@ -207,8 +207,7 @@ class Manipulation(task.Task, abc.ABC):
 
         elif relative is not None:
             # Get current orientation
-            current_quat_xyzw = conversions.Quaternion.to_xyzw(
-                self.get_ee_orientation())
+            current_quat_xyzw = self.get_ee_orientation()
 
             # For 'z' representation, result should always point down
             # Therefore, create a new quatertnion that contains only yaw component
@@ -258,4 +257,4 @@ class Manipulation(task.Task, abc.ABC):
         """
 
         robot = self.world.get_model(self.robot_name).to_gazebo()
-        return robot.get_link(self.robot_ee_link_name).orientation()
+        return conversions.Quaternion.to_xyzw(robot.get_link(self.robot_ee_link_name).orientation())

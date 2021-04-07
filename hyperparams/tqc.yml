@@ -52,6 +52,7 @@ Grasp-OctreeWithColor-Gazebo-v0:
       features_dim: 256
       fast_conv: True
       batch_normalization: True
+      aux_obs_dim: 0
     n_quantiles: 20
     net_arch: [512, 512]
   env_wrapper:

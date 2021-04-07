@@ -25,16 +25,18 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
                  full_depth_conv1d: bool = False,
                  full_depth_channels: int = 4,
                  features_dim: int = 64,
+                 aux_obs_dim: int = 0,
                  fast_conv: bool = True,
                  batch_normalization: bool = True):
 
         self._depth = depth
         self._channels_in = channels_in
+        self._aux_obs_dim = aux_obs_dim
         self.n_stacks = observation_space.shape[0]
 
         # Chain up parent constructor
         super(OctreeCnnFeaturesExtractor, self).__init__(observation_space,
-                                                         self.n_stacks*features_dim)
+                                                         self.n_stacks*(features_dim+aux_obs_dim))
 
         # Channels ordered as [channels_in, depth, depth-1, ..., full_depth]
         # I.e [channels_in, channel_multiplier*1, channel_multiplier*2, channel_multiplier*4, channel_multiplier*8,...]
@@ -102,12 +104,15 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         Note: input octree must be batch of octrees (created with ocnn)
         """
 
+        aux_obs = octree['aux_obs']
+        octree = octree['octree']
+
         # Extract features from the octree at the finest depth
         data = ocnn.octree_property(octree, 'feature', self._depth)
 
         # Make sure the number of input channels matches the argument passed to constructor
         assert data.size(1) == self._channels_in, \
-            f"Input octree has invalid number of channels. Got {data.size(2)}, expected {self._channels_in}"
+            f"Input octree has invalid number of channels. Got {data.size(1)}, expected {self._channels_in}"
 
         # Pass the data through all convolutional and polling layers
         for i in range(len(self.convs)):
@@ -131,5 +136,13 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         # Feed through the last linear layer
         data = self.linear(data)
 
-        # Return a view that merges stacks into a single feature vector (original batches remain separated)
-        return data.view(-1, self.n_stacks*data.shape[-1])
+        # Get a view that merges stacks into a single feature vector (original batches remain separated)
+        data = data.view(-1, self.n_stacks*data.shape[-1])
+
+        if self._aux_obs_dim != 0:
+            # Get a view that merges aux feature stacks into a single feature vector (original batches remain separated)
+            aux_obs = aux_obs.view(-1, self.n_stacks*self._aux_obs_dim)
+            # Concatenate auxiliary observations (if any)
+            data = torch.cat((data, aux_obs), dim=1)
+
+        return data
