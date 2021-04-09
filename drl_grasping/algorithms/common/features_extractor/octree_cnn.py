@@ -20,18 +20,20 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
                  observation_space: gym.spaces.Box,
                  depth: int = 5,
                  full_depth: int = 2,
-                 channels_in: int = 3,
-                 channel_multiplier: int = 8,
+                 channels_in: int = 4,
+                 channel_multiplier: int = 16,
                  full_depth_conv1d: bool = False,
-                 full_depth_channels: int = 4,
-                 features_dim: int = 64,
+                 full_depth_channels: int = 8,
+                 features_dim: int = 128,
                  aux_obs_dim: int = 0,
                  fast_conv: bool = True,
-                 batch_normalization: bool = True):
+                 batch_normalization: bool = True,
+                 verbose: bool = False):
 
         self._depth = depth
         self._channels_in = channels_in
         self._aux_obs_dim = aux_obs_dim
+        self._verbose = verbose
         self.n_stacks = observation_space.shape[0]
 
         # Chain up parent constructor
@@ -89,15 +91,22 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
 
         # Last linear layer of the extractor, applied to all (flattened) voxels at full depth
         if batch_normalization:
-            OctreeLinear = LinearBnRelu
+            LineadModule = LinearBnRelu
         else:
-            OctreeLinear = LinearRelu
-        self.linear = OctreeLinear(flatten_dim, features_dim)
+            LineadModule = LinearRelu
+        self.linear = LineadModule(flatten_dim, features_dim)
+
+        # One linear layer for auxiliary observations
+        if self._aux_obs_dim != 0:
+            self.aux_obs_linear = LineadModule(
+                self._aux_obs_dim, self._aux_obs_dim)
 
         number_of_learnable_parameters = sum(p.numel() for p in self.parameters()
                                              if p.requires_grad)
         print("Initialised OctreeCnnFeaturesExtractor with "
-              f"{number_of_learnable_parameters} parameters:\n{self}")
+              f"{number_of_learnable_parameters} parameters")
+        if verbose:
+            print(self)
 
     def forward(self, octree):
         """
@@ -142,7 +151,9 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         if self._aux_obs_dim != 0:
             # Get a view that merges aux feature stacks into a single feature vector (original batches remain separated)
             aux_obs = aux_obs.view(-1, self.n_stacks*self._aux_obs_dim)
-            # Concatenate auxiliary observations (if any)
-            data = torch.cat((data, aux_obs), dim=1)
+            # Feed the data through linear layer
+            aux_data = self.linear(aux_obs)
+            # Concatenate auxiliary data
+            data = torch.cat((data, aux_data), dim=1)
 
         return data
