@@ -79,6 +79,9 @@ class Manipulation(task.Task, abc.ABC):
     _insert_scene_broadcaster_plugin: bool = True
     _insert_user_commands_plugin: bool = False
 
+    _relative_position_scaling_factor: float = 0.1
+    _z_relative_orientation_scaling_factor: float = np.pi/4.0
+
     def __init__(self,
                  agent_rate: float,
                  restrict_position_goal_to_workspace: bool,
@@ -147,8 +150,7 @@ class Manipulation(task.Task, abc.ABC):
                           absolute: Union[Tuple[float, float, float],
                                           None] = None,
                           relative: Union[Tuple[float, float, float],
-                                          None] = None,
-                          relative_position_scaling_factor: float = 0.1):
+                                          None] = None):
 
         target_pos = None
 
@@ -157,7 +159,7 @@ class Manipulation(task.Task, abc.ABC):
             target_pos = absolute
         elif relative is not None:
             # Scale relative action to metric units
-            relative_pos = relative_position_scaling_factor * relative
+            relative_pos = self._relative_position_scaling_factor * relative
             # Get current position
             current_pos = self.get_ee_position()
 
@@ -184,8 +186,7 @@ class Manipulation(task.Task, abc.ABC):
                              absolute: Union[Tuple[float, ...], None] = None,
                              relative: Union[Tuple[float, ...], None] = None,
                              representation: str = 'quat',
-                             xyzw: bool = True,
-                             z_relative_orientation_scaling_factor: float = np.pi/4.0):
+                             xyzw: bool = True):
 
         target_quat_xyzw = None
 
@@ -231,7 +232,7 @@ class Manipulation(task.Task, abc.ABC):
                 relative_quat_xyzw = orientation_6d_to_quat(
                     vectors[0], vectors[1])
             elif 'z' == representation:
-                relative *= z_relative_orientation_scaling_factor
+                relative *= self._z_relative_orientation_scaling_factor
                 relative_quat_xyzw = Rotation.from_euler(
                     'xyz', [0, 0, relative]).as_quat()
 
