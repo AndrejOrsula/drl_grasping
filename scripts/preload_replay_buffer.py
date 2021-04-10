@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S python3 -O
 
 import argparse
 import difflib
@@ -53,7 +53,7 @@ def main(args=None):
     # If enabled, ensure that the run has a unique ID
     uuid_str = f"_{uuid.uuid4()}" if args.uuid else ""
 
-    print("=" * 10, args.env, "=" * 10)
+    print("=" * 10, "Preloading buffer for ", args.env, "=" * 10)
     print(f"Seed: {args.seed}")
 
     exp_manager = ExperimentManager(
@@ -83,19 +83,14 @@ def main(args=None):
         seed=args.seed,
         log_interval=args.log_interval,
         save_replay_buffer=args.save_replay_buffer,
-        preload_replay_buffer=args.preload_replay_buffer,
         verbose=args.verbose,
         vec_env_type=args.vec_env,
     )
 
     # Prepare experiment and launch hyperparameter optimization if needed
     model = exp_manager.setup_experiment()
-
-    if args.optimize_hyperparameters:
-        exp_manager.hyperparameters_optimization()
-    else:
-        exp_manager.learn(model)
-        exp_manager.save_trained_model(model)
+    # Collect transitions for demonstration
+    exp_manager.collect_demonstration(model)
 
 
 if __name__ == "__main__":
@@ -143,11 +138,6 @@ if __name__ == "__main__":
     parser.add_argument("--save-replay-buffer", action="store_true",
                         default=True,
                         help="Save the replay buffer too (when applicable)")
-
-    # Pre-load a replay buffer and start training on it
-    parser.add_argument("--preload-replay-buffer", type=str,
-                        default="",
-                        help="Path to a replay buffer that should be preloaded before starting the training process")
 
     # Logging
     parser.add_argument("-f", "--log-folder", type=str,

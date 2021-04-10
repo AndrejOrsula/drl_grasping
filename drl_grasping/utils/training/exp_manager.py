@@ -64,6 +64,7 @@ class ExperimentManager(object):
         seed: int = 0,
         log_interval: int = 0,
         save_replay_buffer: bool = False,
+        preload_replay_buffer: str = "",
         verbose: int = 1,
         vec_env_type: str = "dummy",
     ):
@@ -100,6 +101,8 @@ class ExperimentManager(object):
         self.continue_training = trained_agent.endswith(
             ".zip") and os.path.isfile(trained_agent)
         self.truncate_last_trajectory = truncate_last_trajectory
+
+        self.preload_replay_buffer = preload_replay_buffer
 
         self._is_atari = self.is_atari(env_id)
         self._is_ignition_gazebo_env = self.is_ignition_gazebo_env(env_id)
@@ -166,6 +169,24 @@ class ExperimentManager(object):
                 verbose=self.verbose,
                 **self._hyperparams,
             )
+
+            # Pre-load replay buffer if enabled
+            if self.preload_replay_buffer:
+                if self.preload_replay_buffer.endswith('.pkl'):
+                    replay_buffer_path = self.preload_replay_buffer
+                else:
+                    replay_buffer_path = os.path.join(self.preload_replay_buffer,
+                                                      "replay_buffer.pkl")
+                if os.path.exists(replay_buffer_path):
+                    print("Pre-loading replay buffer")
+                    if self.algo == "her":
+                        model.load_replay_buffer(replay_buffer_path,
+                                                 self.truncate_last_trajectory)
+                    else:
+                        model.load_replay_buffer(replay_buffer_path)
+                else:
+                    raise Exception(f"Replay buffer {replay_buffer_path} "
+                                    "does not exist")
 
         self._save_config(saved_hyperparams)
         return model
@@ -752,3 +773,26 @@ class ExperimentManager(object):
         # Write report
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
         study.trials_dataframe().to_csv(log_path)
+
+    def collect_demonstration(self, model):
+        # Any random action will do (this won't actually be used since `preload_replay_buffer` env kwarg is enabled)
+        action = np.array([model.env.action_space.sample()])
+        # Reset env at the beginning
+        obs = model.env.reset()
+        # Collect transitions
+        for i in range(model.replay_buffer.buffer_size):
+            # Note: If `None` is passed to Grasp env, it uses custom action heuristic to reach the target
+            next_obs, rewards, dones, infos = model.env.unwrapped.step(action)
+            # Extract the actual actions from info
+            actual_actions = [info['actual_actions'] for info in infos]
+            # Add to replay buffer
+            model.replay_buffer.add(
+                obs, next_obs, actual_actions, rewards, dones)
+            # Update current observation
+            obs = next_obs
+
+        print("Saving replay buffer")
+        model.save_replay_buffer(os.path.join(
+            self.save_path, "replay_buffer.pkl"))
+        model.env.close()
+        exit
