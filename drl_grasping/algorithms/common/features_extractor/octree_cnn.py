@@ -149,10 +149,10 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         data = data.view(-1, self.n_stacks*data.shape[-1])
 
         if self._aux_obs_dim != 0:
-            # Get a view that merges aux feature stacks into a single feature vector (original batches remain separated)
-            aux_obs = aux_obs.view(-1, self.n_stacks*self._aux_obs_dim)
             # Feed the data through linear layer
-            aux_data = self.linear(aux_obs)
+            aux_data = self.aux_obs_linear(aux_obs.view(-1, self._aux_obs_dim))
+            # Get a view that merges aux feature stacks into a single feature vector (original batches remain separated)
+            aux_data = aux_data.view(-1, self.n_stacks*self._aux_obs_dim)
             # Concatenate auxiliary data
             data = torch.cat((data, aux_data), dim=1)
 
