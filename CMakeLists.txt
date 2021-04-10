@@ -37,6 +37,7 @@ install(PROGRAMS
     ${SCRIPTS_DIR}/utils/process_collection.py
     ${SCRIPTS_DIR}/enjoy.py
     ${SCRIPTS_DIR}/train.py
+    ${SCRIPTS_DIR}/preload_replay_buffer.py
     DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -54,6 +55,7 @@ install(PROGRAMS
     ${EXAMPLES_DIR}/ex_enjoy.bash
     ${EXAMPLES_DIR}/ex_optimize.bash
     ${EXAMPLES_DIR}/ex_train.bash
+    ${EXAMPLES_DIR}/ex_preload_replay_buffer.bash
     DESTINATION lib/${PROJECT_NAME}
 )
 

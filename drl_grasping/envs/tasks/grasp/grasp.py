@@ -1,8 +1,10 @@
 from drl_grasping.envs.tasks.manipulation import Manipulation
 from drl_grasping.envs.tasks.grasp.curriculum import GraspCurriculum
+from gym_ignition.rbd import conversions
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
 from typing import Tuple, List, Union, Dict
+from scipy.spatial.transform import Rotation
 import abc
 import gym
 import itertools
@@ -80,6 +82,7 @@ class Grasp(Manipulation, abc.ABC):
                  curriculum_restart_exploration_at_start: bool,
                  max_episode_length: int,
                  verbose: bool,
+                 preload_replay_buffer: bool = False,
                  **kwargs):
 
         # Initialize the Task base class
@@ -123,6 +126,9 @@ class Grasp(Manipulation, abc.ABC):
         # Indicates whether gripper is opened or closed
         self._gripper_state = 1.0
 
+        # Flag that indicates whether to collect transitions with custom heuristic
+        self._preload_replay_buffer = preload_replay_buffer
+
     def create_action_space(self) -> ActionSpace:
 
         if self._full_3d_orientation:
@@ -153,6 +159,9 @@ class Grasp(Manipulation, abc.ABC):
         pass
 
     def set_action(self, action: Action):
+
+        if self._preload_replay_buffer:
+            action = self._demonstrate_action()
 
         if self._verbose:
             print(f"action: {action}")
@@ -216,6 +225,9 @@ class Grasp(Manipulation, abc.ABC):
 
         info.update(self.curriculum.get_info())
 
+        if self._preload_replay_buffer:
+            info.update({'actual_actions': self._get_actual_actions()})
+
         return info
 
     def reset_task(self):
@@ -247,6 +259,21 @@ class Grasp(Manipulation, abc.ABC):
 
         # Return position of the object's link
         return object_model.get_link(link_name=link_name).position()
+
+    def get_object_orientation(self, object_name: str, link_name: Union[str, None] = None) -> Tuple[float, float, float, float]:
+        """
+            Returns wxyz quat of object.
+        """
+
+        # Get reference to the model of the object
+        object_model = self.world.get_model(object_name).to_gazebo()
+
+        # Use the first link if not specified
+        if link_name is None:
+            link_name = object_model.link_names()[0]
+
+        # Return position of the object's link
+        return object_model.get_link(link_name=link_name).orientation()
 
     def get_closest_object_distance(self, object_positions:  Dict[str, Tuple[float, float, float]]) -> float:
 
@@ -388,3 +415,81 @@ class Grasp(Manipulation, abc.ABC):
                                      self._object_spawn_volume_proportion *
                                      self._workspace_volume[1],
                                      self._object_spawn_volume[2])
+
+    def _demonstrate_action(self) -> np.ndarray:
+
+        self.__actual_actions = np.zeros(self.action_space.shape)
+
+        ee_position = np.array(self.get_ee_position())
+        object_position = np.array(
+            self.get_object_position(self.object_names[0]))
+
+        distance = object_position - ee_position
+        distance_mag = np.linalg.norm(distance)
+
+        if distance_mag < 0.02:
+            # Object is appreached
+            if 1.0 == self._gripper_state:
+                # Gripper is currently opened and should be closed
+                self.__actual_actions[0] = -1.0
+                # Don't move this step
+                self.__actual_actions[1:4] = np.zeros((3,))
+            else:
+                # Gripper is already closed, keep it that way gripper close
+                self.__actual_actions[0] = -1.0
+                # Move upwards
+                self.__actual_actions[1:4] = np.array((0.0, 0.0, 1.0))
+
+            # Do not change orientation in either case
+            if self._full_3d_orientation:
+                pass
+                # self.__actual_actions[4:10] = orientation_6d
+            else:
+                self.__actual_actions[4] = 0.0
+        else:
+            # Object is not yet approached
+            # Keep the gripper open
+            self.__actual_actions[0] = 1.0
+
+            # Move towards the object
+            if distance_mag > self._relative_position_scaling_factor:
+                relative_position = distance/distance_mag
+            else:
+                relative_position = distance/self._relative_position_scaling_factor
+            self.__actual_actions[1:4] = relative_position
+
+            # Stay above object until xy position is correct
+            distance_mag_xy = np.linalg.norm(distance[:2])
+            if distance_mag_xy > 0.01 and ee_position[2] < 0.1:
+                self.__actual_actions[3] = max(0.0, self.__actual_actions[3])
+
+            # Orient gripper appropriately
+            ee_orientation = np.array(self.get_ee_orientation())
+            object_orientation = conversions.Quaternion.to_xyzw(
+                np.array(self.get_object_orientation(self.object_names[0])))
+            if self._full_3d_orientation:
+                pass
+                # self.__actual_actions[4:10] = orientation_6d
+            else:
+                current_ee_yaw = Rotation.from_quat(
+                    ee_orientation).as_euler('xyz')[2]
+                current_object_yaw = Rotation.from_quat(
+                    object_orientation).as_euler('xyz')[2]
+                yaw_diff = current_object_yaw-current_ee_yaw
+                if yaw_diff > np.pi:
+                    yaw_diff -= np.pi/2
+                elif yaw_diff < -np.pi:
+                    yaw_diff += np.pi/2
+                yaw_diff = min(
+                    1.0, 1.0/(self._z_relative_orientation_scaling_factor/yaw_diff))
+                self.__actual_actions[4] = yaw_diff
+
+        # Make sure robot does not collide with the table
+        if ee_position[2] < 0.025:
+            self.__actual_actions[3] = max(0.0, self.__actual_actions[3])
+
+        # print(self.__actual_actions)
+        return self.__actual_actions
+
+    def _get_actual_actions(self) -> np.ndarray:
+        return self.__actual_actions

@@ -81,6 +81,7 @@ class GraspOctree(Grasp, abc.ABC):
                  octree_max_size: int,
                  proprieceptive_observations: bool,
                  verbose: bool,
+                 preload_replay_buffer: bool = False,
                  **kwargs):
 
         # Initialize the Task base class
@@ -112,6 +113,7 @@ class GraspOctree(Grasp, abc.ABC):
                        curriculum_restart_exploration_at_start=curriculum_restart_exploration_at_start,
                        max_episode_length=max_episode_length,
                        verbose=verbose,
+                       preload_replay_buffer=preload_replay_buffer,
                        **kwargs)
 
         if octree_include_color:
