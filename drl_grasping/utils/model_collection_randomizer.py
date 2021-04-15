@@ -107,19 +107,19 @@ class ModelCollectionRandomizer():
         return model_paths
 
     def random_model(self,
-                     min_scale=0.15,
-                     max_scale=0.2,
+                     min_scale=0.125,
+                     max_scale=0.175,
                      min_mass=0.05,
                      max_mass=0.25,
                      min_friction=0.75,
                      max_friction=1.5,
-                     decimation_fraction_of_visual=0.025,
-                     decimation_min_faces=8,
-                     decimation_max_faces=400,
+                     decimation_fraction_of_visual=0.25,
+                     decimation_min_faces=40,
+                     decimation_max_faces=200,
                      max_faces=40000,
                      max_vertices=None,
-                     component_min_faces_fraction=0.05,
-                     component_max_volume_fraction=0.1,
+                     component_min_faces_fraction=0.1,
+                     component_max_volume_fraction=0.35,
                      fix_mtl_texture_paths=True,
                      skip_blacklisted=True,
                      return_sdf_path=True) -> str:
@@ -176,8 +176,8 @@ class ModelCollectionRandomizer():
                            decimation_max_faces=400,
                            max_faces=40000,
                            max_vertices=None,
-                           component_min_faces_fraction=0.05,
-                           component_max_volume_fraction=0.1,
+                           component_min_faces_fraction=0.1,
+                           component_max_volume_fraction=0.35,
                            fix_mtl_texture_paths=True):
         if self._unique_cache:
             model_paths = self._model_paths
@@ -204,9 +204,9 @@ class ModelCollectionRandomizer():
 
     def process_model(self,
                       model_path,
-                      decimation_fraction_of_visual=0.025,
-                      decimation_min_faces=8,
-                      decimation_max_faces=400,
+                      decimation_fraction_of_visual=0.25,
+                      decimation_min_faces=40,
+                      decimation_max_faces=200,
                       max_faces=40000,
                       max_vertices=None,
                       component_min_faces_fraction=0.05,

@@ -34,6 +34,12 @@ ament_python_install_module(
 # Install scripts
 set(SCRIPTS_DIR scripts)
 install(PROGRAMS
+    ${SCRIPTS_DIR}/utils/dataset/dataset_download_test.bash
+    ${SCRIPTS_DIR}/utils/dataset/dataset_download_train.bash
+    ${SCRIPTS_DIR}/utils/dataset/dataset_set_test.bash
+    ${SCRIPTS_DIR}/utils/dataset/dataset_set_train.bash
+    ${SCRIPTS_DIR}/utils/dataset/dataset_unset_test.bash
+    ${SCRIPTS_DIR}/utils/dataset/dataset_unset_train.bash
     ${SCRIPTS_DIR}/utils/process_collection.py
     ${SCRIPTS_DIR}/enjoy.py
     ${SCRIPTS_DIR}/train.py
