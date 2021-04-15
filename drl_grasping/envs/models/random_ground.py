@@ -37,6 +37,15 @@ class RandomGround(model_wrapper.ModelWrapper):
         if texture_dir is not None:
             # Get list of the available textures
             textures = os.listdir(texture_dir)
+            # Keep only texture directories if texture_dir is a git repo (ugly fix)
+            try:
+                textures.remove('.git')
+            except:
+                pass
+            try:
+                textures.remove('README.md')
+            except:
+                pass
 
             # Choose a random texture from these
             random_texture_dir = os.path.join(texture_dir,
