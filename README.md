@@ -1,20 +1,20 @@
 # Deep Reinforcement Learning for Robotic Grasping from Octrees
 
-This is the primary repository for my Master's Thesis conducted at Aalborg University, Denmark. The primary focus of this project is to apply Deep Reinforcement Learning (DRL) to obtain a robust policy that allows a robot to grasp arbitrary objects from compact octree observations.
+This is the primary repository for my Master's Thesis conducted at Aalborg University, Denmark. The focus of this project is to apply Deep Reinforcement Learning (DRL) to acquire a robust policy that allows a robot to grasp arbitrary objects from compact octree observations.
 
-TODO: Include short GIF of agent grasping + observation besides (with counter of steps)
+TODO: Include short WebP animation of agent grasping + observation besides (with counter of steps)
 
 ## Instructions
 
 **Requirements:**
 - **OS:** Ubuntu 20.04 (Focal)
-- **GPU:** CUDA is required to use octree observations on GPU. Everything else should function normally on CPU.
+- **GPU:** CUDA is required to process octree observations on GPU. Everything else should function normally on CPU.
 
 > Skip to [Docker section](#Docker) if you are not interested in local installation.
 
 ### Dependencies
 
-These are the dependencies required to use entirety of this project. If no "(tested with `version`)" is specified, the latest release from relevant distribution is expected to work fine.
+These are the dependencies required to use the entirety of this project. If no "(tested with `version`)" is specified, the latest release from a relevant distribution is expected to work fine.
 
 - [Python 3](https://www.python.org/downloads) (tested with `3.8`)
 - [PyTorch](https://github.com/pytorch/pytorch#installation) (tested with `1.7`)
@@ -44,14 +44,13 @@ mkdir -p drl_grasping/src && cd drl_grasping/src
 # Clone this repository
 git clone https://github.com/AndrejOrsula/drl_grasping.git
 # Import and install dependencies
-vcs import < drl_grasping/drl_grasping.repos
-cd ..
-rosdep install --from-paths src -i -y --rosdistro ${ROS_DISTRO}
-# Build with Colcon
+vcs import < drl_grasping/drl_grasping.repos && cd ..
+rosdep install -r --from-paths src -i -y --rosdistro ${ROS_DISTRO}
+# Build with colcon
 colcon build --merge-install --symlink-install --cmake-args "-DCMAKE_BUILD_TYPE=Release"
 ```
 
-### Environment
+### Sourcing of the Workspace Overlay
 
 Before using, remember to source the ROS 2 workspace overlay.
 
@@ -88,13 +87,13 @@ To run the docker, please use the included [docker run](docker/run.bash) script 
 bash run.bash andrejorsula/drl_grasping:latest /bin/bash
 ```
 
-> If you are struggling to get CUDA working on system with Nvidia GPU, you might need to use a different version of CUDA base image that support your driver.
+> If you are struggling to get CUDA working on your system with Nvidia GPU, you might need to use a different version of CUDA base image that supports the version of your driver.
 
 ## Environments
 
 This repository contains environments for robotic manipulation that are compatible with [OpenAI Gym](https://github.com/openai/gym). All of these make use of [Ignition Gazebo](https://ignitionrobotics.org) robotic simulator, which is interfaced via [gym-ignition](https://github.com/robotology/gym-ignition).
 
-Currently, the following environments are included inside this repository. Take a look at their [gym registration](drl_grasping/envs/tasks/__init__.py) and source code if you are interested in configuring them.
+Currently, the following environments are included inside this repository. Take a look at their [gym environment registration](drl_grasping/envs/tasks/__init__.py) and source code if you are interested in configuring them.
 
 - [Reach](drl_grasping/envs/tasks/reach) task
   - Observation variants
@@ -115,7 +114,7 @@ Currently, the following environments are included inside this repository. Take 
 
 These environments can be wrapped by a randomizer in order to introduce domain randomization and improve generalization of the trained policies, which is especially beneficial for Sim2Real transfer.
 
-TODO: Include short GIF of domain randomization
+TODO: Include short WebP animation of domain randomization
 
 The included [ManipulationGazeboEnvRandomizer](drl_grasping/envs/randomizers/manipulation.py) allows randomization of the following properties at each reset of the environment.
 
