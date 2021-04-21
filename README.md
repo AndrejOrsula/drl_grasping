@@ -10,7 +10,7 @@ TODO: Include short GIF of agent grasping + observation besides (with counter of
 - **OS:** Ubuntu 20.04 (Focal)
 - **GPU:** CUDA is required to use octree observations on GPU. Everything else should function normally on CPU.
 
-> Skip to [Docker](#Docker) section if you are not interested in local installation.
+> Skip to [Docker section](#Docker) if you are not interested in local installation.
 
 ### Dependencies
 
@@ -177,28 +177,30 @@ TODO: Include graphics for learning curve
 
 The [OctreeCnnFeaturesExtractor](drl_grasping/algorithms/common/features_extractor/octree_cnn.py) makes use of [O-CNN](https://github.com/microsoft/O-CNN) implementation to enable training on GPU. This feature extractor is part of `OctreeCnnPolicy` policy that is currently implemented for TD3, SAC and TQC algorithms.
 
+TODO: Add graphics for network architecture
+
 ### Hyperparameters
 
-Hyperparameters for training of RL agents can be found in [hyperparameters](hyperparameters) directory. [Optuna](https://github.com/optuna/optuna) was used to autotune some of them, but certain algorithm/environment combinations require far more tuning. If needed, you can try running Optuna yourself, see [`ex_optimize`](examples/ex_optimize.bash) for example.
+Hyperparameters for training of RL agents can be found in [hyperparameters](hyperparams) directory. [Optuna](https://github.com/optuna/optuna) was used to autotune some of them, but certain algorithm/environment combinations require far more tuning. If needed, you can try running Optuna yourself, see [`ex_optimize`](examples/ex_optimize.bash) for example.
 
 ## Directory Structure
 
 ```bash
-├── drl_grasping          # Primary Python module of this project
-    ├── algorithms        # Definitions of policies and slight modifications to RL algorithms
-    ├── envs              # Environments for grasping (compatible with OpenAI Gym)
-        ├── tasks         # Tasks for the agent that are identical for simulation and real-world
-        ├── randomizers   # Domain randomization of the tasks, which also populates the simulated world
-        └── models        # Functional models for the environment (Ignition Gazebo)
-    ├── control           # Control for the agent
-    ├── perception        # Perception for the agent
-    └── utils             # Other utilities, used across the module
-├── examples              # Examples for training and enjoying RL agents
-├── hyperparameters       # Hyperparameters for training RL agents
-├── scripts               # Helpful scripts for training, evaluating, ... 
-├── launch                # ROS 2 launch scripts that can be used to help with setup
-├── docker                # Dockerfile for this project
-└── drl_grasping.repos    # List of other dependencies created for `drl_grasping`
+├── drl_grasping        # Primary Python module of this project
+    ├── algorithms      # Definitions of policies and slight modifications to RL algorithms
+    ├── envs            # Environments for grasping (compatible with OpenAI Gym)
+        ├── tasks       # Tasks for the agent that are identical for simulation
+        ├── randomizers # Domain randomization of the tasks, which also populates the world
+        └── models      # Functional models for the environment (Ignition Gazebo)
+    ├── control         # Control for the agent
+    ├── perception      # Perception for the agent
+    └── utils           # Other utilities, used across the module
+├── examples            # Examples for training and enjoying RL agents
+├── hyperparams         # Hyperparameters for training RL agents
+├── scripts             # Helpful scripts for training, evaluating, ... 
+├── launch              # ROS 2 launch scripts that can be used to help with setup
+├── docker              # Dockerfile for this project
+└── drl_grasping.repos  # List of other dependencies created for `drl_grasping`
 ```
 
 ---
