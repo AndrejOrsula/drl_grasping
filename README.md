@@ -6,11 +6,12 @@ TODO: Include short WebP animation of agent grasping + observation besides (with
 
 ## Instructions
 
-**Requirements:**
-- **OS:** Ubuntu 20.04 (Focal) is required for local installation.
-- **GPU:** CUDA is required to process octree observations on GPU. Everything else should function normally on CPU.
+<details><summary>Local Installation (click to expand)</summary>
 
-> Skip to [Docker section](#docker) if you are not interested in local installation and instead want to reproduce or just try this project.
+### Requirements
+
+- **OS:** Ubuntu 20.04 (Focal)
+- **GPU:** CUDA is required to process octree observations on GPU. Everything else should function normally on CPU.
 
 ### Dependencies
 
@@ -65,9 +66,14 @@ This enables:
 - Execution of scripts and examples via `ros2 run drl_grasping <executable>`
 - Launching of setup scripts via `ros2 launch drl_grasping <launch_script>`
 
-### Docker
+</details>
 
-The easiest way to try out this project is by using the included [Dockerfile](docker/Dockerfile).
+<details><summary>Docker (click to expand)</summary>
+
+### Requirements
+
+- **OS:** Any system that supports [Docker](https://docs.docker.com/get-docker) should work (Linux, Windows, macOS). However, only Linux was properly tested.
+- **GPU:** CUDA is required to process octree observations on GPU. Therefore, only Docker images with CUDA support are currently available.
 
 Before starting, make sure your system has a setup for using [Nvidia Docker](https://github.com/NVIDIA/nvidia-docker), e.g.:
 
@@ -83,7 +89,11 @@ sudo apt-get update && sudo apt-get install -y nvidia-docker2
 sudo systemctl restart docker
 ```
 
-Then you can pull a pre-build Docker image from [Docker Hub](https://hub.docker.com). Currently, there is only a development image available.
+### Docker
+
+The easiest way to try out this project is by using the included [Dockerfile](docker/Dockerfile).
+
+Instead of building it locally, you can pull a pre-built Docker image directly from [Docker Hub](https://hub.docker.com). Currently, there is only a development image available.
 
 ```bash
 docker pull andrejorsula/drl_grasping:latest
@@ -97,6 +107,7 @@ run.bash andrejorsula/drl_grasping:latest /bin/bash
 
 > If you are struggling to get CUDA working on your system with Nvidia GPU (no `nvidia-smi` output), you might need to use a different version of CUDA base image that supports the version of your driver.
 
+</details>
 
 ## Environments
 
