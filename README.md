@@ -65,7 +65,6 @@ This enables:
 - Execution of scripts and examples via `ros2 run drl_grasping <executable>`
 - Launching of setup scripts via `ros2 launch drl_grasping <launch_script>`
 
-
 </details>
 
 <details><summary>Docker (click to expand)</summary>
