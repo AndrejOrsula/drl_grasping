@@ -118,6 +118,7 @@ register(
             'curriculum_stage_reward_multiplier': 0.5,
             'curriculum_stage_increase_rewards': False,
             'curriculum_scale_negative_reward': False,
+            'curriculum_n_ground_collisions_till_termination': 15,
             'curriculum_reward_multiplier': 1.0,
             'curriculum_reach_dense_reward_multiplier': 2.0,
             'curriculum_lift_dense_reward_multiplier': 10.0,
@@ -128,6 +129,7 @@ register(
             'octree_include_color': False,
             'octree_n_stacked': 2,
             'octree_max_size': 30000,
+            'proprieceptive_observations': False,
             'verbose': False,
             })
 register(
@@ -155,6 +157,7 @@ register(
             'curriculum_stage_reward_multiplier': 2.0,
             'curriculum_stage_increase_rewards': True,
             'curriculum_scale_negative_reward': False,
+            'curriculum_n_ground_collisions_till_termination': 15,
             'curriculum_reward_multiplier': 1.0,
             'curriculum_reach_dense_reward_multiplier': 2.0,
             'curriculum_lift_dense_reward_multiplier': 10.0,
@@ -166,5 +169,6 @@ register(
             'octree_include_color': True,
             'octree_n_stacked': 2,
             'octree_max_size': 100000,
+            'proprieceptive_observations': False,
             'verbose': False,
             })

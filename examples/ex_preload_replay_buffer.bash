@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
+
 ## Random seed to use for both the environment and agent (-1 for random)
 SEED="42"
 
 ## ID of the environment
+## Note: `preload_replay_buffer` must be enabled in the environment manually
 ## Reach
 # ENV_ID="Reach-Gazebo-v0"
 # ENV_ID="Reach-ColorImage-Gazebo-v0"
@@ -14,27 +16,13 @@ SEED="42"
 # ENV_ID="Grasp-Octree-Gazebo-v0"
 ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 
-## Algorithm to use
+## Algorithm to use (might not matter too much as long as it is off-policy)
 # ALGO="sac"
 # ALGO="td3"
 ALGO="tqc"
 
-## Path to trained agent (to continue training)
-# TRAINED_AGENT=""${ENV_ID}"_1/rl_model_0000_steps.zip"
-
-## Path to a replay buffer that should be preloaded before training begins (new training only - no continuation)
-# PRELOAD_REPLAY_BUFFER="training/preloaded_buffers/"${ALGO}"/"${ENV_ID}"_1/replay_buffer.pkl"
-
-## Continuous evaluation (-1 to disable)
-EVAL_FREQUENCY=-1
-EVAL_EPISODES=5
-
-## Path the parent training directory
-TRAINING_DIR="training"
-## Path to logs
-LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/logs"
-## Path to tensorboard logs
-TENSORBOARD_LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/tensorboard_logs"
+## Path to logs, where to save the replay buffer
+LOG_DIR="training/preloaded_buffers"
 
 ## Extra arguments to be passed into the script
 EXTRA_ARGS=""
@@ -66,20 +54,11 @@ else
 fi
 
 ## Arguments
-TRAIN_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --eval-freq "${EVAL_FREQUENCY}" --eval-episodes "${EVAL_EPISODES}" "${EXTRA_ARGS}""
-## Add trained agent to args in order to continue training
-if [ ! -z "${TRAINED_AGENT}" ]; then
-    TRAIN_ARGS=""${TRAIN_ARGS}" --trained-agent "${LOG_DIR}"/"${ALGO}"/"${TRAINED_AGENT}""
-fi
-## Add preload replay buffer to args in order to preload buffer with transitions that use custom heuristic (demonstration)
-if [ ! -z "${PRELOAD_REPLAY_BUFFER}" ]; then
-    TRAIN_ARGS=""${TRAIN_ARGS}" --preload-replay-buffer "${PRELOAD_REPLAY_BUFFER}""
-fi
-
+PRELOAD_BUFFER_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" "${EXTRA_ARGS}""
 
 ## Execute train script
-TRAIN_CMD=""${SCRIPT_DIR}"/train.py "${TRAIN_ARGS}""
-echo "Executing train command:"
-echo "${TRAIN_CMD}"
+PRELOAD_BUFFER_CMD=""${SCRIPT_DIR}"/preload_replay_buffer.py "${PRELOAD_BUFFER_ARGS}""
+echo "Executing command that preloads replay buffer:"
+echo "${PRELOAD_BUFFER_CMD}"
 echo ""
-${TRAIN_CMD}
+${PRELOAD_BUFFER_CMD}

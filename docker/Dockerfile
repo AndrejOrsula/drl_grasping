@@ -176,8 +176,12 @@ RUN pip3 install \
         trimesh \
         pcg_gazebo
 
-ARG DRL_GRASPING_GIT_BRANCH=devel
-ARG DRL_GRASPING_DOCKER_VERSION=0.3.0
+### Install stable-baselines3 contrib for TQC algo
+RUN pip3 install \
+        sb3-contrib
+
+ARG DRL_GRASPING_GIT_BRANCH=hyperparameter_tuning
+ARG DRL_GRASPING_DOCKER_VERSION=0.3.8
 RUN apt-get update && mkdir -p ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
     cd ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
     git clone https://github.com/AndrejOrsula/drl_grasping.git -b ${DRL_GRASPING_GIT_BRANCH} && \

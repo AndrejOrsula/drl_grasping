@@ -1,13 +1,13 @@
 from drl_grasping.algorithms.common.features_extractor import OctreeCnnFeaturesExtractor
 from drl_grasping.algorithms.common.octree_replay_buffer import preprocess_stacked_octree_batch
-from stable_baselines3.common.policies import register_policy, ContinuousCritic
+from stable_baselines3.common.policies import register_policy
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.utils import is_vectorized_observation
 from stable_baselines3.common.vec_env.obs_dict_wrapper import ObsDictWrapper
-from stable_baselines3.td3.policies import Actor
-from stable_baselines3.td3.policies import TD3Policy
+from sb3_contrib.tqc.policies import Actor, Critic
+from sb3_contrib.tqc.policies import TQCPolicy
 from torch import nn
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type
 import gym
 import numpy as np
 import torch as th
@@ -17,7 +17,7 @@ import ocnn
 
 class ActorOctreeCnn(Actor):
     """
-    Actor network (policy) for TD3.
+    Actor network (policy) for TQC.
     Overriden to not preprocess observations (unnecessary conversion into float)
 
     :param observation_space: Obervation space
@@ -27,6 +27,17 @@ class ActorOctreeCnn(Actor):
         (a CNN when using images, a nn.Flatten() layer otherwise)
     :param features_dim: Number of features
     :param activation_fn: Activation function
+    :param use_sde: Whether to use State Dependent Exploration or not
+    :param log_std_init: Initial value for the log standard deviation
+    :param full_std: Whether to use (n_features x n_actions) parameters
+        for the std instead of only (n_features,) when using gSDE.
+    :param sde_net_arch: Network architecture for extracting features
+        when using gSDE. If None, the latent features from the policy will be used.
+        Pass an empty list to use the states as features.
+    :param use_expln: Use ``expln()`` function instead of ``exp()`` when using gSDE to ensure
+        a positive standard deviation (cf paper). It allows to keep variance
+        above zero and prevent it from growing too fast. In practice, ``exp()`` is usually enough.
+    :param clip_mean: Clip the mean output when using gSDE to avoid numerical instability.
     :param normalize_images: Whether to normalize images or not,
          dividing by 255.0 (True by default)
     """
@@ -39,6 +50,12 @@ class ActorOctreeCnn(Actor):
         features_extractor: nn.Module,
         features_dim: int,
         activation_fn: Type[nn.Module] = nn.ReLU,
+        use_sde: bool = False,
+        log_std_init: float = -3,
+        full_std: bool = True,
+        sde_net_arch: Optional[List[int]] = None,
+        use_expln: bool = False,
+        clip_mean: float = 2.0,
         normalize_images: bool = True,
     ):
         super(ActorOctreeCnn, self).__init__(
@@ -48,6 +65,12 @@ class ActorOctreeCnn(Actor):
             features_extractor=features_extractor,
             features_dim=features_dim,
             activation_fn=activation_fn,
+            use_sde=use_sde,
+            log_std_init=log_std_init,
+            full_std=full_std,
+            sde_net_arch=sde_net_arch,
+            use_expln=use_expln,
+            clip_mean=clip_mean,
             normalize_images=normalize_images)
 
     def extract_features(self, obs: th.Tensor) -> th.Tensor:
@@ -65,20 +88,9 @@ class ActorOctreeCnn(Actor):
         # return self.features_extractor(preprocessed_obs)
 
 
-class ContinuousCriticOctreeCnn(ContinuousCritic):
+class CriticOctreeCnn(Critic):
     """
-    Critic network(s) for DDPG/SAC/TD3.
-    Overriden to not preprocess observations (unnecessary conversion into float)
-
-    It represents the action-state value function (Q-value function).
-    Compared to A2C/PPO critics, this one represents the Q-value
-    and takes the continuous action as input. It is concatenated with the state
-    and then fed to the network which outputs a single value: Q(s, a).
-    For more recent algorithms like SAC/TD3, multiple networks
-    are created to give different estimates.
-
-    By default, it creates two critic networks used to reduce overestimation
-    thanks to clipped Q-learning (cf TD3 paper).
+    Critic network (q-value function) for TQC.
 
     :param observation_space: Obervation space
     :param action_space: Action space
@@ -89,7 +101,6 @@ class ContinuousCriticOctreeCnn(ContinuousCritic):
     :param activation_fn: Activation function
     :param normalize_images: Whether to normalize images or not,
          dividing by 255.0 (True by default)
-    :param n_critics: Number of critic networks to create.
     :param share_features_extractor: Whether the features extractor is shared or not
         between the actor and the critic (this saves computation time)
     """
@@ -103,10 +114,11 @@ class ContinuousCriticOctreeCnn(ContinuousCritic):
         features_dim: int,
         activation_fn: Type[nn.Module] = nn.ReLU,
         normalize_images: bool = True,
+        n_quantiles: int = 25,
         n_critics: int = 2,
         share_features_extractor: bool = True,
     ):
-        super().__init__(
+        super(CriticOctreeCnn, self).__init__(
             observation_space=observation_space,
             action_space=action_space,
             net_arch=net_arch,
@@ -114,6 +126,7 @@ class ContinuousCriticOctreeCnn(ContinuousCritic):
             features_dim=features_dim,
             activation_fn=activation_fn,
             normalize_images=normalize_images,
+            n_quantiles=n_quantiles,
             n_critics=n_critics,
             share_features_extractor=share_features_extractor)
 
@@ -132,26 +145,34 @@ class ContinuousCriticOctreeCnn(ContinuousCritic):
         # return self.features_extractor(preprocessed_obs)
 
 
-class OctreeCnnPolicy(TD3Policy):
+class OctreeCnnPolicy(TQCPolicy):
     """
-    Policy class (with both actor and critic) for TD3.
-    This class includes OctreeCnnFeaturesExtractor by default
+    Policy class (with both actor and critic) for TQC.
+    Overriden to not preprocess observations (unnecessary conversion into float)
 
     :param observation_space: Observation space
     :param action_space: Action space
     :param lr_schedule: Learning rate schedule (could be constant)
     :param net_arch: The specification of the policy and value networks.
     :param activation_fn: Activation function
+    :param use_sde: Whether to use State Dependent Exploration or not
+    :param log_std_init: Initial value for the log standard deviation
+    :param sde_net_arch: Network architecture for extracting features
+        when using gSDE. If None, the latent features from the policy will be used.
+        Pass an empty list to use the states as features.
+    :param use_expln: Use ``expln()`` function instead of ``exp()`` when using gSDE to ensure
+        a positive standard deviation (cf paper). It allows to keep variance
+        above zero and prevent it from growing too fast. In practice, ``exp()`` is usually enough.
+    :param clip_mean: Clip the mean output when using gSDE to avoid numerical instability.
     :param features_extractor_class: Features extractor to use.
     :param features_extractor_kwargs: Keyword arguments
-        to pass to the features extractor.
+        to pass to the feature extractor.
     :param normalize_images: Whether to normalize images or not,
          dividing by 255.0 (True by default)
     :param optimizer_class: The optimizer to use,
         ``th.optim.Adam`` by default
     :param optimizer_kwargs: Additional keyword arguments,
         excluding the learning rate, to pass to the optimizer
-    :param n_critics: Number of critic networks to create.
     :param share_features_extractor: Whether to share or not the features extractor
         between the actor and the critic (this saves computation time)
     """
@@ -161,31 +182,42 @@ class OctreeCnnPolicy(TD3Policy):
         observation_space: gym.spaces.Space,
         action_space: gym.spaces.Space,
         lr_schedule,
-        net_arch: Optional[Union[List[int], Dict[str, List[int]]]] = None,
+        net_arch: Optional[List[int]] = None,
         activation_fn: Type[nn.Module] = nn.ReLU,
+        use_sde: bool = False,
+        log_std_init: float = -3,
+        sde_net_arch: Optional[List[int]] = None,
+        use_expln: bool = False,
+        clip_mean: float = 2.0,
         features_extractor_class: Type[BaseFeaturesExtractor] = OctreeCnnFeaturesExtractor,
         features_extractor_kwargs: Optional[Dict[str, Any]] = None,
         normalize_images: bool = True,
         optimizer_class: Type[th.optim.Optimizer] = th.optim.Adam,
         optimizer_kwargs: Optional[Dict[str, Any]] = None,
+        n_quantiles: int = 25,
         n_critics: int = 2,
         share_features_extractor: bool = True,
         debug_write_octree: bool = False,
     ):
         super(OctreeCnnPolicy, self).__init__(
-            observation_space,
-            action_space,
-            lr_schedule,
-            net_arch,
-            activation_fn,
-            features_extractor_class,
-            features_extractor_kwargs,
-            normalize_images,
-            optimizer_class,
-            optimizer_kwargs,
-            n_critics,
-            share_features_extractor,
-        )
+            observation_space=observation_space,
+            action_space=action_space,
+            lr_schedule=lr_schedule,
+            net_arch=net_arch,
+            activation_fn=activation_fn,
+            use_sde=use_sde,
+            log_std_init=log_std_init,
+            sde_net_arch=sde_net_arch,
+            use_expln=use_expln,
+            clip_mean=clip_mean,
+            features_extractor_class=features_extractor_class,
+            features_extractor_kwargs=features_extractor_kwargs,
+            normalize_images=normalize_images,
+            optimizer_class=optimizer_class,
+            optimizer_kwargs=optimizer_kwargs,
+            n_quantiles=n_quantiles,
+            n_critics=n_critics,
+            share_features_extractor=share_features_extractor)
 
         self._debug_write_octree = debug_write_octree
 
@@ -194,10 +226,10 @@ class OctreeCnnPolicy(TD3Policy):
             self.actor_kwargs, features_extractor)
         return ActorOctreeCnn(**actor_kwargs).to(self.device)
 
-    def make_critic(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> ContinuousCritic:
+    def make_critic(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> Critic:
         critic_kwargs = self._update_features_extractor(
             self.critic_kwargs, features_extractor)
-        return ContinuousCriticOctreeCnn(**critic_kwargs).to(self.device)
+        return CriticOctreeCnn(**critic_kwargs).to(self.device)
 
     def predict(
         self,

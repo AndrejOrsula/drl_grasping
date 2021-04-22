@@ -1,1 +1,1 @@
-from . import sac, td3
+from . import sac, td3, tqc

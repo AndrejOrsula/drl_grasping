@@ -19,7 +19,7 @@ class OctreeConvRelu(torch.nn.Module):
 
 
 class OctreeConvBnRelu(torch.nn.Module):
-    def __init__(self, depth, channel_in, channel_out, kernel_size=[3], stride=1, bn_eps=0.001, bn_momentum=0.01):
+    def __init__(self, depth, channel_in, channel_out, kernel_size=[3], stride=1, bn_eps=0.00001, bn_momentum=0.1):
         super(OctreeConvBnRelu, self).__init__()
         self.conv = ocnn.OctreeConv(depth,
                                     channel_in,
@@ -55,7 +55,7 @@ class OctreeConvFastRelu(torch.nn.Module):
 
 
 class OctreeConvFastBnRelu(torch.nn.Module):
-    def __init__(self, depth, channel_in, channel_out, kernel_size=[3], stride=1, bn_eps=0.001, bn_momentum=0.01):
+    def __init__(self, depth, channel_in, channel_out, kernel_size=[3], stride=1, bn_eps=0.00001, bn_momentum=0.1):
         super(OctreeConvFastBnRelu, self).__init__()
         self.conv = ocnn.OctreeConvFast(depth,
                                         channel_in,
@@ -87,7 +87,7 @@ class OctreeConv1x1Relu(torch.nn.Module):
 
 
 class OctreeConv1x1BnRelu(torch.nn.Module):
-    def __init__(self, channel_in, channel_out, use_bias=True, bn_eps=0.001, bn_momentum=0.01):
+    def __init__(self, channel_in, channel_out, use_bias=True, bn_eps=0.00001, bn_momentum=0.1):
         super(OctreeConv1x1BnRelu, self).__init__()
         self.conv1x1 = ocnn.OctreeConv1x1(channel_in, channel_out, use_bias)
         self.bn = torch.nn.BatchNorm2d(channel_out, bn_eps, bn_momentum)
@@ -95,6 +95,32 @@ class OctreeConv1x1BnRelu(torch.nn.Module):
 
     def forward(self, data_in):
         out = self.conv1x1(data_in)
+        out = self.bn(out)
+        out = self.relu(out)
+        return out
+
+
+class LinearRelu(torch.nn.Module):
+    def __init__(self, channel_in, channel_out, use_bias=True):
+        super(LinearRelu, self).__init__()
+        self.fc = torch.nn.Linear(channel_in, channel_out, use_bias)
+        self.relu = torch.nn.ReLU(inplace=True)
+
+    def forward(self, data_in):
+        out = self.fc(data_in)
+        out = self.relu(out)
+        return out
+
+
+class LinearBnRelu(torch.nn.Module):
+    def __init__(self, channel_in, channel_out, use_bias=True, bn_eps=0.00001, bn_momentum=0.1):
+        super(LinearBnRelu, self).__init__()
+        self.fc = torch.nn.Linear(channel_in, channel_out, use_bias)
+        self.bn = torch.nn.BatchNorm1d(channel_out, bn_eps, bn_momentum)
+        self.relu = torch.nn.ReLU(inplace=True)
+
+    def forward(self, data_in):
+        out = self.fc(data_in)
         out = self.bn(out)
         out = self.relu(out)
         return out

@@ -14,7 +14,7 @@ class Ground(model_wrapper.ModelWrapper):
                  orientation: List[float] = (1, 0, 0, 0),
                  size: List[float] = (1.0, 1.0),
                  collision_thickness=0.05,
-                 friction: float = 1.0):
+                 friction: float = 5.0):
 
         # Get a unique model name
         model_name = get_unique_model_name(world, name)

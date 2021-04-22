@@ -15,8 +15,9 @@ SEED="42"
 ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 
 ## Algorithm to use
-ALGO="sac"
+# ALGO="sac"
 # ALGO="td3"
+ALGO="tqc"
 
 ## Checkpoint to load
 CHECKPOINT=10000

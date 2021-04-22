@@ -1,8 +1,10 @@
 from drl_grasping.envs.tasks.manipulation import Manipulation
 from drl_grasping.envs.tasks.grasp.curriculum import GraspCurriculum
+from gym_ignition.rbd import conversions
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
 from typing import Tuple, List, Union, Dict
+from scipy.spatial.transform import Rotation
 import abc
 import gym
 import itertools
@@ -58,24 +60,29 @@ class Grasp(Manipulation, abc.ABC):
                  gripper_dead_zone: float,
                  full_3d_orientation: bool,
                  sparse_reward: bool,
+                 normalize_reward: bool,
                  required_reach_distance: float,
                  required_lift_height: float,
+                 reach_dense_reward_multiplier: float,
+                 lift_dense_reward_multiplier: float,
                  act_quick_reward: float,
-                 curriculum_enable_stages: bool,
+                 outside_workspace_reward: float,
+                 ground_collision_reward: float,
+                 n_ground_collisions_till_termination: int,
                  curriculum_enable_workspace_scale: bool,
+                 curriculum_min_workspace_scale: float,
+                 curriculum_enable_stages: bool,
+                 curriculum_stage_reward_multiplier: float,
+                 curriculum_stage_increase_rewards: bool,
                  curriculum_success_rate_threshold: float,
                  curriculum_success_rate_rolling_average_n: int,
                  curriculum_restart_every_n_steps: int,
-                 curriculum_min_workspace_scale: float,
-                 curriculum_stage_reward_multiplier: float,
-                 curriculum_stage_increase_rewards: bool,
-                 curriculum_scale_negative_reward: bool,
-                 curriculum_reward_multiplier: float,
-                 curriculum_reach_dense_reward_multiplier: float,
-                 curriculum_lift_dense_reward_multiplier: float,
+                 curriculum_skip_reach_stage: bool,
                  curriculum_skip_grasp_stage: bool,
                  curriculum_restart_exploration_at_start: bool,
+                 max_episode_length: int,
                  verbose: bool,
+                 preload_replay_buffer: bool = False,
                  **kwargs):
 
         # Initialize the Task base class
@@ -86,24 +93,28 @@ class Grasp(Manipulation, abc.ABC):
                               **kwargs)
 
         self.curriculum = GraspCurriculum(task=self,
-                                          enable_stages=curriculum_enable_stages,
                                           enable_workspace_scale=curriculum_enable_workspace_scale,
+                                          min_workspace_scale=curriculum_min_workspace_scale,
+                                          enable_stages=curriculum_enable_stages,
                                           sparse_reward=sparse_reward,
+                                          normalize_reward=normalize_reward,
                                           required_reach_distance=required_reach_distance,
                                           required_lift_height=required_lift_height,
+                                          stage_reward_multiplier=curriculum_stage_reward_multiplier,
+                                          stage_increase_rewards=curriculum_stage_increase_rewards,
+                                          reach_dense_reward_multiplier=reach_dense_reward_multiplier,
+                                          lift_dense_reward_multiplier=lift_dense_reward_multiplier,
                                           act_quick_reward=act_quick_reward,
+                                          outside_workspace_reward=outside_workspace_reward,
+                                          ground_collision_reward=ground_collision_reward,
+                                          n_ground_collisions_till_termination=n_ground_collisions_till_termination,
                                           success_rate_threshold=curriculum_success_rate_threshold,
                                           success_rate_rolling_average_n=curriculum_success_rate_rolling_average_n,
                                           restart_every_n_steps=curriculum_restart_every_n_steps,
-                                          min_workspace_scale=curriculum_min_workspace_scale,
-                                          stage_reward_multiplier=curriculum_stage_reward_multiplier,
-                                          stage_increase_rewards=curriculum_stage_increase_rewards,
-                                          scale_negative_rewards=curriculum_scale_negative_reward,
-                                          reward_multiplier=curriculum_reward_multiplier,
-                                          reach_dense_reward_multiplier=curriculum_reach_dense_reward_multiplier,
-                                          lift_dense_reward_multiplier=curriculum_lift_dense_reward_multiplier,
+                                          skip_reach_stage=curriculum_skip_reach_stage,
                                           skip_grasp_stage=curriculum_skip_grasp_stage,
                                           restart_exploration_at_start=curriculum_restart_exploration_at_start,
+                                          max_episode_length=max_episode_length,
                                           verbose=verbose)
 
         # Additional parameters
@@ -111,6 +122,12 @@ class Grasp(Manipulation, abc.ABC):
         self._full_3d_orientation: bool = full_3d_orientation
 
         self._original_workspace_volume = self._workspace_volume
+
+        # Indicates whether gripper is opened or closed
+        self._gripper_state = 1.0
+
+        # Flag that indicates whether to collect transitions with custom heuristic
+        self._preload_replay_buffer = preload_replay_buffer
 
     def create_action_space(self) -> ActionSpace:
 
@@ -143,6 +160,9 @@ class Grasp(Manipulation, abc.ABC):
 
     def set_action(self, action: Action):
 
+        if self._preload_replay_buffer:
+            action = self._demonstrate_action()
+
         if self._verbose:
             print(f"action: {action}")
 
@@ -151,8 +171,10 @@ class Grasp(Manipulation, abc.ABC):
         gripper_action = action[0]
         if gripper_action < -self._gripper_dead_zone:
             self.moveit2.gripper_close(manual_plan=True)
+            self._gripper_state = -1.0
         elif gripper_action > self._gripper_dead_zone:
             self.moveit2.gripper_open(manual_plan=True)
+            self._gripper_state = 1.0
         else:
             # No-op for the gripper as it is in the dead zone
             pass
@@ -203,11 +225,16 @@ class Grasp(Manipulation, abc.ABC):
 
         info.update(self.curriculum.get_info())
 
+        if self._preload_replay_buffer:
+            info.update({'actual_actions': self._get_actual_actions()})
+
         return info
 
     def reset_task(self):
 
         self.curriculum.reset_task()
+
+        self._gripper_state = 1.0
 
         if self._verbose:
             print(f"\ntask reset")
@@ -232,6 +259,21 @@ class Grasp(Manipulation, abc.ABC):
 
         # Return position of the object's link
         return object_model.get_link(link_name=link_name).position()
+
+    def get_object_orientation(self, object_name: str, link_name: Union[str, None] = None) -> Tuple[float, float, float, float]:
+        """
+            Returns wxyz quat of object.
+        """
+
+        # Get reference to the model of the object
+        object_model = self.world.get_model(object_name).to_gazebo()
+
+        # Use the first link if not specified
+        if link_name is None:
+            link_name = object_model.link_names()[0]
+
+        # Return position of the object's link
+        return object_model.get_link(link_name=link_name).orientation()
 
     def get_closest_object_distance(self, object_positions:  Dict[str, Tuple[float, float, float]]) -> float:
 
@@ -338,19 +380,23 @@ class Grasp(Manipulation, abc.ABC):
                 return True
         return False
 
-    def check_all_objects_outside_workspace(self, object_positions:  Dict[str, Tuple[float, float, float]]) -> bool:
+    def check_all_objects_outside_workspace(self,
+                                            object_positions: Dict[str, Tuple[float, float, float]],
+                                            extra_padding: float = 0.025) -> bool:
         """
         Returns true if all objects are outside the workspace
         """
 
         ws_min_bound = \
-            (self._workspace_centre[0] - self._workspace_volume[0]/2,
-             self._workspace_centre[1] - self._workspace_volume[1]/2,
-             self._workspace_centre[2] - self._workspace_volume[2]/2)
+            (self._workspace_centre[0] - self._workspace_volume[0]/2 - extra_padding,
+             self._workspace_centre[1] -
+             self._workspace_volume[1]/2 - extra_padding,
+             self._workspace_centre[2] - self._workspace_volume[2]/2 - extra_padding)
         ws_max_bound = \
-            (self._workspace_centre[0] + self._workspace_volume[0]/2,
-             self._workspace_centre[1] + self._workspace_volume[1]/2,
-             self._workspace_centre[2] + self._workspace_volume[2]/2)
+            (self._workspace_centre[0] + self._workspace_volume[0]/2 + extra_padding,
+             self._workspace_centre[1] +
+             self._workspace_volume[1]/2 + extra_padding,
+             self._workspace_centre[2] + self._workspace_volume[2]/2 + extra_padding)
 
         return all([object_position[0] < ws_min_bound[0] or
                     object_position[1] < ws_min_bound[1] or
@@ -366,5 +412,84 @@ class Grasp(Manipulation, abc.ABC):
                                   scale*self._original_workspace_volume[1],
                                   self._original_workspace_volume[2])
         self._object_spawn_volume = (self._object_spawn_volume_proportion*self._workspace_volume[0],
-                                     self._object_spawn_volume_proportion*self._workspace_volume[1],
+                                     self._object_spawn_volume_proportion *
+                                     self._workspace_volume[1],
                                      self._object_spawn_volume[2])
+
+    def _demonstrate_action(self) -> np.ndarray:
+
+        self.__actual_actions = np.zeros(self.action_space.shape)
+
+        ee_position = np.array(self.get_ee_position())
+        object_position = np.array(
+            self.get_object_position(self.object_names[0]))
+
+        distance = object_position - ee_position
+        distance_mag = np.linalg.norm(distance)
+
+        if distance_mag < 0.02:
+            # Object is appreached
+            if 1.0 == self._gripper_state:
+                # Gripper is currently opened and should be closed
+                self.__actual_actions[0] = -1.0
+                # Don't move this step
+                self.__actual_actions[1:4] = np.zeros((3,))
+            else:
+                # Gripper is already closed, keep it that way gripper close
+                self.__actual_actions[0] = -1.0
+                # Move upwards
+                self.__actual_actions[1:4] = np.array((0.0, 0.0, 1.0))
+
+            # Do not change orientation in either case
+            if self._full_3d_orientation:
+                pass
+                # self.__actual_actions[4:10] = orientation_6d
+            else:
+                self.__actual_actions[4] = 0.0
+        else:
+            # Object is not yet approached
+            # Keep the gripper open
+            self.__actual_actions[0] = 1.0
+
+            # Move towards the object
+            if distance_mag > self._relative_position_scaling_factor:
+                relative_position = distance/distance_mag
+            else:
+                relative_position = distance/self._relative_position_scaling_factor
+            self.__actual_actions[1:4] = relative_position
+
+            # Stay above object until xy position is correct
+            distance_mag_xy = np.linalg.norm(distance[:2])
+            if distance_mag_xy > 0.01 and ee_position[2] < 0.1:
+                self.__actual_actions[3] = max(0.0, self.__actual_actions[3])
+
+            # Orient gripper appropriately
+            ee_orientation = np.array(self.get_ee_orientation())
+            object_orientation = conversions.Quaternion.to_xyzw(
+                np.array(self.get_object_orientation(self.object_names[0])))
+            if self._full_3d_orientation:
+                pass
+                # self.__actual_actions[4:10] = orientation_6d
+            else:
+                current_ee_yaw = Rotation.from_quat(
+                    ee_orientation).as_euler('xyz')[2]
+                current_object_yaw = Rotation.from_quat(
+                    object_orientation).as_euler('xyz')[2]
+                yaw_diff = current_object_yaw-current_ee_yaw
+                if yaw_diff > np.pi:
+                    yaw_diff -= np.pi/2
+                elif yaw_diff < -np.pi:
+                    yaw_diff += np.pi/2
+                yaw_diff = min(
+                    1.0, 1.0/(self._z_relative_orientation_scaling_factor/yaw_diff))
+                self.__actual_actions[4] = yaw_diff
+
+        # Make sure robot does not collide with the table
+        if ee_position[2] < 0.025:
+            self.__actual_actions[3] = max(0.0, self.__actual_actions[3])
+
+        # print(self.__actual_actions)
+        return self.__actual_actions
+
+    def _get_actual_actions(self) -> np.ndarray:
+        return self.__actual_actions

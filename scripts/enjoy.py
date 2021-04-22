@@ -132,16 +132,16 @@ def main(args=None):
                 ep_len = 0
                 state = None
 
-            # Reset also when the goal is achieved when using HER
-            if done and infos[0].get("is_success") is not None:
-                if args.verbose > 1:
-                    print("Success?", infos[0].get("is_success", False))
-                # Alternatively, you can add a check to wait for the end of the episode
-                if done:
-                    obs = env.reset()
-                if infos[0].get("is_success") is not None:
-                    successes.append(infos[0].get("is_success", False))
-                    episode_reward, ep_len = 0.0, 0
+            # # Reset also when the goal is achieved when using HER
+            # if done and infos[0].get("is_success") is not None:
+            #     if args.verbose > 1:
+            #         print("Success?", infos[0].get("is_success", False))
+            #     # Alternatively, you can add a check to wait for the end of the episode
+            #     if done:
+            #         obs = env.reset()
+            #     if infos[0].get("is_success") is not None:
+            #         successes.append(infos[0].get("is_success", False))
+            #         episode_reward, ep_len = 0.0, 0
 
     if args.verbose > 0 and len(successes) > 0:
         print(f"Success rate: {100 * np.mean(successes):.2f}%")
@@ -149,11 +149,11 @@ def main(args=None):
     if args.verbose > 0 and len(episode_rewards) > 0:
         print(f"{len(episode_rewards)} Episodes")
         print(f"Mean reward: {np.mean(episode_rewards):.2f} "
-              "+/- {np.std(episode_rewards):.2f}")
+              f"+/- {np.std(episode_rewards):.2f}")
 
     if args.verbose > 0 and len(episode_lengths) > 0:
         print(f"Mean episode length: {np.mean(episode_lengths):.2f} "
-              "+/- {np.std(episode_lengths):.2f}")
+              f"+/- {np.std(episode_lengths):.2f}")
 
     # Workaround for https://github.com/openai/gym/issues/893
     if not args.no_render:
@@ -194,7 +194,7 @@ if __name__ == "__main__":
 
     # Test duration
     parser.add_argument("-n", "--n-timesteps", type=int,
-                        default=1000,
+                        default=10000,
                         help="Overwrite the number of timesteps")
 
     # Random seed

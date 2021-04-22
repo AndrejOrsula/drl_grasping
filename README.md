@@ -70,6 +70,7 @@ This enables:
 The easiest way to try out this project is by using the included [Dockerfile](docker/Dockerfile).
 
 Before starting, make sure your system has a setup for using [Nvidia Docker](https://github.com/NVIDIA/nvidia-docker), e.g.:
+
 ```bash
 # Docker
 curl https://get.docker.com | sh \
@@ -95,6 +96,7 @@ run.bash andrejorsula/drl_grasping:latest /bin/bash
 ```
 
 > If you are struggling to get CUDA working on your system with Nvidia GPU (no `nvidia-smi` output), you might need to use a different version of CUDA base image that supports the version of your driver.
+
 
 ## Environments
 

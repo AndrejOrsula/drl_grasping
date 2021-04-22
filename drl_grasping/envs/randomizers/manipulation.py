@@ -5,6 +5,7 @@ from gym_ignition.randomizers import gazebo_env_randomizer
 from gym_ignition.randomizers.gazebo_env_randomizer import MakeEnvCallable
 from gym_ignition.rbd import conversions
 from scenario import gazebo as scenario
+from scipy.spatial import distance
 from scipy.spatial.transform import Rotation
 from typing import Union, Tuple
 import abc
@@ -78,6 +79,10 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         # Flag that determines whether environment has already been initialised
         self.__env_initialised = False
 
+        # Dict to keep track of set object positions - without stepping (faster than lookup through gazebo)
+        # It is used to make sure that objects are not spawned inside each other
+        self.__object_positions = {}
+
     # ===========================
     # PhysicsRandomizer interface
     # ===========================
@@ -135,6 +140,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         self.randomize_models(task=task,
                               gazebo=gazebo)
 
+        object_overlapping_ok = False
         if hasattr(task, 'camera_sub'):
             # Execute steps until observation after reset is available
             task.camera_sub.reset_new_observation_checker()
@@ -144,10 +150,58 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                 if not gazebo.run(paused=False):
                     raise RuntimeError(
                         "Failed to execute a running Gazebo run")
+                object_overlapping_ok = self.check_object_overlapping(
+                    task=task)
         else:
             # Otherwise execute exactly one unpaused steps to update JointStatePublisher (and potentially others)
             if not gazebo.run(paused=False):
                 raise RuntimeError("Failed to execute a running Gazebo run")
+            object_overlapping_ok = self.check_object_overlapping(task=task)
+
+        # Make sure no objects are overlapping (intersections between collision geometry)
+        attemps = 0
+        while not object_overlapping_ok and attemps < 5:
+            attemps += 1
+            if self._verbose:
+                print("Objects overlapping, trying new positions")
+            if not gazebo.run(paused=False):
+                raise RuntimeError(
+                    "Failed to execute a running Gazebo run")
+            object_overlapping_ok = self.check_object_overlapping(task=task)
+
+    def check_object_overlapping(self,
+                                 task: SupportedTasks,
+                                 allowed_penetration_depth: float = 0.001) -> bool:
+        """
+        Go through all objects and make sure that none of them are overlapping.
+        If an object is overlapping, reset its position.
+        Returns True if all objects are okay, false if they had to be reset.
+        """
+
+        # Update object positions
+        for object_name in self.task.object_names:
+            model = task.world.get_model(object_name).to_gazebo()
+            self.__object_positions[object_name] = model.get_link(
+                link_name=model.link_names()[0]).position()
+
+        is_ok = True
+        for object_name in self.task.object_names:
+            obj = task.world.get_model(object_name).to_gazebo()
+            for contact in obj.contacts():
+                if task.ground_name in contact.body_b:
+                    continue 
+                depth = np.mean([point.depth for point in contact.points])
+                if depth > allowed_penetration_depth:
+                    is_ok = False
+                    position, quat_random = self.get_random_object_pose(centre=task._object_spawn_centre,
+                                                                        volume=task._object_spawn_volume,
+                                                                        np_random=task.np_random,
+                                                                        name=object_name)
+                    obj.reset_base_pose(position, quat_random)
+                    obj.reset_base_world_velocity([0.0, 0.0, 0.0],
+                                                  [0.0, 0.0, 0.0])
+
+        return is_ok
 
     def init_models(self,
                     task: SupportedTasks,
@@ -341,6 +395,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
 
         # Randomize objects if needed
         # Note: No need to randomize pose of new models because they are already spawned randomly
+        self.__object_positions.clear()
         if task._object_enable:
             if self.object_models_expired():
                 if self._object_random_use_mesh_models:
@@ -451,11 +506,16 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
             if not task.world.to_gazebo().remove_model(task.ground_name):
                 raise RuntimeError(f"Failed to remove {task.ground_name}")
 
+        # Choose one of the random orientations for the texture (4 directions)
+        orientation = [(1, 0, 0, 0),
+                       (0, 0, 0, 1),
+                       (0.7071, 0, 0, 0.7071),
+                       (0.7071, 0, 0, -0.7071)][task.np_random.randint(4)]
+
         # Add new random ground
         plane = models.RandomGround(world=task.world,
                                     position=task._ground_position,
-                                    orientation=conversions.Quaternion.to_wxyz(
-                                        task._ground_quat_xyzw),
+                                    orientation=orientation,
                                     size=task._ground_size,
                                     np_random=task.np_random,
                                     texture_dir=os.environ.get('DRL_GRASPING_PBR_TEXTURES_DIR',
@@ -467,11 +527,12 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
 
         assert(len(task.object_names) == 1)
 
-        obj = task.world.to_gazebo().get_model(task.object_names[0])
-        obj.to_gazebo().reset_base_pose(task._object_spawn_centre,
-                                        conversions.Quaternion.to_wxyz(task._object_quat_xyzw))
-        obj.to_gazebo().reset_base_world_velocity(
-            [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+        obj = task.world.to_gazebo().get_model(
+            task.object_names[0]).to_gazebo()
+        obj.reset_base_pose(task._object_spawn_centre,
+                            conversions.Quaternion.to_wxyz(task._object_quat_xyzw))
+        obj.reset_base_world_velocity([0.0, 0.0, 0.0],
+                                      [0.0, 0.0, 0.0])
 
     def randomize_object_models(self,
                                 task: SupportedTasks):
@@ -493,7 +554,9 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                             position=position,
                                             orientation=quat_random,
                                             np_random=task.np_random)
-                self.task.object_names.append(model.name())
+                model_name = model.name()
+                self.task.object_names.append(model_name)
+                self.__object_positions[model_name] = position
             except:
                 # TODO (low priority): Automatically blacklist a model if Gazebo does not accept it
                 pass
@@ -517,8 +580,12 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                 model = models.RandomPrimitive(world=task.world,
                                                position=position,
                                                orientation=quat_random,
-                                               np_random=task.np_random)
-                self.task.object_names.append(model.name())
+                                               np_random=task.np_random,
+                                               # TODO: Re-enable random primitive type
+                                               use_specific_primitive='box')
+                model_name = model.name()
+                self.task.object_names.append(model_name)
+                self.__object_positions[model_name] = position
             except:
                 pass
 
@@ -529,18 +596,33 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
             position, quat_random = self.get_random_object_pose(centre=task._object_spawn_centre,
                                                                 volume=task._object_spawn_volume,
                                                                 np_random=task.np_random)
-            obj = task.world.to_gazebo().get_model(object_name)
-            obj.to_gazebo().reset_base_pose(position, quat_random)
-            obj.to_gazebo().reset_base_world_velocity(
-                [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+            obj = task.world.to_gazebo().get_model(object_name).to_gazebo()
+            obj.reset_base_pose(position, quat_random)
+            obj.reset_base_world_velocity([0.0, 0.0, 0.0],
+                                          [0.0, 0.0, 0.0])
+            self.__object_positions[object_name] = position
 
-    def get_random_object_pose(self, centre, volume, np_random):
+    def get_random_object_pose(self, centre, volume, np_random, name: str = "", min_distance_to_other_objects: float = 0.25, min_distance_decay_factor: float = 0.9):
 
-        position = [
-            centre[0] + np_random.uniform(-volume[0]/2, volume[0]/2),
-            centre[1] + np_random.uniform(-volume[1]/2, volume[1]/2),
-            centre[2] + np_random.uniform(-volume[2]/2, volume[2]/2),
-        ]
+        is_too_close = True
+        while is_too_close:
+            position = [
+                centre[0] + np_random.uniform(-volume[0]/2, volume[0]/2),
+                centre[1] + np_random.uniform(-volume[1]/2, volume[1]/2),
+                centre[2] + np_random.uniform(-volume[2]/2, volume[2]/2),
+            ]
+
+            # Check if position is far enough from other
+            is_too_close = False
+            for obj_name, obj_position in self.__object_positions.items():
+                if obj_name == name:
+                    # Do not compare to itself
+                    continue
+                if distance.euclidean(position, obj_position) < min_distance_to_other_objects:
+                    min_distance_to_other_objects *= min_distance_decay_factor
+                    is_too_close = True
+                    break
+
         quat = np_random.uniform(-1, 1, 4)
         quat /= np.linalg.norm(quat)
 

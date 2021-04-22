@@ -1,0 +1,88 @@
+Reach-OctreeWithColor-Gazebo-v0:
+  policy: "OctreeCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      depth: 4
+      full_depth: 2
+      channels_in: 7
+      channel_multiplier: 16
+      full_depth_channels: 4
+      features_dim: 128
+      fast_conv: True
+      batch_normalization: True
+    n_quantiles: 25
+    net_arch: [256, 128]
+  env_wrapper:
+    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
+        robot_random_joint_positions: False
+        camera_pose_rollouts_num: 0
+        object_random_pose: True
+        camera_noise_mean: 0
+        camera_noise_stddev: 0.001
+  n_timesteps: 100000
+  buffer_size: 50000
+  learning_starts: 5000
+  batch_size: 32
+  # Consider increasing learning rate to something like lin_0.0005
+  learning_rate: lin_0.0001
+  # Consider increasing gamma to something like 0.9999
+  gamma: 0.99
+  # Consider decreasing tau to something like 0.0005
+  tau: 0.005
+  ent_coef: "auto_0.5_0.025"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 2
+  train_freq: 1
+  gradient_steps: 2
+  noise_type: "normal"
+  noise_std: 0.025
+  optimize_memory_usage: True
+
+
+Grasp-OctreeWithColor-Gazebo-v0:
+  policy: "OctreeCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      depth: 5
+      full_depth: 2
+      channels_in: 7
+      channel_multiplier: 16
+      full_depth_conv1d: True
+      full_depth_channels: 32
+      features_dim: 256
+      fast_conv: True
+      batch_normalization: True
+      aux_obs_dim: 0
+    n_quantiles: 20
+    net_arch: [512, 512]
+  env_wrapper:
+    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
+        robot_random_joint_positions: False
+        camera_pose_rollouts_num: 0
+        ground_model_rollouts_num: 0
+        object_random_pose: True
+        object_random_use_mesh_models: False
+        object_models_rollouts_num: 1
+        object_random_model_count: 1
+        camera_noise_mean: 0
+        camera_noise_stddev: 0.001
+  # Try without reward normalization (seems to work fine)
+  # normalize: "{'norm_obs': False, 'norm_reward': True}"
+  n_timesteps: 1000000
+  buffer_size: 30000
+  learning_starts: 10000
+  batch_size: 24
+  # Consider increasing learning rate to something like lin_0.0005
+  learning_rate: lin_0.0005
+  # Consider increasing gamma to something like 0.9999
+  gamma: 0.99
+  # Consider decreasing tau to something like 0.0005
+  tau: 0.001
+  ent_coef: "auto_0.5_0.05"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 2
+  train_freq: 1
+  gradient_steps: 1
+  noise_type: "normal"
+  noise_std: 0.05
+  optimize_memory_usage: True
