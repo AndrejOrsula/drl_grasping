@@ -8,7 +8,8 @@ TODO: Include short WebP animation of agent grasping + observation besides (with
 
 <details><summary>Local Installation (click to expand)</summary>
 
-**Requirements:**
+### Requirements
+
 - **OS:** Ubuntu 20.04 (Focal)
 - **GPU:** CUDA is required to process octree observations on GPU. Everything else should function normally on CPU.
 
@@ -69,7 +70,8 @@ This enables:
 
 <details><summary>Docker (click to expand)</summary>
 
-**Requirements:**
+### Requirements
+
 - **OS:** Any system that supports [Docker](https://docs.docker.com/get-docker) should work (Linux, Windows, macOS). However, only Linux was properly tested.
 - **GPU:** CUDA is required to process octree observations on GPU. Therefore, only Docker images with CUDA support are currently available.
 
