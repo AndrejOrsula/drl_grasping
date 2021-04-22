@@ -6,6 +6,8 @@ TODO: Include short WebP animation of agent grasping + observation besides (with
 
 ## Instructions
 
+<details><summary>Click to expand</summary><br/>
+
 **Requirements:**
 - **OS:** Ubuntu 20.04 (Focal) is required for local installation.
 - **GPU:** CUDA is required to process octree observations on GPU. Everything else should function normally on CPU.
@@ -97,6 +99,7 @@ run.bash andrejorsula/drl_grasping:latest /bin/bash
 
 > If you are struggling to get CUDA working on your system with Nvidia GPU (no `nvidia-smi` output), you might need to use a different version of CUDA base image that supports the version of your driver.
 
+</details>
 
 ## Environments
 
