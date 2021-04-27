@@ -2,7 +2,10 @@
 
 This is the primary repository for my Master's Thesis conducted at Aalborg University, Denmark. The focus of this project is to apply Deep Reinforcement Learning to acquire a robust policy that allows robot to grasp arbitrary objects from compact octree observations.
 
-TODO: Include short WebP animation of agent grasping + observation besides (with counter of steps)
+<p align="center" float="middle">
+  <img width="66.667%" src="_graphics/grasp_single_object.webp"/>
+</p>
+TODO: Update animation with multi-object example and point cloud visualisation
 
 ## Instructions
 
@@ -134,7 +137,10 @@ Currently, the following environments are included inside this repository. Take 
 
 These environments can be wrapped by a randomizer in order to introduce domain randomization and improve generalization of the trained policies, which is especially beneficial for Sim2Real transfer.
 
-TODO: Include short WebP animation of domain randomization
+<p align="center" float="middle">
+  <img width="66.667%" src="_graphics/domain_randomization.webp"/>
+</p>
+TODO: Update animation
 
 The included [ManipulationGazeboEnvRandomizer](drl_grasping/envs/randomizers/manipulation.py) allows randomization of the following properties at each reset of the environment.
 
@@ -191,7 +197,7 @@ Only [Franka Emika Panda](https://github.com/AndrejOrsula/panda_ign) is currentl
 
 This project makes direct use of [stable-baselines3](https://github.com/DLR-RM/stable-baselines3) as well as [sb3_contrib](https://github.com/Stable-Baselines-Team/stable-baselines3-contrib). Furthermore, scripts for training and evaluation were largely inspired by [rl-baselines3-zoo](https://github.com/DLR-RM/rl-baselines3-zoo).
 
-To train an agent, please take a look at [`ex_train`](examples/ex_train.bash) example. Similarly, see [`ex_enjoy`](examples/ex_enjoy.bash) example demonstrates a way to evaluate a trained agent.
+To train an agent, please take a look at [`ex_train`](examples/ex_train.bash) example. Similarly, [`ex_enjoy`](examples/ex_enjoy.bash) example demonstrates a way to evaluate a trained agent.
 
 TODO: Add graphics for learning curve (TD3 vs SAC cs TQC)
 
