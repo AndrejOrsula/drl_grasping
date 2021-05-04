@@ -28,12 +28,22 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
                  aux_obs_dim: int = 0,
                  fast_conv: bool = True,
                  batch_normalization: bool = True,
+                 bn_eps: float = 0.00001,
+                 bn_momentum: float = 0.01,
                  verbose: bool = False):
 
         self._depth = depth
         self._channels_in = channels_in
         self._aux_obs_dim = aux_obs_dim
         self._verbose = verbose
+
+        # Keyword arguments used for layers that might contain BatchNorm layers
+        bn_kwargs = {}
+        if batch_normalization:
+            bn_kwargs.update({'bn_eps': bn_eps,
+                              'bn_momentum': bn_momentum})
+
+        # Determine number of stacked octrees based on observation space shape
         self.n_stacks = observation_space.shape[0]
 
         # Chain up parent constructor
@@ -59,7 +69,7 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
             else:
                 OctreeConv = OctreeConvRelu
         OctreePool = ocnn.OctreeMaxPool
-        self.convs = torch.nn.ModuleList([OctreeConv(depth-i, channels[i], channels[i+1])
+        self.convs = torch.nn.ModuleList([OctreeConv(depth-i, channels[i], channels[i+1], **bn_kwargs)
                                           for i in range(depth-full_depth)])
         self.pools = torch.nn.ModuleList([OctreePool(depth-i)
                                           for i in range(depth-full_depth)])
@@ -74,12 +84,12 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
             else:
                 OctreeConv1D = OctreeConv1x1Relu
             self.full_depth_conv = OctreeConv1D(channels[-1],
-                                                full_depth_channels)
+                                                full_depth_channels, **bn_kwargs)
         else:
             # Use 3D convolution (same as previous modules)
             self.full_depth_conv = OctreeConv(full_depth,
                                               channels[-1],
-                                              full_depth_channels)
+                                              full_depth_channels, **bn_kwargs)
 
         # Layer that converts octree at depth=full_depth into a full voxel grid (zero padding) such that it has a fixed size
         self.octree2voxel = ocnn.FullOctree2Voxel(full_depth)
@@ -90,16 +100,12 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         flatten_dim = full_depth_channels*full_depth_voxel_count
 
         # Last linear layer of the extractor, applied to all (flattened) voxels at full depth
-        if batch_normalization:
-            LineadModule = LinearBnRelu
-        else:
-            LineadModule = LinearRelu
-        self.linear = LineadModule(flatten_dim, features_dim)
+        self.linear = LinearRelu(flatten_dim, features_dim)
 
         # One linear layer for auxiliary observations
         if self._aux_obs_dim != 0:
-            self.aux_obs_linear = LineadModule(
-                self._aux_obs_dim, self._aux_obs_dim)
+            self.aux_obs_linear = LinearRelu(self._aux_obs_dim,
+                                             self._aux_obs_dim)
 
         number_of_learnable_parameters = sum(p.numel() for p in self.parameters()
                                              if p.requires_grad)
