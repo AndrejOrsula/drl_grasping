@@ -170,23 +170,23 @@ class ExperimentManager(object):
                 **self._hyperparams,
             )
 
-            # Pre-load replay buffer if enabled
-            if self.preload_replay_buffer:
-                if self.preload_replay_buffer.endswith('.pkl'):
-                    replay_buffer_path = self.preload_replay_buffer
+        # Pre-load replay buffer if enabled
+        if self.preload_replay_buffer:
+            if self.preload_replay_buffer.endswith('.pkl'):
+                replay_buffer_path = self.preload_replay_buffer
+            else:
+                replay_buffer_path = os.path.join(self.preload_replay_buffer,
+                                                    "replay_buffer.pkl")
+            if os.path.exists(replay_buffer_path):
+                print("Pre-loading replay buffer")
+                if self.algo == "her":
+                    model.load_replay_buffer(replay_buffer_path,
+                                                self.truncate_last_trajectory)
                 else:
-                    replay_buffer_path = os.path.join(self.preload_replay_buffer,
-                                                      "replay_buffer.pkl")
-                if os.path.exists(replay_buffer_path):
-                    print("Pre-loading replay buffer")
-                    if self.algo == "her":
-                        model.load_replay_buffer(replay_buffer_path,
-                                                 self.truncate_last_trajectory)
-                    else:
-                        model.load_replay_buffer(replay_buffer_path)
-                else:
-                    raise Exception(f"Replay buffer {replay_buffer_path} "
-                                    "does not exist")
+                    model.load_replay_buffer(replay_buffer_path)
+            else:
+                raise Exception(f"Replay buffer {replay_buffer_path} "
+                                "does not exist")
 
         self._save_config(saved_hyperparams)
         return model
@@ -596,7 +596,7 @@ class ExperimentManager(object):
         replay_buffer_path = os.path.join(os.path.dirname(
             self.trained_agent), "replay_buffer.pkl")
 
-        if os.path.exists(replay_buffer_path):
+        if not self.preload_replay_buffer and os.path.exists(replay_buffer_path):
             print("Loading replay buffer")
             if self.algo == "her":
                 # if we use HER we have to add an additional argument
@@ -669,6 +669,24 @@ class ExperimentManager(object):
             verbose=self.verbose,
             **kwargs,
         )
+
+        # Pre-load replay buffer if enabled
+        if self.preload_replay_buffer:
+            if self.preload_replay_buffer.endswith('.pkl'):
+                replay_buffer_path = self.preload_replay_buffer
+            else:
+                replay_buffer_path = os.path.join(self.preload_replay_buffer,
+                                                    "replay_buffer.pkl")
+            if os.path.exists(replay_buffer_path):
+                print("Pre-loading replay buffer")
+                if self.algo == "her":
+                    model.load_replay_buffer(replay_buffer_path,
+                                                self.truncate_last_trajectory)
+                else:
+                    model.load_replay_buffer(replay_buffer_path)
+            else:
+                raise Exception(f"Replay buffer {replay_buffer_path} "
+                                "does not exist")
 
         model.trial = trial
 

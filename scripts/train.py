@@ -141,7 +141,7 @@ if __name__ == "__main__":
                         default=10000,
                         help="Save the model every n steps (if negative, no checkpoint)")
     parser.add_argument("--save-replay-buffer", action="store_true",
-                        default=True,
+                        default=False,
                         help="Save the replay buffer too (when applicable)")
 
     # Pre-load a replay buffer and start training on it

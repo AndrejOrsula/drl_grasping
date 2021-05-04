@@ -28,6 +28,9 @@ OPTIMIZE_N_TRIALS=10
 OPTIMIZE_N_EVALUATIONS=4
 OPTIMIZE_EVAL_EPISODES=10
 
+## Path to a replay buffer that should be preloaded before each trial begins
+# PRELOAD_REPLAY_BUFFER="training/preloaded_buffers/"${ENV_ID}"_1/replay_buffer.pkl"
+
 ## Path the parent training directory
 TRAINING_DIR="training"
 ## Path to logs
@@ -66,6 +69,10 @@ fi
 
 ## Arguments
 OPTIMIZE_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --optimize-hyperparameters --sampler "${OPTIMIZE_SAMPLER}" --pruner "${OPTIMIZE_PRUNER}" --n-timesteps "${OPTIMIZE_N_TIMESTAMPS}" --n-startup-trials "${OPTIMIZE_N_STARTUP_TRIALS}" --n-trials "${OPTIMIZE_N_TRIALS}" --n-evaluations "${OPTIMIZE_N_EVALUATIONS}" --eval-episodes "${OPTIMIZE_EVAL_EPISODES}""
+## Add preload replay buffer to args in order to preload buffer with transitions that use custom heuristic (demonstration)
+if [ ! -z "${PRELOAD_REPLAY_BUFFER}" ]; then
+    OPTIMIZE_ARGS=""${OPTIMIZE_ARGS}" --preload-replay-buffer "${PRELOAD_REPLAY_BUFFER}""
+fi
 
 ## Execute optimize script
 OPTIMIZE_CMD=""${SCRIPT_DIR}"/train.py "${OPTIMIZE_ARGS}""
