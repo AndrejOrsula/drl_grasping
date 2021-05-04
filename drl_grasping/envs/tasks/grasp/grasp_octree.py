@@ -25,27 +25,32 @@ class GraspOctree(Grasp, abc.ABC):
                              float, float] = (-0.0402991, -0.0166924, 0.9230002, 0.3823192)
     _camera_ros2_bridge_points: bool = True
 
-    _workspace_centre: Tuple[float, float, float] = (0.45, 0, 0.2)
-    _workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
+    _workspace_volume: Tuple[float, float, float] = (0.24, 0.24, 0.2)
+    _workspace_centre: Tuple[float, float, float] = (
+        0.5, 0.0, _workspace_volume[2]/2)
 
-    # A small offset to include ground inside the observations
+    # Size of octree (boundary size)
+    _octree_size: float = 0.24
+    # A small offset to include ground in the observations
     _octree_ground_offset: float = 0.01
-    _octree_min_bound: Tuple[float, float, float] = (0.15,
-                                                     -0.3,
+    _octree_min_bound: Tuple[float, float, float] = (_workspace_centre[0]-_octree_size/2,
+                                                     _workspace_centre[1] -
+                                                     _octree_size/2,
                                                      0.0 - _octree_ground_offset)
-    _octree_max_bound: Tuple[float, float, float] = (0.75,
-                                                     0.3,
-                                                     0.6 - _octree_ground_offset)
+    _octree_max_bound: Tuple[float, float, float] = (_workspace_centre[0]+_octree_size/2,
+                                                     _workspace_centre[1] +
+                                                     _octree_size/2,
+                                                     (_octree_size) - _octree_ground_offset)
 
     _object_spawn_centre: Tuple[float, float, float] = \
         (_workspace_centre[0],
          _workspace_centre[1],
-         0.05)
+         0.15)
     _object_spawn_volume_proportion: float = 0.75
     _object_spawn_volume: Tuple[float, float, float] = \
         (_object_spawn_volume_proportion*_workspace_volume[0],
          _object_spawn_volume_proportion*_workspace_volume[1],
-         0.0)
+         0.075)
 
     def __init__(self,
                  agent_rate: float,
@@ -64,6 +69,8 @@ class GraspOctree(Grasp, abc.ABC):
                  n_ground_collisions_till_termination: int,
                  curriculum_enable_workspace_scale: bool,
                  curriculum_min_workspace_scale: float,
+                 curriculum_enable_object_count_increase: bool,
+                 curriculum_max_object_count: int,
                  curriculum_enable_stages: bool,
                  curriculum_stage_reward_multiplier: float,
                  curriculum_stage_increase_rewards: bool,
@@ -102,6 +109,8 @@ class GraspOctree(Grasp, abc.ABC):
                        n_ground_collisions_till_termination=n_ground_collisions_till_termination,
                        curriculum_enable_workspace_scale=curriculum_enable_workspace_scale,
                        curriculum_min_workspace_scale=curriculum_min_workspace_scale,
+                       curriculum_enable_object_count_increase=curriculum_enable_object_count_increase,
+                       curriculum_max_object_count=curriculum_max_object_count,
                        curriculum_enable_stages=curriculum_enable_stages,
                        curriculum_stage_reward_multiplier=curriculum_stage_reward_multiplier,
                        curriculum_stage_increase_rewards=curriculum_stage_increase_rewards,
@@ -213,7 +222,6 @@ class GraspOctree(Grasp, abc.ABC):
 
             # Gather proprioceptive observations
             ee_position = self.get_ee_position()
-            # TODO: get_ee_orientation depends on realtime runtime PR (xyzw order)
             ee_orientation = orientation_quat_to_6d(
                 quat_xyzw=self.get_ee_orientation())
             aux_obs = (self._gripper_state,) + ee_position + \

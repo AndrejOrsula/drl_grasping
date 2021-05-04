@@ -20,20 +20,21 @@ class Grasp(Manipulation, abc.ABC):
     _robot_initial_joint_positions: Tuple[float, ...] = (0.0,
                                                          0.0,
                                                          0.0,
-                                                         -1.57,
+                                                         -2.0,
                                                          0.0,
-                                                         1.57,
+                                                         2.0,
                                                          0.79,
                                                          0.04,
                                                          0.04)
 
-    _workspace_centre: Tuple[float, float, float] = (0.45, 0, 0.2)
-    _workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
+    _workspace_volume: Tuple[float, float, float] = (0.24, 0.24, 0.2)
+    _workspace_centre: Tuple[float, float, float] = (
+        0.5, 0.0, _workspace_volume[2]/2)
 
     _ground_enable: bool = True
-    _ground_position: Tuple[float, float, float] = (0, 0, 0)
+    _ground_position: Tuple[float, float, float] = (0.25, 0, 0)
     _ground_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-    _ground_size: Tuple[float, float] = (2.0, 2.0)
+    _ground_size: Tuple[float, float] = (1.25, 1.25)
 
     _object_enable: bool = True
     # 'box' [x, y, z], 'sphere' [radius], 'cylinder' [radius, height]
@@ -47,12 +48,12 @@ class Grasp(Manipulation, abc.ABC):
     _object_spawn_centre: Tuple[float, float, float] = \
         (_workspace_centre[0],
          _workspace_centre[1],
-         0.05)
+         0.15)
     _object_spawn_volume_proportion: float = 0.75
     _object_spawn_volume: Tuple[float, float, float] = \
         (_object_spawn_volume_proportion*_workspace_volume[0],
          _object_spawn_volume_proportion*_workspace_volume[1],
-         0.0)
+         0.05)
 
     def __init__(self,
                  agent_rate: float,
@@ -71,6 +72,8 @@ class Grasp(Manipulation, abc.ABC):
                  n_ground_collisions_till_termination: int,
                  curriculum_enable_workspace_scale: bool,
                  curriculum_min_workspace_scale: float,
+                 curriculum_enable_object_count_increase: bool,
+                 curriculum_max_object_count: int,
                  curriculum_enable_stages: bool,
                  curriculum_stage_reward_multiplier: float,
                  curriculum_stage_increase_rewards: bool,
@@ -95,6 +98,8 @@ class Grasp(Manipulation, abc.ABC):
         self.curriculum = GraspCurriculum(task=self,
                                           enable_workspace_scale=curriculum_enable_workspace_scale,
                                           min_workspace_scale=curriculum_min_workspace_scale,
+                                          enable_object_count_increase=curriculum_enable_object_count_increase,
+                                          max_object_count=curriculum_max_object_count,
                                           enable_stages=curriculum_enable_stages,
                                           sparse_reward=sparse_reward,
                                           normalize_reward=normalize_reward,
@@ -317,6 +322,10 @@ class Grasp(Manipulation, abc.ABC):
         Grasped object must be in contact with all gripper links (fingers) and their contant normals must be dissimilar.
         """
 
+        if 1.0 == self._gripper_state:
+            # Return empty if the gripper is opened
+            return []
+
         robot = self.world.get_model(self.robot_name)
         grasp_candidates = {}
 
@@ -382,20 +391,18 @@ class Grasp(Manipulation, abc.ABC):
 
     def check_all_objects_outside_workspace(self,
                                             object_positions: Dict[str, Tuple[float, float, float]],
-                                            extra_padding: float = 0.025) -> bool:
+                                            extra_padding: float = 0.05) -> bool:
         """
         Returns true if all objects are outside the workspace
         """
 
         ws_min_bound = \
             (self._workspace_centre[0] - self._workspace_volume[0]/2 - extra_padding,
-             self._workspace_centre[1] -
-             self._workspace_volume[1]/2 - extra_padding,
+             self._workspace_centre[1] - self._workspace_volume[1]/2 - extra_padding,
              self._workspace_centre[2] - self._workspace_volume[2]/2 - extra_padding)
         ws_max_bound = \
             (self._workspace_centre[0] + self._workspace_volume[0]/2 + extra_padding,
-             self._workspace_centre[1] +
-             self._workspace_volume[1]/2 + extra_padding,
+             self._workspace_centre[1] + self._workspace_volume[1]/2 + extra_padding,
              self._workspace_centre[2] + self._workspace_volume[2]/2 + extra_padding)
 
         return all([object_position[0] < ws_min_bound[0] or
@@ -406,15 +413,16 @@ class Grasp(Manipulation, abc.ABC):
                     object_position[2] > ws_max_bound[2]
                     for object_position in object_positions.values()])
 
-    def update_workspace_size(self, scale: float):
+    def update_workspace_size(self, scale: float, affect_reachable_ws: bool = False):
 
-        self._workspace_volume = (scale*self._original_workspace_volume[0],
-                                  scale*self._original_workspace_volume[1],
-                                  self._original_workspace_volume[2])
-        self._object_spawn_volume = (self._object_spawn_volume_proportion*self._workspace_volume[0],
-                                     self._object_spawn_volume_proportion *
-                                     self._workspace_volume[1],
-                                     self._object_spawn_volume[2])
+        new_volume = (scale*self._original_workspace_volume[0],
+                      scale*self._original_workspace_volume[1],
+                      self._original_workspace_volume[2])
+        if affect_reachable_ws:
+            self._workspace_volume = new_volume
+        self._object_spawn_volume = (self._object_spawn_volume_proportion*new_volume[0],
+                                     self._object_spawn_volume_proportion*new_volume[1],
+                                     new_volume[2])
 
     def _demonstrate_action(self) -> np.ndarray:
 
@@ -428,7 +436,7 @@ class Grasp(Manipulation, abc.ABC):
         distance_mag = np.linalg.norm(distance)
 
         if distance_mag < 0.02:
-            # Object is appreached
+            # Object is approached
             if 1.0 == self._gripper_state:
                 # Gripper is currently opened and should be closed
                 self.__actual_actions[0] = -1.0
@@ -442,8 +450,8 @@ class Grasp(Manipulation, abc.ABC):
 
             # Do not change orientation in either case
             if self._full_3d_orientation:
-                pass
                 # self.__actual_actions[4:10] = orientation_6d
+                pass
             else:
                 self.__actual_actions[4] = 0.0
         else:
@@ -468,8 +476,8 @@ class Grasp(Manipulation, abc.ABC):
             object_orientation = conversions.Quaternion.to_xyzw(
                 np.array(self.get_object_orientation(self.object_names[0])))
             if self._full_3d_orientation:
-                pass
                 # self.__actual_actions[4:10] = orientation_6d
+                pass
             else:
                 current_ee_yaw = Rotation.from_quat(
                     ee_orientation).as_euler('xyz')[2]
@@ -488,7 +496,6 @@ class Grasp(Manipulation, abc.ABC):
         if ee_position[2] < 0.025:
             self.__actual_actions[3] = max(0.0, self.__actual_actions[3])
 
-        # print(self.__actual_actions)
         return self.__actual_actions
 
     def _get_actual_actions(self) -> np.ndarray:
