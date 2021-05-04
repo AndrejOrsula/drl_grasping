@@ -2,6 +2,7 @@ from __future__ import annotations
 from stable_baselines3.common import logger
 from typing import Union, Type, Dict
 import enum
+import math
 
 
 @enum.unique
@@ -11,10 +12,10 @@ class GraspStage(enum.Enum):
     Each subsequent stage is entered only after the previous one reaches the desired success rate.
     """
 
-    REACH = enum.auto()
-    TOUCH = enum.auto()
-    GRASP = enum.auto()
-    LIFT = enum.auto()
+    REACH = 1
+    TOUCH = 2
+    GRASP = 3
+    LIFT = 4
 
     @classmethod
     def first(self) -> Type[GraspStage]:
@@ -54,6 +55,8 @@ class GraspCurriculum():
                  task,
                  enable_workspace_scale: bool,
                  min_workspace_scale: float,
+                 enable_object_count_increase: bool,
+                 max_object_count: int,
                  enable_stages: bool,
                  sparse_reward: bool,
                  normalize_reward: bool,
@@ -82,6 +85,8 @@ class GraspCurriculum():
         # Parameters
         self._enable_workspace_scale = enable_workspace_scale
         self._min_workspace_scale = min_workspace_scale
+        self._enable_object_count_increase = enable_object_count_increase
+        self._max_object_count = max_object_count
         self._enable_stages = enable_stages
         self._sparse_reward = sparse_reward
         self._normalize_reward = normalize_reward
@@ -141,15 +146,15 @@ class GraspCurriculum():
         # Used for LIFT sub-task
         self._previous_object_heights: Dict[str, float] = {}
         # Tracker of how much dense reward. This makes sure that rewards are always normalized correctly
-        self._remaining_dense_reward_REACH = self._stage_reward_multiplier**(
-            GraspStage.REACH.value-1)
-        self._remaining_dense_reward_LIFT = self._stage_reward_multiplier**(
-            GraspStage.LIFT.value-1)
+        self._remaining_dense_reward_REACH = \
+            self._stage_reward_multiplier**(GraspStage.REACH.value-1)
+        self._remaining_dense_reward_LIFT = \
+            self._stage_reward_multiplier**(GraspStage.LIFT.value-1)
 
-        # Counter of steps
-        self._reset_step_counter = self._restart_every_n_steps
         # Whether to restart exploration from the beginning
         self._restart_exploration = restart_exploration_at_start
+        # Counter of steps
+        self._reset_step_counter = self._restart_every_n_steps
 
         self._normalize_positive_reward_multiplier = 1.0
         self._normalize_negative_reward_multiplier = 1.0
@@ -157,9 +162,7 @@ class GraspCurriculum():
             self._normalize_positive_reward_multiplier = 1.0/sum([self._stage_reward_multiplier**i
                                                                   for i in range(len(GraspStage))])
 
-            if 0 == self._ground_collision_reward \
-                    and 0 == self._outside_workspace_reward \
-                    and 0 == self._act_quick_reward:
+            if 0 == self._ground_collision_reward and 0 == self._outside_workspace_reward and 0 == self._act_quick_reward:
                 self._normalize_negative_reward_multiplier = 0.0
             else:
                 max_negative_reward = (self._max_episode_length*self._act_quick_reward)+max(self._n_ground_collisions_till_termination*self._ground_collision_reward,
@@ -182,6 +185,12 @@ class GraspCurriculum():
             scale = max(self._min_workspace_scale,
                         self._success_rate / self._success_rate_threshold)
             self.task.update_workspace_size(scale)
+
+        if self._enable_object_count_increase:
+            extra_objects = math.floor((self._max_object_count-1) *
+                                       (self._success_rate/self._success_rate_threshold))
+            self.task.object_count_override = min(1 + extra_objects,
+                                                  self._max_object_count)
 
     def maybe_next_stage(self) -> bool:
         """
@@ -330,6 +339,7 @@ class GraspCurriculum():
         # Add curriculum-specific data to logs
         self._log_curriculum()
 
+        # Reset states
         self._is_success = False
         self._is_failure = False
         for stage in range(GraspStage.first().value, GraspStage.last().value + 1):
@@ -373,16 +383,13 @@ class GraspCurriculum():
             return 0.0
         else:
             # Dense reward
-            net_decrease_in_distance = self._previous_min_distance - current_min_distance
+            decrease_in_distance = self._previous_min_distance - current_min_distance
             self._previous_min_distance = current_min_distance
 
-            # Give only positive reward
-            if net_decrease_in_distance < 0:
-                return 0.0
             # Cap the reward at a certain maximum
             if self._remaining_dense_reward_REACH > 0.0:
                 reward = min(self._remaining_dense_reward_REACH,
-                             self._reach_dense_reward_multiplier*net_decrease_in_distance)
+                             self._reach_dense_reward_multiplier*decrease_in_distance)
                 self._remaining_dense_reward_REACH -= reward
                 return reward
             else:
@@ -476,7 +483,7 @@ class GraspCurriculum():
                       self._stage, exclude="tensorboard")
         logger.record("curriculum/current_stage_id",
                       self._stage.value, exclude="stdout")
-        logger.record("curriculum/success_rate",
+        logger.record("curriculum/current_success_rate",
                       self._success_rate)
         if self._restart_every_n_steps > 0:
             logger.record("curriculum/steps_until_reset",
