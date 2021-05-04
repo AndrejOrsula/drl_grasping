@@ -260,7 +260,7 @@ class OctreeCnnPolicy(TQCPolicy):
         if self._debug_write_octree:
             ocnn.write_octree(th.from_numpy(observation[-1]), 'octree.octree')
 
-        # Make batch out of tensor (consisting of n-stacked frames)
+        # Make batch out of tensor (consisting of n-stacked octrees)
         octree_batch = preprocess_stacked_octree_batch(
             observation, self.device)
 

@@ -38,7 +38,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                  camera_noise_mean: float = None,
                  camera_noise_stddev: float = None,
                  ground_model_rollouts_num: int = 0,
-                 object_random_pose: bool = False,
+                 object_random_pose: bool = True,
                  object_random_use_mesh_models: bool = False,
                  object_models_rollouts_num: int = 0,
                  object_random_model_count: int = 1,
@@ -108,6 +108,10 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
             raise ValueError("gazebo kwarg not passed to the task randomizer")
         gazebo = kwargs["gazebo"]
 
+        # Override number of objects in the scene if task requires it (e.g. if curriculum has this functionality)
+        if hasattr(task, 'object_count_override'):
+            self._object_random_model_count = task.object_count_override
+
         if not self.__env_initialised:
             # TODO (low priority): TF2 - Move this to task
             # Broadcaster of tf (world -> robot, world -> camera)
@@ -168,40 +172,6 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                 raise RuntimeError(
                     "Failed to execute a running Gazebo run")
             object_overlapping_ok = self.check_object_overlapping(task=task)
-
-    def check_object_overlapping(self,
-                                 task: SupportedTasks,
-                                 allowed_penetration_depth: float = 0.001) -> bool:
-        """
-        Go through all objects and make sure that none of them are overlapping.
-        If an object is overlapping, reset its position.
-        Returns True if all objects are okay, false if they had to be reset.
-        """
-
-        # Update object positions
-        for object_name in self.task.object_names:
-            model = task.world.get_model(object_name).to_gazebo()
-            self.__object_positions[object_name] = model.get_link(
-                link_name=model.link_names()[0]).position()
-
-        is_ok = True
-        for object_name in self.task.object_names:
-            obj = task.world.get_model(object_name).to_gazebo()
-            for contact in obj.contacts():
-                if task.ground_name in contact.body_b:
-                    continue 
-                depth = np.mean([point.depth for point in contact.points])
-                if depth > allowed_penetration_depth:
-                    is_ok = False
-                    position, quat_random = self.get_random_object_pose(centre=task._object_spawn_centre,
-                                                                        volume=task._object_spawn_volume,
-                                                                        np_random=task.np_random,
-                                                                        name=object_name)
-                    obj.reset_base_pose(position, quat_random)
-                    obj.reset_base_world_velocity([0.0, 0.0, 0.0],
-                                                  [0.0, 0.0, 0.0])
-
-        return is_ok
 
     def init_models(self,
                     task: SupportedTasks,
@@ -414,13 +384,15 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
     def robot_random_joint_positions(self,
                                      task: SupportedTasks):
 
-        joint_positions = []
-        for joint_limits in models.Panda.get_joint_limits():
-            mean = (joint_limits[0] + joint_limits[1])/2
-            std = self._robot_random_joint_positions_std * \
-                abs(joint_limits[1] - joint_limits[0])
-            random_position = task.np_random.normal(loc=mean, scale=std)
-            joint_positions.append(random_position)
+        # Get random joint positions around the initial position
+        joint_positions = [joint_position +
+                           task.np_random.normal(loc=0.0,
+                                                 scale=self._robot_random_joint_positions_std)
+                           for joint_position in task._robot_initial_joint_positions]
+
+        # Reset gripper
+        finger_count = models.Panda.get_finger_count()
+        joint_positions[-finger_count:] = task._robot_initial_joint_positions[-finger_count:]
 
         robot = task.world.to_gazebo().get_model(task.robot_name)
         if not robot.to_gazebo().reset_joint_positions(joint_positions):
@@ -429,7 +401,6 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
             raise RuntimeError("Failed to reset robot joint velocities")
 
         # Send new positions also to the controller
-        finger_count = models.Panda.get_finger_count()
         task.moveit2.move_to_joint_positions(joint_positions[:-finger_count])
 
     def reset_robot_joint_positions(self,
@@ -627,6 +598,42 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         quat /= np.linalg.norm(quat)
 
         return position, quat
+
+    def check_object_overlapping(self,
+                                 task: SupportedTasks,
+                                 allowed_penetration_depth: float = 0.001,
+                                 ground_allowed_penetration_depth: float = 0.01) -> bool:
+        """
+        Go through all objects and make sure that none of them are overlapping.
+        If an object is overlapping, reset its position.
+        Positions are reset also if object is in collision with robot right after reset.
+        Collisions/overlaps with ground are ignored.
+        Returns True if all objects are okay, false if they had to be reset.
+        """
+
+        # Update object positions
+        for object_name in self.task.object_names:
+            model = task.world.get_model(object_name).to_gazebo()
+            self.__object_positions[object_name] = model.get_link(
+                link_name=model.link_names()[0]).position()
+
+        for object_name in self.task.object_names:
+            obj = task.world.get_model(object_name).to_gazebo()
+            for contact in obj.contacts():
+                depth = np.mean([point.depth for point in contact.points])
+                if task.ground_name in contact.body_b and depth < ground_allowed_penetration_depth:
+                    continue
+                if task.robot_name in contact.body_b or depth > allowed_penetration_depth:
+                    position, quat_random = self.get_random_object_pose(centre=task._object_spawn_centre,
+                                                                        volume=task._object_spawn_volume,
+                                                                        np_random=task.np_random,
+                                                                        name=object_name)
+                    obj.reset_base_pose(position, quat_random)
+                    obj.reset_base_world_velocity([0.0, 0.0, 0.0],
+                                                  [0.0, 0.0, 0.0])
+                    return False
+
+        return True
 
     # ============================
     # Randomizer rollouts checking
