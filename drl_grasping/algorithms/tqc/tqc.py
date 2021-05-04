@@ -42,7 +42,7 @@ def _setup_model_store_init_and_reset_ent_coef(self) -> None:
             # NOTE: The monkey patch is on the following block of code
             if len(self.ent_coef.split("_")) == 3:
                 restart_value = float(self.ent_coef.split("_")[2])
-                assert restart_value > 0.0, "The retart value of ent_coef must be greater than 0"
+                assert restart_value > 0.0, "The restart value of ent_coef must be greater than 0"
                 self.ent_coef_restart_value = restart_value
             else:
                 self.ent_coef_restart_value = init_value
