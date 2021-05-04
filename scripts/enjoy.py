@@ -122,6 +122,7 @@ def main(args=None):
 
         if args.n_envs == 1:
             if done and args.verbose > 0:
+                print("---")
                 # NOTE: for env using VecNormalize, the mean reward
                 # is a normalized reward when `--norm_reward` flag is passed
                 print(f"Episode Reward: {episode_reward:.2f}")
@@ -131,6 +132,9 @@ def main(args=None):
                 episode_reward = 0.0
                 ep_len = 0
                 state = None
+                if infos[0].get("is_success") is not None:
+                    print("Success?:", infos[0].get("is_success", False))
+                    successes.append(infos[0].get("is_success", False))
 
             # # Reset also when the goal is achieved when using HER
             # if done and infos[0].get("is_success") is not None:
