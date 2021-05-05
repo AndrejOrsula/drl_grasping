@@ -20,7 +20,7 @@ ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 ALGO="tqc"
 
 ## Checkpoint to load
-CHECKPOINT=10000
+CHECKPOINT=0000
 
 ## Path the parent training directory
 TRAINING_DIR="training"

@@ -77,7 +77,7 @@ class RandomPrimitive(model_wrapper.ModelWrapper):
 
         if 'box' == primitive:
             return Box.get_sdf(model_name=model_name,
-                               size=list(np_random.uniform(0.04, 0.07, (3,))),
+                               size=list(np_random.uniform(0.04, 0.06, (3,))),
                                mass=mass,
                                static=static,
                                collision=collision,

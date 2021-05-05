@@ -22,12 +22,12 @@ ALGO="tqc"
 ## Path to trained agent (to continue training)
 # TRAINED_AGENT=""${ENV_ID}"_1/rl_model_0000_steps.zip"
 
-## Path to a replay buffer that should be preloaded before training begins (new training only - no continuation)
-# PRELOAD_REPLAY_BUFFER="training/preloaded_buffers/"${ALGO}"/"${ENV_ID}"_1/replay_buffer.pkl"
+## Path to a replay buffer that should be preloaded before training begins
+# PRELOAD_REPLAY_BUFFER="training/preloaded_buffers/"${ENV_ID}"_1/replay_buffer.pkl"
 
 ## Continuous evaluation (-1 to disable)
 EVAL_FREQUENCY=-1
-EVAL_EPISODES=5
+EVAL_EPISODES=10
 
 ## Path the parent training directory
 TRAINING_DIR="training"
@@ -38,6 +38,7 @@ TENSORBOARD_LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/tensorboard_logs"
 
 ## Extra arguments to be passed into the script
 EXTRA_ARGS=""
+# EXTRA_ARGS="--save-replay-buffer"
 
 ########################################################################################################################
 ########################################################################################################################

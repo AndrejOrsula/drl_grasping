@@ -19,17 +19,17 @@ class OctreeCreator(Node):
                  min_bound: Tuple[float, float, float] = (-1.0, -1.0, -1.0),
                  max_bound: Tuple[float, float, float] = (1.0, 1.0, 1.0),
                  normals_radius: float = 0.05,
-                 normals_max_nn: int = 30,
+                 normals_max_nn: int = 10,
                  include_color: bool = False,
                  depth: int = 4,
                  full_depth: int = 2,
-                 node_dis: bool = False,
+                 node_dis: bool = True,
                  node_feature: bool = False,
                  split_label: bool = False,
                  adaptive: bool = False,
                  adp_depth: int = 4,
                  th_normal: float = 0.1,
-                 th_distance: float = 1.0,
+                 th_distance: float = 2.0,
                  extrapolate: bool = False,
                  save_pts: bool = False,
                  key2xyz: bool = False,
@@ -169,7 +169,7 @@ class OctreeCreator(Node):
 
         # In case the point cloud has no points, add a single point
         # This is a workaround because I was not able to create an empty octree without getting a segfault
-        # TODO: Figure out a better way of making an empty octree
+        # TODO: Figure out a better way of making an empty octree (it does not occur if setup correctly, so probably not worth it)
         if not open3d_point_cloud.has_points():
             open3d_point_cloud.points.append([(self._min_bound[0] + self._max_bound[0])/2,
                                               (self._min_bound[1] + self._max_bound[1])/2,
