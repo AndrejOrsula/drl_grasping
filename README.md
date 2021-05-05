@@ -77,6 +77,8 @@ This enables:
 - **OS:** Any system that supports [Docker](https://docs.docker.com/get-docker) should work (Linux, Windows, macOS). However, only Linux was properly tested.
 - **GPU:** CUDA is required to process octree observations on GPU. Therefore, only Docker images with CUDA support are currently available.
 
+### Dependencies
+
 Before starting, make sure your system has a setup for using [Nvidia Docker](https://github.com/NVIDIA/nvidia-docker), e.g.:
 
 ```bash
@@ -95,7 +97,7 @@ sudo systemctl restart docker
 
 The easiest way to try out this project is by using the included [Dockerfile](docker/Dockerfile).
 
-Instead of building it locally, you can pull a pre-built Docker image directly from [Docker Hub](https://hub.docker.com). Currently, there is only a development image available.
+Instead of building it locally, you can pull a pre-built Docker image directly from [Docker Hub](https://hub.docker.com/repository/docker/andrejorsula/drl_grasping). Currently, there is only a development image available.
 
 ```bash
 docker pull andrejorsula/drl_grasping:latest
