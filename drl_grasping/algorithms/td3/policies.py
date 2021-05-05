@@ -170,8 +170,11 @@ class OctreeCnnPolicy(TD3Policy):
         optimizer_kwargs: Optional[Dict[str, Any]] = None,
         n_critics: int = 2,
         share_features_extractor: bool = True,
+        separate_networks_for_stacks: bool = True,
         debug_write_octree: bool = False,
     ):
+        features_extractor_kwargs.update(
+            {'separate_networks_for_stacks': separate_networks_for_stacks})
         super(OctreeCnnPolicy, self).__init__(
             observation_space,
             action_space,
@@ -187,6 +190,7 @@ class OctreeCnnPolicy(TD3Policy):
             share_features_extractor,
         )
 
+        self._separate_networks_for_stacks = separate_networks_for_stacks
         self._debug_write_octree = debug_write_octree
 
     def make_actor(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> Actor:
@@ -230,7 +234,7 @@ class OctreeCnnPolicy(TD3Policy):
 
         # Make batch out of tensor (consisting of n-stacked octrees)
         octree_batch = preprocess_stacked_octree_batch(
-            observation, self.device)
+            observation, self.device, separate_batches=self._separate_networks_for_stacks)
 
         with th.no_grad():
             actions = self._predict(octree_batch,
