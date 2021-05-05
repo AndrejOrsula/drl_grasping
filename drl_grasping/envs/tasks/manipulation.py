@@ -268,7 +268,7 @@ class Manipulation(task.Task, abc.ABC):
 
     def get_ee_orientation(self) -> Tuple[float, float, float, float]:
         """
-        Return the current wxyz quaternion of the end effector
+        Return the current xyzw quaternion of the end effector
         """
 
         robot = self.world.get_model(self.robot_name).to_gazebo()
