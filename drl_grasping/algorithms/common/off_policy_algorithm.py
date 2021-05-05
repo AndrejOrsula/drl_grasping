@@ -70,4 +70,38 @@ def _store_transition_not_done_if_truncated(
         self._last_original_obs = new_obs_
 
 
+# So ugly, lul
+def _setup_model_with_separate_octree_batches_for_stacks(self) -> None:
+    self._setup_lr_schedule()
+    self.set_random_seed(self.seed)
+    if 'separate_networks_for_stacks' in self.policy_kwargs:
+        self.replay_buffer = ReplayBuffer(
+            self.buffer_size,
+            self.observation_space,
+            self.action_space,
+            self.device,
+            optimize_memory_usage=self.optimize_memory_usage,
+            separate_networks_for_stacks=self.policy_kwargs['separate_networks_for_stacks'],
+        )
+    else:
+        self.replay_buffer = ReplayBuffer(
+            self.buffer_size,
+            self.observation_space,
+            self.action_space,
+            self.device,
+            optimize_memory_usage=self.optimize_memory_usage,
+        )
+    self.policy = self.policy_class(  # pytype:disable=not-instantiable
+        self.observation_space,
+        self.action_space,
+        self.lr_schedule,
+        **self.policy_kwargs,  # pytype:disable=not-instantiable
+    )
+    self.policy = self.policy.to(self.device)
+
+    # Convert train freq parameter to TrainFreq object
+    self._convert_train_freq()
+
+
 OffPolicyAlgorithm._store_transition = _store_transition_not_done_if_truncated
+OffPolicyAlgorithm._setup_model = _setup_model_with_separate_octree_batches_for_stacks
