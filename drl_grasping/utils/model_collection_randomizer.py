@@ -209,8 +209,8 @@ class ModelCollectionRandomizer():
                       decimation_max_faces=200,
                       max_faces=40000,
                       max_vertices=None,
-                      component_min_faces_fraction=0.05,
-                      component_max_volume_fraction=0.1,
+                      component_min_faces_fraction=0.1,
+                      component_max_volume_fraction=0.35,
                       fix_mtl_texture_paths=True) -> bool:
 
         # Parse the SDF of the model

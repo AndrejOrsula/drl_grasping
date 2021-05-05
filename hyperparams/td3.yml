@@ -1,166 +1,238 @@
-# Reach task
+# Reach task - hyperparameters are not tuned (but agent should learn regardless)
+# TODO: Autotune Reach task hyperparameters for T3D
 Reach-Gazebo-v0:
   policy: "MlpPolicy"
   policy_kwargs:
+    n_critics: 2
     net_arch: [128, 64]
   env_wrapper:
     - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
-        object_random_pose: True
-  n_timesteps: 250000
-  buffer_size: 50000
-  learning_starts: 2500
-  batch_size: 128
-  learning_rate: 0.0001
-  gamma: 0.98
-  tau: 0.02
-  target_policy_noise: 0.2
+        robot_random_joint_positions: True
+        robot_random_joint_positions_std: 0.1
+  # normalize: "{'norm_obs': False, 'norm_reward': True}"
+  n_timesteps: 50000
+  buffer_size: 25000
+  learning_starts: 0
+  batch_size: 32
+  learning_rate: lin_0.0003
+  gamma: 0.95
+  tau: 0.01
+  train_freq: 1
+  gradient_steps: 1
+  target_policy_noise: 0.25
   target_noise_clip: 0.5
-  train_freq: [1, "episode"]
-  gradient_steps: 200
   noise_type: "normal"
-  noise_std: 0.1
+  noise_std: 0.025
+  optimize_memory_usage: True
 
 Reach-ColorImage-Gazebo-v0:
   policy: "CnnPolicy"
   policy_kwargs:
-    net_arch: [128, 64]
+    n_critics: 2
+    net_arch: [128, 128]
   env_wrapper:
     - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
-        camera_pose_rollouts_num: 0
-        object_random_pose: True
-  n_timesteps: 250000
-  buffer_size: 50000
-  learning_starts: 2500
+        robot_random_joint_positions: True
+        robot_random_joint_positions_std: 0.1
+        camera_pose_rollouts_num: 1
+        camera_noise_mean: 0
+        camera_noise_stddev: 0.001
+  # normalize: "{'norm_obs': False, 'norm_reward': True}"
+  n_timesteps: 50000
+  buffer_size: 25000
+  learning_starts: 0
   batch_size: 32
-  learning_rate: 0.0001
-  gamma: 0.98
-  tau: 0.02
-  target_policy_noise: 0.2
+  learning_rate: lin_0.0003
+  gamma: 0.95
+  tau: 0.01
+  train_freq: 1
+  gradient_steps: 1
+  target_policy_noise: 0.25
   target_noise_clip: 0.5
-  train_freq: [1, "episode"]
-  gradient_steps: 200
   noise_type: "normal"
-  noise_std: 0.1
+  noise_std: 0.025
+  optimize_memory_usage: True
 
 Reach-Octree-Gazebo-v0:
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
-      depth: 5
+      depth: 4
       full_depth: 2
-      channels_in: 3
+      channels_in: 4
       channel_multiplier: 8
+      full_depth_conv1d: True
+      full_depth_channels: 2
+      features_dim: 64
+      aux_obs_dim: 0
       fast_conv: True
       batch_normalization: False
-    net_arch: [128, 64]
+      bn_eps: 0.00001
+      bn_momentum: 0.01
+    n_critics: 2
+    net_arch: [128, 128]
+    separate_networks_for_stacks: False
+    share_features_extractor: True
   env_wrapper:
     - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
-        camera_pose_rollouts_num: 0
-        object_random_pose: True
-  n_timesteps: 250000
-  buffer_size: 50000
-  learning_starts: 2500
+        robot_random_joint_positions: True
+        robot_random_joint_positions_std: 0.1
+        camera_pose_rollouts_num: 1
+        camera_noise_mean: 0
+        camera_noise_stddev: 0.001
+  # normalize: "{'norm_obs': False, 'norm_reward': True}"
+  n_timesteps: 50000
+  buffer_size: 25000
+  learning_starts: 0
   batch_size: 32
-  learning_rate: 0.0001
-  gamma: 0.98
-  tau: 0.02
-  target_policy_noise: 0.2
+  learning_rate: lin_0.0003
+  gamma: 0.95
+  tau: 0.01
+  train_freq: 1
+  gradient_steps: 1
+  target_policy_noise: 0.25
   target_noise_clip: 0.5
-  train_freq: [1, "episode"]
-  gradient_steps: 200
   noise_type: "normal"
-  noise_std: 0.1
+  noise_std: 0.025
+  optimize_memory_usage: True
 
 Reach-OctreeWithColor-Gazebo-v0:
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
-      depth: 5
+      depth: 4
       full_depth: 2
-      channels_in: 6
-      channel_multiplier: 16
+      channels_in: 7
+      channel_multiplier: 8
+      full_depth_conv1d: True
+      full_depth_channels: 2
+      features_dim: 64
+      aux_obs_dim: 0
       fast_conv: True
       batch_normalization: False
-    net_arch: [128, 64]
+      bn_eps: 0.00001
+      bn_momentum: 0.01
+    n_critics: 2
+    net_arch: [128, 128]
+    separate_networks_for_stacks: False
+    share_features_extractor: True
   env_wrapper:
     - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
-        camera_pose_rollouts_num: 0
-        object_random_pose: True
-  n_timesteps: 250000
-  buffer_size: 50000
-  learning_starts: 2500
+        robot_random_joint_positions: True
+        robot_random_joint_positions_std: 0.1
+        camera_pose_rollouts_num: 1
+        camera_noise_mean: 0
+        camera_noise_stddev: 0.001
+  # normalize: "{'norm_obs': False, 'norm_reward': True}"
+  n_timesteps: 50000
+  buffer_size: 25000
+  learning_starts: 0
   batch_size: 32
-  learning_rate: 0.0001
-  gamma: 0.98
-  tau: 0.02
-  target_policy_noise: 0.2
+  learning_rate: lin_0.0003
+  gamma: 0.95
+  tau: 0.01
+  train_freq: 1
+  gradient_steps: 1
+  target_policy_noise: 0.25
   target_noise_clip: 0.5
-  train_freq: [1, "episode"]
-  gradient_steps: 200
   noise_type: "normal"
-  noise_std: 0.1
+  noise_std: 0.025
+  optimize_memory_usage: True
 
-# Grasp task
+# Grasp task - hyperparameters are not tuned (agent might not learn anything)
+# TODO: Autotune Grasp task hyperparameters for TQC
 Grasp-Octree-Gazebo-v0:
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
-      depth: 5
+      depth: 4
       full_depth: 2
-      channels_in: 3
+      channels_in: 4
       channel_multiplier: 32
+      full_depth_conv1d: True
+      full_depth_channels: 4
+      features_dim: 128
+      aux_obs_dim: 10
       fast_conv: True
       batch_normalization: False
-    net_arch: [128, 96]
+      bn_eps: 0.00001
+      bn_momentum: 0.01
+    n_critics: 3
+    net_arch: [384, 384]
+    separate_networks_for_stacks: True
+    share_features_extractor: True
   env_wrapper:
     - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
-        robot_random_joint_positions: False
-        camera_pose_rollouts_num: 0
+        robot_random_joint_positions: True
+        robot_random_joint_positions_std: 0.1
+        camera_pose_rollouts_num: 1
+        camera_noise_mean: 0
+        camera_noise_stddev: 0.001
         ground_model_rollouts_num: 1
         object_random_pose: True
+        object_random_use_mesh_models: True
         object_models_rollouts_num: 1
+        object_random_model_count: 1
+  normalize: "{'norm_obs': False, 'norm_reward': True}"
   n_timesteps: 1000000
-  buffer_size: 75000
-  learning_starts: 5000
+  buffer_size: 25000
+  learning_starts: 0
   batch_size: 64
-  learning_rate: 0.0001
+  learning_rate: lin_0.0001
   gamma: 0.99
-  tau: 0.01
-  target_policy_noise: 0.2
+  tau: 0.00005
+  train_freq: 1
+  gradient_steps: 2
+  target_policy_noise: 0.25
   target_noise_clip: 0.5
-  train_freq: [1, "episode"]
-  gradient_steps: 250
   noise_type: "normal"
-  noise_std: 0.25
+  noise_std: 0.05
+  optimize_memory_usage: True
 
 Grasp-OctreeWithColor-Gazebo-v0:
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
-      depth: 5
+      depth: 4
       full_depth: 2
-      channels_in: 6
-      channel_multiplier: 64
+      channels_in: 7
+      channel_multiplier: 32
+      full_depth_conv1d: True
+      full_depth_channels: 4
+      features_dim: 128
+      aux_obs_dim: 10
       fast_conv: True
       batch_normalization: False
-    net_arch: [192, 128]
+      bn_eps: 0.00001
+      bn_momentum: 0.01
+    n_critics: 3
+    net_arch: [384, 384]
+    separate_networks_for_stacks: True
+    share_features_extractor: True
   env_wrapper:
     - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
-        robot_random_joint_positions: False
-        camera_pose_rollouts_num: 0
-        ground_model_rollouts_num: 0
+        robot_random_joint_positions: True
+        robot_random_joint_positions_std: 0.1
+        camera_pose_rollouts_num: 1
+        camera_noise_mean: 0
+        camera_noise_stddev: 0.001
+        ground_model_rollouts_num: 1
         object_random_pose: True
-        object_models_rollouts_num: 0
+        object_random_use_mesh_models: True
+        object_models_rollouts_num: 1
+        object_random_model_count: 1
+  normalize: "{'norm_obs': False, 'norm_reward': True}"
   n_timesteps: 1000000
-  buffer_size: 75000
-  learning_starts: 5000
+  buffer_size: 25000
+  learning_starts: 0
   batch_size: 64
-  learning_rate: 0.0001
+  learning_rate: lin_0.0001
   gamma: 0.99
-  tau: 0.01
-  target_policy_noise: 0.3
+  tau: 0.00005
+  train_freq: 1
+  gradient_steps: 2
+  target_policy_noise: 0.25
   target_noise_clip: 0.5
-  train_freq: [1, "episode"]
-  gradient_steps: 250
   noise_type: "normal"
-  noise_std: 0.25
+  noise_std: 0.05
+  optimize_memory_usage: True
