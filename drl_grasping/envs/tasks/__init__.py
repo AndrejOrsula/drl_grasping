@@ -164,7 +164,7 @@ register(
             'curriculum_enable_object_count_increase': True,
             'curriculum_max_object_count': 4,
             'curriculum_enable_stages': False,
-            'curriculum_stage_reward_multiplier': 4.0,
+            'curriculum_stage_reward_multiplier': 3.0,
             'curriculum_stage_increase_rewards': True,
             'curriculum_success_rate_threshold': 0.75,
             'curriculum_success_rate_rolling_average_n': 100,
@@ -182,3 +182,5 @@ register(
             # Important: 'preload_replay_buffer' can only be enabled if using demonstrations to fill replay buffer. Make sure this is disabled otherwise
             # 'preload_replay_buffer': False,
             'verbose': False})
+
+# TODO: Remember to update non-octree settings once done with tuning

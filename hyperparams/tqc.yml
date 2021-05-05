@@ -207,7 +207,7 @@ Grasp-OctreeWithColor-Gazebo-v0:
       channels_in: 7
       channel_multiplier: 32
       full_depth_conv1d: True
-      full_depth_channels: 4
+      full_depth_channels: 8
       features_dim: 128
       aux_obs_dim: 10
       fast_conv: True
