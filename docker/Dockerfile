@@ -180,8 +180,8 @@ RUN pip3 install \
 RUN pip3 install \
         sb3-contrib
 
-ARG DRL_GRASPING_GIT_BRANCH=hyperparameter_tuning
-ARG DRL_GRASPING_DOCKER_VERSION=0.3.8
+ARG DRL_GRASPING_GIT_BRANCH=master
+ARG DRL_GRASPING_DOCKER_VERSION=0.10.0
 RUN apt-get update && mkdir -p ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
     cd ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
     git clone https://github.com/AndrejOrsula/drl_grasping.git -b ${DRL_GRASPING_GIT_BRANCH} && \

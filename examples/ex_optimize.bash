@@ -22,11 +22,14 @@ ALGO="tqc"
 ## Args for optimization
 OPTIMIZE_SAMPLER="tpe"
 OPTIMIZE_PRUNER="median"
-OPTIMIZE_N_TIMESTAMPS=150000
-OPTIMIZE_N_STARTUP_TRIALS=3
-OPTIMIZE_N_TRIALS=10
+OPTIMIZE_N_TIMESTAMPS=100000
+OPTIMIZE_N_STARTUP_TRIALS=5
+OPTIMIZE_N_TRIALS=20
 OPTIMIZE_N_EVALUATIONS=4
-OPTIMIZE_EVAL_EPISODES=10
+OPTIMIZE_EVAL_EPISODES=20
+
+## Path to a replay buffer that should be preloaded before each trial begins
+# PRELOAD_REPLAY_BUFFER="training/preloaded_buffers/"${ENV_ID}"_1/replay_buffer.pkl"
 
 ## Path to a replay buffer that should be preloaded before each trial begins
 # PRELOAD_REPLAY_BUFFER="training/preloaded_buffers/"${ENV_ID}"_1/replay_buffer.pkl"
