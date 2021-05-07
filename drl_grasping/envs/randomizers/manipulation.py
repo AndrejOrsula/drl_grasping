@@ -551,9 +551,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                 model = models.RandomPrimitive(world=task.world,
                                                position=position,
                                                orientation=quat_random,
-                                               np_random=task.np_random,
-                                               # TODO: Re-enable random primitive type
-                                               use_specific_primitive='box')
+                                               np_random=task.np_random)
                 model_name = model.name()
                 self.task.object_names.append(model_name)
                 self.__object_positions[model_name] = position
