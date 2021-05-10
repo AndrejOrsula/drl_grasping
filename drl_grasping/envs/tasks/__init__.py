@@ -166,7 +166,7 @@ register(
             'curriculum_enable_stages': False,
             'curriculum_stage_reward_multiplier': 7.0,
             'curriculum_stage_increase_rewards': True,
-            'curriculum_success_rate_threshold': 0.75,
+            'curriculum_success_rate_threshold': 0.6,
             'curriculum_success_rate_rolling_average_n': 100,
             'curriculum_restart_every_n_steps': 0,
             'curriculum_skip_reach_stage': False,
