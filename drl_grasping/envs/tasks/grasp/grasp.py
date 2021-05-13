@@ -17,15 +17,23 @@ class Grasp(Manipulation, abc.ABC):
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
     _robot_arm_collision: bool = False
     _robot_hand_collision: bool = True
-    _robot_initial_joint_positions: Tuple[float, ...] = (0.0,
-                                                         0.0,
-                                                         0.0,
-                                                         -2.0,
-                                                         0.0,
-                                                         2.0,
-                                                         0.79,
-                                                         0.04,
-                                                         0.04)
+    _robot_initial_joint_positions_panda: Tuple[float, ...] = (0.0,
+                                                               0.0,
+                                                               0.0,
+                                                               -2.0,
+                                                               0.0,
+                                                               2.0,
+                                                               0.79,
+                                                               0.04,
+                                                               0.04)
+    _robot_initial_joint_positions_ur5_rg2: Tuple[float, ...] = (0.0,
+                                                                 0.0,
+                                                                 1.57,
+                                                                 0.0,
+                                                                 -1.57,
+                                                                 -1.57,
+                                                                 0.52,
+                                                                 0.52)
 
     _workspace_volume: Tuple[float, float, float] = (0.24, 0.24, 0.2)
     _workspace_centre: Tuple[float, float, float] = (
@@ -57,6 +65,7 @@ class Grasp(Manipulation, abc.ABC):
 
     def __init__(self,
                  agent_rate: float,
+                 robot_model: str,
                  restrict_position_goal_to_workspace: bool,
                  gripper_dead_zone: float,
                  full_3d_orientation: bool,
@@ -91,6 +100,7 @@ class Grasp(Manipulation, abc.ABC):
         # Initialize the Task base class
         Manipulation.__init__(self,
                               agent_rate=agent_rate,
+                              robot_model=robot_model,
                               restrict_position_goal_to_workspace=restrict_position_goal_to_workspace,
                               verbose=verbose,
                               **kwargs)
@@ -398,11 +408,13 @@ class Grasp(Manipulation, abc.ABC):
 
         ws_min_bound = \
             (self._workspace_centre[0] - self._workspace_volume[0]/2 - extra_padding,
-             self._workspace_centre[1] - self._workspace_volume[1]/2 - extra_padding,
+             self._workspace_centre[1] -
+             self._workspace_volume[1]/2 - extra_padding,
              self._workspace_centre[2] - self._workspace_volume[2]/2 - extra_padding)
         ws_max_bound = \
             (self._workspace_centre[0] + self._workspace_volume[0]/2 + extra_padding,
-             self._workspace_centre[1] + self._workspace_volume[1]/2 + extra_padding,
+             self._workspace_centre[1] +
+             self._workspace_volume[1]/2 + extra_padding,
              self._workspace_centre[2] + self._workspace_volume[2]/2 + extra_padding)
 
         return all([object_position[0] < ws_min_bound[0] or
@@ -421,7 +433,8 @@ class Grasp(Manipulation, abc.ABC):
         if affect_reachable_ws:
             self._workspace_volume = new_volume
         self._object_spawn_volume = (self._object_spawn_volume_proportion*new_volume[0],
-                                     self._object_spawn_volume_proportion*new_volume[1],
+                                     self._object_spawn_volume_proportion *
+                                     new_volume[1],
                                      new_volume[2])
 
     def _demonstrate_action(self) -> np.ndarray:

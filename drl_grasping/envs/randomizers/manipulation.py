@@ -222,6 +222,14 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                  arm_collision=task._robot_arm_collision,
                                  hand_collision=task._robot_hand_collision,
                                  initial_joint_positions=task._robot_initial_joint_positions)
+        elif 'ur5_rg2' == task._robot_model:
+            robot = models.UR5RG2(world=task.world,
+                                  position=task._robot_position,
+                                  orientation=conversions.Quaternion.to_wxyz(
+                                      task._robot_quat_xyzw),
+                                  arm_collision=task._robot_arm_collision,
+                                  hand_collision=task._robot_hand_collision,
+                                  initial_joint_positions=task._robot_initial_joint_positions)
         task.robot_name = robot.name()
         task.robot_base_link_name = robot.get_base_link_name()
         task.robot_ee_link_name = robot.get_ee_link_name()
@@ -391,7 +399,10 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                            for joint_position in task._robot_initial_joint_positions]
 
         # Reset gripper
-        finger_count = models.Panda.get_finger_count()
+        if 'panda' == task._robot_model:
+            finger_count = models.Panda.get_finger_count()
+        elif 'ur5_rg2' == task._robot_model:
+            finger_count = models.UR5RG2.get_finger_count()
         joint_positions[-finger_count:] = task._robot_initial_joint_positions[-finger_count:]
 
         robot = task.world.to_gazebo().get_model(task.robot_name)
@@ -401,7 +412,13 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
             raise RuntimeError("Failed to reset robot joint velocities")
 
         # Send new positions also to the controller
-        task.moveit2.move_to_joint_positions(joint_positions[:-finger_count])
+        if 'panda' == task._robot_model:
+            task.moveit2.move_to_joint_positions(
+                joint_positions[:-finger_count])
+        elif 'ur5_rg2' == task._robot_model:
+            pass
+            # TODO: No idea why, but `move_to_joint_positions` causes UR5 to move to [0,0,0,0,0,0] configuration no matter the input.
+            # Panda works fine so idk. Disabling for now...
 
     def reset_robot_joint_positions(self,
                                     task: SupportedTasks):
@@ -413,9 +430,15 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
             raise RuntimeError("Failed to reset robot joint velocities")
 
         # Send new positions also to the controller
-        finger_count = models.Panda.get_finger_count()
-        task.moveit2.move_to_joint_positions(
-            task._robot_initial_joint_positions[:-finger_count])
+        if 'panda' == task._robot_model:
+            finger_count = models.Panda.get_finger_count()
+            task.moveit2.move_to_joint_positions(
+                task._robot_initial_joint_positions[:-finger_count])
+        elif 'ur5_rg2' == task._robot_model:
+            pass
+            # TODO: No idea why, but `move_to_joint_positions` causes UR5 to move to [0,0,0,0,0,0] configuration no matter the input.
+            # Panda works fine so idk. Disabling for now...
+            finger_count = models.UR5RG2.get_finger_count()
 
     def randomize_camera_pose(self,
                               task: SupportedTasks):

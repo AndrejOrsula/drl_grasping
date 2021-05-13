@@ -14,6 +14,10 @@ SEED="42"
 # ENV_ID="Grasp-Octree-Gazebo-v0"
 ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 
+## Robot model
+# ROBOT_MODEL="panda"
+ROBOT_MODEL="ur5_rg2"
+
 ## Algorithm to use
 # ALGO="sac"
 # ALGO="td3"
@@ -45,6 +49,9 @@ EXTRA_ARGS=""
 
 ## Spawn ign_moveit2 subprocess in background, while making sure to forward termination signals
 IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless.launch.py"
+if [ "$ROBOT_MODEL" = "ur5_rg2" ]; then
+    IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_ur5_rg2.launch.py"
+fi
 echo "Launching ign_moveit2 in background:"
 echo "${IGN_MOVEIT2_CMD}"
 echo ""
@@ -57,15 +64,6 @@ terminate_subprocesses() {
 }
 trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
 
-## Locate scripts directory
-if [ -f ""$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)")"/scripts" ]; then
-    # If run from source code
-    SCRIPT_DIR=""$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)")"/scripts"
-else
-    # If run from installed dir or via `ros2 run`
-    SCRIPT_DIR=""$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)""
-fi
-
 ## Arguments
 TRAIN_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --eval-freq "${EVAL_FREQUENCY}" --eval-episodes "${EVAL_EPISODES}" "${EXTRA_ARGS}""
 ## Add trained agent to args in order to continue training
@@ -77,9 +75,8 @@ if [ ! -z "${PRELOAD_REPLAY_BUFFER}" ]; then
     TRAIN_ARGS=""${TRAIN_ARGS}" --preload-replay-buffer "${PRELOAD_REPLAY_BUFFER}""
 fi
 
-
 ## Execute train script
-TRAIN_CMD=""${SCRIPT_DIR}"/train.py "${TRAIN_ARGS}""
+TRAIN_CMD="ros2 run drl_grasping train.py "${TRAIN_ARGS}""
 echo "Executing train command:"
 echo "${TRAIN_CMD}"
 echo ""

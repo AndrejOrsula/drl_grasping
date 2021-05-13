@@ -16,6 +16,10 @@ SEED="42"
 # ENV_ID="Grasp-Octree-Gazebo-v0"
 ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 
+## Robot model
+# ROBOT_MODEL="panda"
+ROBOT_MODEL="ur5_rg2"
+
 ## Algorithm to use (might not matter too much as long as it is off-policy)
 # ALGO="sac"
 # ALGO="td3"
@@ -32,6 +36,9 @@ EXTRA_ARGS=""
 
 ## Spawn ign_moveit2 subprocess in background, while making sure to forward termination signals
 IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless.launch.py"
+if [ "$ROBOT_MODEL" = "ur5_rg2" ]; then
+    IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless_ur5_rg2.launch.py"
+fi
 echo "Launching ign_moveit2 in background:"
 echo "${IGN_MOVEIT2_CMD}"
 echo ""
@@ -44,20 +51,11 @@ terminate_subprocesses() {
 }
 trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
 
-## Locate scripts directory
-if [ -f ""$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)")"/scripts" ]; then
-    # If run from source code
-    SCRIPT_DIR=""$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)")"/scripts"
-else
-    # If run from installed dir or via `ros2 run`
-    SCRIPT_DIR=""$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)""
-fi
-
 ## Arguments
 PRELOAD_BUFFER_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" "${EXTRA_ARGS}""
 
 ## Execute train script
-PRELOAD_BUFFER_CMD=""${SCRIPT_DIR}"/preload_replay_buffer.py "${PRELOAD_BUFFER_ARGS}""
+PRELOAD_BUFFER_CMD="ros2 run drl_grasping preload_replay_buffer.py "${PRELOAD_BUFFER_ARGS}""
 echo "Executing command that preloads replay buffer:"
 echo "${PRELOAD_BUFFER_CMD}"
 echo ""

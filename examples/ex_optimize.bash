@@ -14,6 +14,10 @@ SEED="42"
 # ENV_ID="Grasp-Octree-Gazebo-v0"
 ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 
+## Robot model
+# ROBOT_MODEL="panda"
+ROBOT_MODEL="ur5_rg2"
+
 ## Algorithm to use
 # ALGO="sac"
 # ALGO="td3"
@@ -49,6 +53,9 @@ EXTRA_ARGS=""
 
 ## Spawn ign_moveit2 subprocess in background, while making sure to forward termination signals
 IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless.launch.py"
+if [ "$ROBOT_MODEL" = "ur5_rg2" ]; then
+    IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless_ur5_rg2.launch.py"
+fi
 echo "Launching ign_moveit2 in background:"
 echo "${IGN_MOVEIT2_CMD}"
 echo ""
@@ -61,15 +68,6 @@ terminate_subprocesses() {
 }
 trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
 
-## Locate scripts directory
-if [ -f ""$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)")"/scripts" ]; then
-    # If run from source code
-    SCRIPT_DIR=""$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)")"/scripts"
-else
-    # If run from installed dir or via `ros2 run`
-    SCRIPT_DIR=""$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)""
-fi
-
 ## Arguments
 OPTIMIZE_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --optimize-hyperparameters --sampler "${OPTIMIZE_SAMPLER}" --pruner "${OPTIMIZE_PRUNER}" --n-timesteps "${OPTIMIZE_N_TIMESTAMPS}" --n-startup-trials "${OPTIMIZE_N_STARTUP_TRIALS}" --n-trials "${OPTIMIZE_N_TRIALS}" --n-evaluations "${OPTIMIZE_N_EVALUATIONS}" --eval-episodes "${OPTIMIZE_EVAL_EPISODES}""
 ## Add preload replay buffer to args in order to preload buffer with transitions that use custom heuristic (demonstration)
@@ -78,7 +76,7 @@ if [ ! -z "${PRELOAD_REPLAY_BUFFER}" ]; then
 fi
 
 ## Execute optimize script
-OPTIMIZE_CMD=""${SCRIPT_DIR}"/train.py "${OPTIMIZE_ARGS}""
+OPTIMIZE_CMD="ros2 run drl_grasping train.py "${OPTIMIZE_ARGS}""
 echo "Executing optimization command:"
 echo "${OPTIMIZE_CMD}"
 echo ""
