@@ -14,6 +14,10 @@ SEED="42"
 # ENV_ID="Grasp-Octree-Gazebo-v0"
 ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 
+## Robot model
+# ROBOT_MODEL="panda"
+ROBOT_MODEL="ur5_rg2"
+
 ## Algorithm to use
 # ALGO="sac"
 # ALGO="td3"
@@ -49,6 +53,9 @@ EXTRA_ARGS=""
 
 ## Spawn ign_moveit2 subprocess in background, while making sure to forward termination signals
 IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless.launch.py"
+if [ "$ROBOT_MODEL" = "ur5_rg2" ]; then
+    IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless_ur5_rg2.launch.py"
+fi
 echo "Launching ign_moveit2 in background:"
 echo "${IGN_MOVEIT2_CMD}"
 echo ""

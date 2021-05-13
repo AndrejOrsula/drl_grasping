@@ -311,7 +311,7 @@ class Panda(model_wrapper.ModelWrapper,
             <position_cmd_max>87</position_cmd_max>
 
             <joint_name>%s</joint_name>
-            <initial_position>%s1.57</initial_position>
+            <initial_position>%s</initial_position>
             <position_p_gain>6000</position_p_gain>
             <position_d_gain>30</position_d_gain>
             <position_i_gain>3300</position_i_gain>

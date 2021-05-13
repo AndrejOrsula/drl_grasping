@@ -43,6 +43,7 @@ class ReachOctree(Reach, abc.ABC):
 
     def __init__(self,
                  agent_rate: float,
+                 robot_model: str,
                  restrict_position_goal_to_workspace: bool,
                  sparse_reward: bool,
                  act_quick_reward: float,
@@ -58,6 +59,7 @@ class ReachOctree(Reach, abc.ABC):
         # Initialize the Task base class
         Reach.__init__(self,
                        agent_rate=agent_rate,
+                       robot_model=robot_model,
                        restrict_position_goal_to_workspace=restrict_position_goal_to_workspace,
                        sparse_reward=sparse_reward,
                        act_quick_reward=act_quick_reward,
@@ -83,6 +85,7 @@ class ReachOctree(Reach, abc.ABC):
                                             use_sim_time=True,
                                             debug_draw=False,
                                             debug_write_octree=False,
+                                            robot_frame_id='panda_link0' if 'panda' == robot_model else 'base_link',
                                             node_name=f'drl_grasping_octree_creator_{self.id}')
 
         # Additional parameters
