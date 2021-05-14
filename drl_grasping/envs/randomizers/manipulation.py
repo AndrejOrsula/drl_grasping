@@ -11,6 +11,7 @@ from typing import Union, Tuple
 import abc
 import numpy as np
 import os
+import operator
 
 
 # Tasks that are supported by this randomizer (used primarily for type hinting)
@@ -42,6 +43,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                  object_random_use_mesh_models: bool = False,
                  object_models_rollouts_num: int = 0,
                  object_random_model_count: int = 1,
+                 invisible_world_bottom_collision_plane: bool = True,
                  visualise_workspace: bool = False,
                  visualise_spawn_volume: bool = False,
                  verbose: bool = False):
@@ -72,6 +74,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         self._camera_noise_mean = camera_noise_mean
         self._camera_noise_stddev = camera_noise_stddev
         self._object_random_model_count = object_random_model_count
+        self._invisible_world_bottom_collision_plane = invisible_world_bottom_collision_plane
         self._visualise_workspace = visualise_workspace
         self._visualise_spawn_volume = visualise_spawn_volume
         self._verbose = verbose
@@ -209,34 +212,38 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
             self.add_default_object(task=task,
                                     gazebo=gazebo)
 
+        # Add an invisible plane at the bottom of the world
+        if self._invisible_world_bottom_collision_plane:
+            self.add_invisible_world_bottom_collision_plane(task=task,
+                                                            gazebo=gazebo)
+
     def add_robot(self,
                   task: SupportedTasks,
                   gazebo: scenario.GazeboSimulator):
 
-        robot = None
         if 'panda' == task._robot_model:
-            robot = models.Panda(world=task.world,
-                                 position=task._robot_position,
-                                 orientation=conversions.Quaternion.to_wxyz(
-                                     task._robot_quat_xyzw),
-                                 arm_collision=task._robot_arm_collision,
-                                 hand_collision=task._robot_hand_collision,
-                                 initial_joint_positions=task._robot_initial_joint_positions)
+            self._robot = models.Panda(world=task.world,
+                                       position=task._robot_position,
+                                       orientation=conversions.Quaternion.to_wxyz(
+                                           task._robot_quat_xyzw),
+                                       arm_collision=task._robot_arm_collision,
+                                       hand_collision=task._robot_hand_collision,
+                                       initial_joint_positions=task._robot_initial_joint_positions)
         elif 'ur5_rg2' == task._robot_model:
-            robot = models.UR5RG2(world=task.world,
-                                  position=task._robot_position,
-                                  orientation=conversions.Quaternion.to_wxyz(
-                                      task._robot_quat_xyzw),
-                                  arm_collision=task._robot_arm_collision,
-                                  hand_collision=task._robot_hand_collision,
-                                  initial_joint_positions=task._robot_initial_joint_positions)
-        task.robot_name = robot.name()
-        task.robot_base_link_name = robot.get_base_link_name()
-        task.robot_ee_link_name = robot.get_ee_link_name()
-        task.robot_gripper_link_names = robot.get_gripper_link_names()
+            self._robot = models.UR5RG2(world=task.world,
+                                        position=task._robot_position,
+                                        orientation=conversions.Quaternion.to_wxyz(
+                                            task._robot_quat_xyzw),
+                                        arm_collision=task._robot_arm_collision,
+                                        hand_collision=task._robot_hand_collision,
+                                        initial_joint_positions=task._robot_initial_joint_positions)
+        task.robot_name = self._robot.name()
+        task.robot_base_link_name = self._robot.get_base_link_name()
+        task.robot_ee_link_name = self._robot.get_ee_link_name()
+        task.robot_gripper_link_names = self._robot.get_gripper_link_names()
 
         # TODO (low priority): TF2 - Move this to task
-        robot_base_frame_id = robot.link_names()[0]
+        robot_base_frame_id = self._robot.link_names()[0]
         self._tf2_broadcaster.broadcast_tf(translation=task._robot_position,
                                            rotation=task._robot_quat_xyzw,
                                            xyzw=True,
@@ -350,6 +357,22 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
+    def add_invisible_world_bottom_collision_plane(self,
+                                                   task: SupportedTasks,
+                                                   gazebo: scenario.GazeboSimulator):
+
+        models.Plane(world=task.world,
+                     position=(0.0, 0.0, -1.0),
+                     orientation=(1.0, 0.0, 0.0, 0.0),
+                     direction=(0.0, 0.0, 1.0),
+                     collision=True,
+                     friction=10.0,
+                     visual=False)
+
+        # Execute a paused run to process model insertion
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
+
     def randomize_models(self,
                          task: SupportedTasks,
                          gazebo: scenario.GazeboSimulator):
@@ -399,10 +422,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                            for joint_position in task._robot_initial_joint_positions]
 
         # Reset gripper
-        if 'panda' == task._robot_model:
-            finger_count = models.Panda.get_finger_count()
-        elif 'ur5_rg2' == task._robot_model:
-            finger_count = models.UR5RG2.get_finger_count()
+        finger_count = self._robot.get_finger_count()
         joint_positions[-finger_count:] = task._robot_initial_joint_positions[-finger_count:]
 
         robot = task.world.to_gazebo().get_model(task.robot_name)
@@ -412,13 +432,11 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
             raise RuntimeError("Failed to reset robot joint velocities")
 
         # Send new positions also to the controller
-        if 'panda' == task._robot_model:
-            task.moveit2.move_to_joint_positions(
-                joint_positions[:-finger_count])
-        elif 'ur5_rg2' == task._robot_model:
-            pass
-            # TODO: No idea why, but `move_to_joint_positions` causes UR5 to move to [0,0,0,0,0,0] configuration no matter the input.
-            # Panda works fine so idk. Disabling for now...
+        # task.moveit2.move_to_joint_positions(joint_positions[:-finger_count])
+        # Note: 'move_to_joint_positions' requires that joints need to be sorted
+        arm_joint_names = self._robot.get_joint_names()[:-finger_count]
+        task.moveit2.move_to_joint_positions(list(operator.itemgetter(*sorted(range(len(arm_joint_names)),
+                                                                              key=arm_joint_names.__getitem__))(joint_positions)))
 
     def reset_robot_joint_positions(self,
                                     task: SupportedTasks):
@@ -430,15 +448,12 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
             raise RuntimeError("Failed to reset robot joint velocities")
 
         # Send new positions also to the controller
-        if 'panda' == task._robot_model:
-            finger_count = models.Panda.get_finger_count()
-            task.moveit2.move_to_joint_positions(
-                task._robot_initial_joint_positions[:-finger_count])
-        elif 'ur5_rg2' == task._robot_model:
-            pass
-            # TODO: No idea why, but `move_to_joint_positions` causes UR5 to move to [0,0,0,0,0,0] configuration no matter the input.
-            # Panda works fine so idk. Disabling for now...
-            finger_count = models.UR5RG2.get_finger_count()
+        # task.moveit2.move_to_joint_positions(task._robot_initial_joint_positions[:-finger_count])
+        # Note: 'move_to_joint_positions' requires that joints need to be sorted
+        arm_joint_names = self._robot.get_joint_names(
+        )[:-self._robot.get_finger_count()]
+        task.moveit2.move_to_joint_positions(list(operator.itemgetter(*sorted(range(len(arm_joint_names)),
+                                                                              key=arm_joint_names.__getitem__))(task._robot_initial_joint_positions)))
 
     def randomize_camera_pose(self,
                               task: SupportedTasks):
