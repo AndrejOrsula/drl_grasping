@@ -205,7 +205,7 @@ Grasp-OctreeWithColor-Gazebo-v0:
       depth: 4
       full_depth: 2
       channels_in: 7
-      channel_multiplier: 48
+      channel_multiplier: 32
       full_depth_conv1d: True
       full_depth_channels: 16
       features_dim: 160
@@ -214,9 +214,9 @@ Grasp-OctreeWithColor-Gazebo-v0:
       batch_normalization: False
       bn_eps: 0.00001
       bn_momentum: 0.01
-    n_quantiles: 50
-    n_critics: 3
-    net_arch: [512, 512, 256]
+    n_quantiles: 25
+    n_critics: 2
+    net_arch: [512, 512]
     separate_networks_for_stacks: True
     share_features_extractor: True
   env_wrapper:
@@ -235,15 +235,16 @@ Grasp-OctreeWithColor-Gazebo-v0:
   n_timesteps: 1000000
   buffer_size: 40000
   learning_starts: 0
-  batch_size: 48
-  learning_rate: lin_0.0002
+  batch_size: 32
+  learning_rate: lin_0.00015
   gamma: 0.999
-  tau: 0.0001
+  tau: 0.00005
   ent_coef: "auto_0.1_0.05"
   target_entropy: "auto"
-  top_quantiles_to_drop_per_net: 4
-  train_freq: 1
-  gradient_steps: 1
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
   noise_type: "normal"
   noise_std: 0.025
+  use_sde: False
   optimize_memory_usage: True
