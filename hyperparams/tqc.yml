@@ -10,7 +10,6 @@ Reach-Gazebo-v0:
     - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
         robot_random_joint_positions: True
         robot_random_joint_positions_std: 0.1
-  # normalize: "{'norm_obs': False, 'norm_reward': True}"
   n_timesteps: 50000
   buffer_size: 25000
   learning_starts: 0
@@ -40,7 +39,6 @@ Reach-ColorImage-Gazebo-v0:
         camera_pose_rollouts_num: 1
         camera_noise_mean: 0
         camera_noise_stddev: 0.001
-  # normalize: "{'norm_obs': False, 'norm_reward': True}"
   n_timesteps: 50000
   buffer_size: 25000
   learning_starts: 0
@@ -85,7 +83,6 @@ Reach-Octree-Gazebo-v0:
         camera_pose_rollouts_num: 1
         camera_noise_mean: 0
         camera_noise_stddev: 0.001
-  # normalize: "{'norm_obs': False, 'norm_reward': True}"
   n_timesteps: 50000
   buffer_size: 25000
   learning_starts: 0
@@ -130,7 +127,6 @@ Reach-OctreeWithColor-Gazebo-v0:
         camera_pose_rollouts_num: 1
         camera_noise_mean: 0
         camera_noise_stddev: 0.001
-  # normalize: "{'norm_obs': False, 'norm_reward': True}"
   n_timesteps: 50000
   buffer_size: 25000
   learning_starts: 0
