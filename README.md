@@ -2,6 +2,10 @@
 
 This is the primary repository for my Master's Thesis conducted at Aalborg University, Denmark. The focus of this project is to apply Deep Reinforcement Learning to acquire a robust policy that allows robot to grasp arbitrary objects from compact octree observations.
 
+Below are some examples of grasping objects using Panda and UR5 with RG2 gripper in the same environment. The observations, represented as point cloud, are visualised on the right, where floating coordinate frame represents the camera pose. (_3x speed_)
+<p align="center" float="middle">
+  <img width="100.0%" src="_graphics/panda_grasp_multi_with_rviz2.webp"/>
+</p>
 <p align="center" float="middle">
   <img width="100.0%" src="_graphics/ur5_rg2_grasp_multi_with_rviz2.webp"/>
 </p>
@@ -136,6 +140,8 @@ Currently, the following environments are included inside this repository. Take 
 <p align="center" float="middle">
   <img width="66.667%" src="_graphics/grasp_single_object.webp"/>
 </p>
+
+TODO: Add animation for Reach task
 
 ### Domain Randomization
 
