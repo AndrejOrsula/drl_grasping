@@ -6,7 +6,7 @@ repositories:
   ign_moveit2:
     type: git
     url: https://github.com/AndrejOrsula/ign_moveit2.git
-    version: python_interface
+    version: master
   panda_ign:
     type: git
     url: https://github.com/AndrejOrsula/panda_ign.git
@@ -14,6 +14,14 @@ repositories:
   panda_moveit2_config:
     type: git
     url: https://github.com/AndrejOrsula/panda_moveit2_config.git
+    version: master
+  ur5_rg2_ign:
+    type: git
+    url: https://github.com/AndrejOrsula/ur5_rg2_ign.git
+    version: master
+  ur5_rg2_moveit2_config:
+    type: git
+    url: https://github.com/AndrejOrsula/ur5_rg2_moveit2_config.git
     version: master
 
   ## Unfortunately, moveit2 cannot be built with symlink-install option yet. Therefore build/install separately if possible.

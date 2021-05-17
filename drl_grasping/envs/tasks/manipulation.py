@@ -16,20 +16,27 @@ class Manipulation(task.Task, abc.ABC):
     _ids = count(0)
 
     # Parameters for ManipulationGazeboEnvRandomizer
-    _robot_model: str = 'panda'
     _robot_position: Tuple[float, float, float] = (0, 0, 0)
     _robot_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
     _robot_arm_collision: bool = True
     _robot_hand_collision: bool = True
-    _robot_initial_joint_positions: Tuple[float, ...] = (0.0,
-                                                         0.0,
-                                                         0.0,
-                                                         -1.57,
-                                                         0.0,
-                                                         1.57,
-                                                         0.79,
-                                                         0.04,
-                                                         0.04)
+    _robot_initial_joint_positions_panda: Tuple[float, ...] = (0.0,
+                                                               0.0,
+                                                               0.0,
+                                                               -1.57,
+                                                               0.0,
+                                                               1.57,
+                                                               0.79,
+                                                               0.0,
+                                                               0.0)
+    _robot_initial_joint_positions_ur5_rg2: Tuple[float, ...] = (0.0,
+                                                                 0.0,
+                                                                 1.57,
+                                                                 0.0,
+                                                                 -1.57,
+                                                                 -1.57,
+                                                                 0.0,
+                                                                 0.0)
 
     _workspace_centre: Tuple[float, float, float] = (0.5, 0, 0.25)
     _workspace_volume: Tuple[float, float, float] = (1.0, 1.0, 1.0)
@@ -84,6 +91,7 @@ class Manipulation(task.Task, abc.ABC):
 
     def __init__(self,
                  agent_rate: float,
+                 robot_model: str,
                  restrict_position_goal_to_workspace: bool,
                  verbose: bool,
                  **kwargs):
@@ -93,8 +101,14 @@ class Manipulation(task.Task, abc.ABC):
         # Initialize the Task base class
         task.Task.__init__(self, agent_rate=agent_rate)
 
+        self._robot_model = robot_model
+        if 'panda' == robot_model:
+            self._robot_initial_joint_positions = self._robot_initial_joint_positions_panda
+        elif 'ur5_rg2' == robot_model:
+            self._robot_initial_joint_positions = self._robot_initial_joint_positions_ur5_rg2
+
         # Control (MoveIt2)
-        self.moveit2 = MoveIt2(node_name=f'ign_moveit2_py_{self.id}')
+        self.moveit2 = MoveIt2(robot_model=robot_model, node_name=f'ign_moveit2_py_{self.id}')
 
         # Names of important models
         self.robot_name = None
