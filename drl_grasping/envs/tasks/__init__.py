@@ -154,7 +154,7 @@ register(
             'real_time_factor': GRASP_RTF,
             'robot_model': 'ur5_rg2',
             'restrict_position_goal_to_workspace': True,
-            'gripper_dead_zone': 0.25,
+            'gripper_dead_zone': 0.0,
             'full_3d_orientation': False,
             'sparse_reward': True,
             'normalize_reward': False,
@@ -171,9 +171,9 @@ register(
             'curriculum_enable_object_count_increase': True,
             'curriculum_max_object_count': 4,
             'curriculum_enable_stages': False,
-            'curriculum_stage_reward_multiplier': 4.0,
+            'curriculum_stage_reward_multiplier': 7.0,
             'curriculum_stage_increase_rewards': True,
-            'curriculum_success_rate_threshold': 0.75,
+            'curriculum_success_rate_threshold': 0.6,
             'curriculum_success_rate_rolling_average_n': 100,
             'curriculum_restart_every_n_steps': 0,
             'curriculum_skip_reach_stage': False,
@@ -189,3 +189,5 @@ register(
             # Important: 'preload_replay_buffer' can only be enabled if using demonstrations to fill replay buffer. Make sure this is disabled otherwise
             # 'preload_replay_buffer': False,
             'verbose': False})
+
+# TODO: Remember to update non-octree settings once done with tuning

@@ -103,5 +103,5 @@ def _setup_model_with_separate_octree_batches_for_stacks(self) -> None:
     self._convert_train_freq()
 
 
-OffPolicyAlgorithm._store_transition = _store_transition_not_done_if_truncated
+# OffPolicyAlgorithm._store_transition = _store_transition_not_done_if_truncated
 OffPolicyAlgorithm._setup_model = _setup_model_with_separate_octree_batches_for_stacks
