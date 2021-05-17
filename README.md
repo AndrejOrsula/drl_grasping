@@ -147,11 +147,6 @@ TODO: Add animation for Reach task
 
 These environments can be wrapped by a randomizer in order to introduce domain randomization and improve generalization of the trained policies, which is especially beneficial for Sim2Real transfer.
 
-<p align="center" float="middle">
-  <img width="66.667%" src="_graphics/domain_randomization.webp"/>
-</p>
-TODO: Update animation
-
 The included [ManipulationGazeboEnvRandomizer](drl_grasping/envs/randomizers/manipulation.py) allows randomization of the following properties at each reset of the environment.
 
 - Object model - primitive geometry
