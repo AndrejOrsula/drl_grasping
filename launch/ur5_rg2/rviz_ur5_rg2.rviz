@@ -88,7 +88,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 5
-      Size (m): 0.004999999888241291
+      Size (m): 0.009999999776482582
       Style: Spheres
       Topic:
         Depth: 5
@@ -104,7 +104,7 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        panda_link0:
+        base_link:
           Value: false
         rgbd_camera/rgbd_camera_link/camera:
           Value: true
@@ -117,7 +117,7 @@ Visualization Manager:
       Show Names: false
       Tree:
         world:
-          panda_link0:
+          base_link:
             {}
           rgbd_camera/rgbd_camera_link/camera:
             {}
