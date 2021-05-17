@@ -12,15 +12,6 @@ class Reach(Manipulation, abc.ABC):
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
     _robot_arm_collision: bool = False
     _robot_hand_collision: bool = False
-    _robot_initial_joint_positions: Tuple[float, ...] = (0.0,
-                                                         0.0,
-                                                         0.0,
-                                                         -1.57,
-                                                         0.0,
-                                                         1.57,
-                                                         0.79,
-                                                         0.0,
-                                                         0.0)
     _workspace_centre: Tuple[float, float, float] = (0.45, 0, 0.25)
     _workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
 
@@ -43,6 +34,7 @@ class Reach(Manipulation, abc.ABC):
 
     def __init__(self,
                  agent_rate: float,
+                 robot_model: str,
                  restrict_position_goal_to_workspace: bool,
                  sparse_reward: bool,
                  act_quick_reward: float,
@@ -53,6 +45,7 @@ class Reach(Manipulation, abc.ABC):
         # Initialize the Task base class
         Manipulation.__init__(self,
                               agent_rate=agent_rate,
+                              robot_model=robot_model,
                               restrict_position_goal_to_workspace=restrict_position_goal_to_workspace,
                               verbose=verbose,
                               **kwargs)

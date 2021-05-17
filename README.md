@@ -3,9 +3,8 @@
 This is the primary repository for my Master's Thesis conducted at Aalborg University, Denmark. The focus of this project is to apply Deep Reinforcement Learning to acquire a robust policy that allows robot to grasp arbitrary objects from compact octree observations.
 
 <p align="center" float="middle">
-  <img width="66.667%" src="_graphics/grasp_single_object.webp"/>
+  <img width="100.0%" src="_graphics/ur5_rg2_grasp_multi_with_rviz2.webp"/>
 </p>
-TODO: Update animation with multi-object example and point cloud visualisation
 
 ## Instructions
 
@@ -132,6 +131,9 @@ Currently, the following environments are included inside this repository. Take 
       - Workspace size
       - Number of objects
       - Termination state (task is divided into hierarchical sub-tasks, further guiding the agent)
+<p align="center" float="middle">
+  <img width="66.667%" src="_graphics/grasp_single_object.webp"/>
+</p>
 
 ### Domain Randomization
 
@@ -190,7 +192,7 @@ There are several databases with free PBR textures that you can use. Alternative
 
 ### Supported Robots
 
-Only [Franka Emika Panda](https://github.com/AndrejOrsula/panda_ign) is currently supported, as this project lacks a more generic solution that would allow to easily utilise arbitrary models. If you need to use another robot with this source code, a simple switch to another robot model should not be too complicated, albeit time-consuming.
+Only [Franka Emika Panda](https://github.com/AndrejOrsula/panda_ign) and [UR5 with RG2 gripper](https://github.com/AndrejOrsula/ur5_rg2_ign) are currently supported. This project currently lacks a more generic solution that would allow to easily utilise arbitrary models, e.g. full-on MoveIt 2 with ros2_control implementation.
 
 
 ## Reinforcement Learning

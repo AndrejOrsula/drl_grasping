@@ -54,6 +54,7 @@ class GraspOctree(Grasp, abc.ABC):
 
     def __init__(self,
                  agent_rate: float,
+                 robot_model: str,
                  restrict_position_goal_to_workspace: bool,
                  gripper_dead_zone: float,
                  full_3d_orientation: bool,
@@ -94,6 +95,7 @@ class GraspOctree(Grasp, abc.ABC):
         # Initialize the Task base class
         Grasp.__init__(self,
                        agent_rate=agent_rate,
+                       robot_model=robot_model,
                        restrict_position_goal_to_workspace=restrict_position_goal_to_workspace,
                        gripper_dead_zone=gripper_dead_zone,
                        full_3d_orientation=full_3d_orientation,
@@ -143,6 +145,7 @@ class GraspOctree(Grasp, abc.ABC):
                                             use_sim_time=True,
                                             debug_draw=False,
                                             debug_write_octree=False,
+                                            robot_frame_id='panda_link0' if 'panda' == robot_model else 'base_link',
                                             node_name=f'drl_grasping_octree_creator_{self.id}')
 
         # Additional parameters
