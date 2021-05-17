@@ -2,6 +2,10 @@
 
 This is the primary repository for my Master's Thesis conducted at Aalborg University, Denmark. The focus of this project is to apply Deep Reinforcement Learning to acquire a robust policy that allows robot to grasp arbitrary objects from compact octree observations.
 
+Below are some examples of grasping objects using Panda and UR5 with RG2 gripper in the same environment. The observations, represented as point cloud, are visualised on the right, where floating coordinate frame represents the camera pose. (_3x speed_)
+<p align="center" float="middle">
+  <img width="100.0%" src="_graphics/panda_grasp_multi_with_rviz2.webp"/>
+</p>
 <p align="center" float="middle">
   <img width="100.0%" src="_graphics/ur5_rg2_grasp_multi_with_rviz2.webp"/>
 </p>
@@ -77,6 +81,8 @@ This enables:
 - **OS:** Any system that supports [Docker](https://docs.docker.com/get-docker) should work (Linux, Windows, macOS). However, only Linux was properly tested.
 - **GPU:** CUDA is required to process octree observations on GPU. Therefore, only Docker images with CUDA support are currently available.
 
+### Dependencies
+
 Before starting, make sure your system has a setup for using [Nvidia Docker](https://github.com/NVIDIA/nvidia-docker), e.g.:
 
 ```bash
@@ -95,7 +101,7 @@ sudo systemctl restart docker
 
 The easiest way to try out this project is by using the included [Dockerfile](docker/Dockerfile).
 
-Instead of building it locally, you can pull a pre-built Docker image directly from [Docker Hub](https://hub.docker.com). Currently, there is only a development image available.
+Instead of building it locally, you can pull a pre-built Docker image directly from [Docker Hub](https://hub.docker.com/repository/docker/andrejorsula/drl_grasping). Currently, there is only a development image available.
 
 ```bash
 docker pull andrejorsula/drl_grasping:latest
@@ -134,6 +140,8 @@ Currently, the following environments are included inside this repository. Take 
 <p align="center" float="middle">
   <img width="66.667%" src="_graphics/grasp_single_object.webp"/>
 </p>
+
+TODO: Add animation for Reach task
 
 ### Domain Randomization
 
