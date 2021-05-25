@@ -10,6 +10,11 @@ Below are some examples of grasping objects using Panda and UR5 with RG2 gripper
   <img width="100.0%" src="_graphics/ur5_rg2_grasp_multi_with_rviz2.webp"/>
 </p>
 
+Example of Sim2Real transfer can be seen below (trained inside simulation, no re-training in real world).
+<p align="center" float="middle">
+  <img width="100.0%" src="_graphics/sim2real.webp"/>
+</p>
+
 ## Instructions
 
 <details><summary>Local Installation (click to expand)</summary>
