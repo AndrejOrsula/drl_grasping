@@ -20,7 +20,7 @@ class GraspOctree(Grasp, abc.ABC):
     _camera_update_rate: int = 10
     _camera_horizontal_fov: float = 0.9
     _camera_vertical_fov: float = 0.9
-    _camera_position: Tuple[float, float, float] = (1.1, -0.75, 0.3)
+    _camera_position: Tuple[float, float, float] = (0.95, -0.55, 0.25)
     _camera_quat_xyzw: Tuple[float, float,
                              float, float] = (-0.0402991, -0.0166924, 0.9230002, 0.3823192)
     _camera_ros2_bridge_points: bool = True
