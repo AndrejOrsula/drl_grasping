@@ -163,7 +163,7 @@ Grasp-Octree-Gazebo-v0:
         camera_pose_rollouts_num: 1
         camera_noise_mean: 0
         camera_noise_stddev: 0.001
-        ground_model_rollouts_num: 1
+        ground_model_rollouts_num: 0
         object_random_pose: True
         object_random_use_mesh_models: True
         object_models_rollouts_num: 1
