@@ -167,7 +167,7 @@ Grasp-Octree-Gazebo-v0:
         object_random_pose: True
         object_random_use_mesh_models: True
         object_models_rollouts_num: 1
-        object_random_model_count: 1
+        object_random_model_count: 4
   n_timesteps: 500000
   buffer_size: 40000
   learning_starts: 0
@@ -215,7 +215,7 @@ Grasp-OctreeWithColor-Gazebo-v0:
         object_random_pose: True
         object_random_use_mesh_models: True
         object_models_rollouts_num: 1
-        object_random_model_count: 1
+        object_random_model_count: 4
   n_timesteps: 500000
   buffer_size: 40000
   learning_starts: 0

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ## Random seed to use for both the environment and agent (-1 for random)
-SEED="42"
+SEED="77"
 
 ## ID of the environment
 ## Reach
@@ -24,7 +24,7 @@ ROBOT_MODEL="ur5_rg2"
 ALGO="tqc"
 
 ## Checkpoint to load
-CHECKPOINT=0000
+CHECKPOINT=500000
 
 ## Path the parent training directory
 TRAINING_DIR="training"

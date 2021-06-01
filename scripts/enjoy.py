@@ -101,16 +101,20 @@ def main(args=None):
     obs = env.reset()
 
     # Deterministic by default
-    stochastic = args.stochastic or not args.deterministic
+    stochastic = args.stochastic
     deterministic = not stochastic
+
+    print(f"Evaluating for {args.n_episodes} episodes with a",
+          "deterministic" if deterministic else "stochastic", "policy.")
 
     state = None
     episode_reward = 0.0
-    episode_rewards, episode_lengths = [], []
+    episode_rewards, episode_lengths, success_episode_lengths = [], [], []
     ep_len = 0
+    episode = 0
     # For HER, monitor success rate
     successes = []
-    for _ in range(args.n_timesteps):
+    while episode < args.n_episodes:
         action, state = model.predict(
             obs, state=state, deterministic=deterministic)
         obs, reward, done, infos = env.step(action)
@@ -120,44 +124,39 @@ def main(args=None):
         episode_reward += reward[0]
         ep_len += 1
 
-        if args.n_envs == 1:
-            if done and args.verbose > 0:
-                print("---")
-                # NOTE: for env using VecNormalize, the mean reward
-                # is a normalized reward when `--norm_reward` flag is passed
-                print(f"Episode Reward: {episode_reward:.2f}")
-                print("Episode Length", ep_len)
-                episode_rewards.append(episode_reward)
-                episode_lengths.append(ep_len)
-                episode_reward = 0.0
-                ep_len = 0
-                state = None
-                if infos[0].get("is_success") is not None:
-                    print("Success?:", infos[0].get("is_success", False))
-                    successes.append(infos[0].get("is_success", False))
-
-            # # Reset also when the goal is achieved when using HER
-            # if done and infos[0].get("is_success") is not None:
-            #     if args.verbose > 1:
-            #         print("Success?", infos[0].get("is_success", False))
-            #     # Alternatively, you can add a check to wait for the end of the episode
-            #     if done:
-            #         obs = env.reset()
-            #     if infos[0].get("is_success") is not None:
-            #         successes.append(infos[0].get("is_success", False))
-            #         episode_reward, ep_len = 0.0, 0
+        if done and args.verbose > 0:
+            episode += 1
+            print(f"--- Episode {episode}/{args.n_episodes}")
+            # NOTE: for env using VecNormalize, the mean reward
+            # is a normalized reward when `--norm_reward` flag is passed
+            print(f"Episode Reward: {episode_reward:.2f}")
+            episode_rewards.append(episode_reward)
+            print("Episode Length", ep_len)
+            episode_lengths.append(ep_len)
+            if infos[0].get("is_success") is not None:
+                print("Success?:", infos[0].get("is_success", False))
+                successes.append(infos[0].get("is_success", False))
+                if infos[0].get("is_success"):
+                    success_episode_lengths.append(ep_len)
+                print(f"Current success rate: {100 * np.mean(successes):.2f}%")
+            episode_reward = 0.0
+            ep_len = 0
+            state = None
 
     if args.verbose > 0 and len(successes) > 0:
         print(f"Success rate: {100 * np.mean(successes):.2f}%")
 
     if args.verbose > 0 and len(episode_rewards) > 0:
-        print(f"{len(episode_rewards)} Episodes")
         print(f"Mean reward: {np.mean(episode_rewards):.2f} "
               f"+/- {np.std(episode_rewards):.2f}")
 
     if args.verbose > 0 and len(episode_lengths) > 0:
         print(f"Mean episode length: {np.mean(episode_lengths):.2f} "
               f"+/- {np.std(episode_lengths):.2f}")
+
+    if args.verbose > 0 and len(success_episode_lengths) > 0:
+        print(f"Mean episode length of successful episodes: {np.mean(success_episode_lengths):.2f} "
+              f"+/- {np.std(success_episode_lengths):.2f}")
 
     # Workaround for https://github.com/openai/gym/issues/893
     if not args.no_render:
@@ -197,9 +196,9 @@ if __name__ == "__main__":
                         help="Number of threads for PyTorch (-1 to use default)")
 
     # Test duration
-    parser.add_argument("-n", "--n-timesteps", type=int,
-                        default=1000,
-                        help="Overwrite the number of timesteps")
+    parser.add_argument("-n", "--n-episodes", type=int,
+                        default=200,
+                        help="Overwrite the number of episodes")
 
     # Random seed
     parser.add_argument("--seed", type=int,
@@ -221,7 +220,7 @@ if __name__ == "__main__":
 
     # Deterministic/stochastic actions
     parser.add_argument("--deterministic", action="store_true",
-                        default=False,
+                        default=True,
                         help="Use deterministic actions")
     parser.add_argument("--stochastic", action="store_true",
                         default=False,
