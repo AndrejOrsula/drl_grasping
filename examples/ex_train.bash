@@ -27,7 +27,7 @@ ALGO="tqc"
 # TRAINED_AGENT=""${ENV_ID}"_1/rl_model_0000_steps.zip"
 
 ## Path to a replay buffer that should be preloaded before training begins
-PRELOAD_REPLAY_BUFFER="training/preloaded_buffers/"${ENV_ID}"_1/replay_buffer.pkl"
+# PRELOAD_REPLAY_BUFFER="training/preloaded_buffers/"${ENV_ID}"_1/replay_buffer.pkl"
 
 ## Continuous evaluation (-1 to disable)
 EVAL_FREQUENCY=-1

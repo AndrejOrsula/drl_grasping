@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ## Random seed to use for both the environment and agent (-1 for random)
-SEED="42"
+SEED="69"
 
 ## ID of the environment
 ## Reach

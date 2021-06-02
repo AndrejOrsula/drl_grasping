@@ -2,7 +2,7 @@
 
 
 ## Random seed to use for both the environment and agent (-1 for random)
-SEED="42"
+SEED="123"
 
 ## ID of the environment
 ## Note: `preload_replay_buffer` must be enabled in the environment manually
