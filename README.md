@@ -1,18 +1,18 @@
 # Deep Reinforcement Learning for Robotic Grasping from Octrees
 
-This is the primary repository for my Master's Thesis conducted at Aalborg University, Denmark. The focus of this project is to apply Deep Reinforcement Learning to acquire a robust policy that allows robot to grasp arbitrary objects from compact octree observations.
+This is the primary repository for my [Master's Thesis](https://github.com/AndrejOrsula/master_thesis) conducted at Aalborg University, Denmark. The focus of this project is to apply Deep Reinforcement Learning to acquire a robust policy that allows robot to grasp arbitrary objects from compact octree observations.
 
-Below are some examples of grasping objects using Panda and UR5 with RG2 gripper in the same environment. The observations, represented as point cloud, are visualised on the right, where floating coordinate frame represents the camera pose. (_3x speed_)
+Below are some examples of employing learned policies on novel scenes for Panda and UR5 robots.
 <p align="center" float="middle">
-  <img width="100.0%" src="_graphics/panda_grasp_multi_with_rviz2.webp"/>
+  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim_panda.webp" alt="Evaluation of a trained policy on novel scenes for Panda robot"/>
 </p>
 <p align="center" float="middle">
-  <img width="100.0%" src="_graphics/ur5_rg2_grasp_multi_with_rviz2.webp"/>
+  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim_ur5_rg2.webp" alt="Evaluation of a trained policy on novel scenes for UR5 robot"/>
 </p>
 
-Example of Sim2Real transfer can be seen below (trained inside simulation, no re-training in real world).
+Example of Sim2Real transfer on UR5 can be seen below (trained inside simulation, no re-training in real world).
 <p align="center" float="middle">
-  <img width="100.0%" src="_graphics/sim2real.webp"/>
+  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim2real.webp" alt="Sim2Real evaluation of a trained policy on a real UR5 robot"/>
 </p>
 
 ## Instructions
@@ -142,15 +142,15 @@ Currently, the following environments are included inside this repository. Take 
       - Workspace size
       - Number of objects
       - Termination state (task is divided into hierarchical sub-tasks, further guiding the agent)
-<p align="center" float="middle">
-  <img width="66.667%" src="_graphics/grasp_single_object.webp"/>
-</p>
 
-TODO: Add animation for Reach task
 
 ### Domain Randomization
 
 These environments can be wrapped by a randomizer in order to introduce domain randomization and improve generalization of the trained policies, which is especially beneficial for Sim2Real transfer.
+
+<p align="center" float="middle">
+  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/graphics/implementation/domain_randomisation.png" alt="Examples of domain randomization"/>
+</p>
 
 The included [ManipulationGazeboEnvRandomizer](drl_grasping/envs/randomizers/manipulation.py) allows randomization of the following properties at each reset of the environment.
 
@@ -209,13 +209,13 @@ This project makes direct use of [stable-baselines3](https://github.com/DLR-RM/s
 
 To train an agent, please take a look at [`ex_train`](examples/ex_train.bash) example. Similarly, [`ex_enjoy`](examples/ex_enjoy.bash) example demonstrates a way to evaluate a trained agent.
 
-TODO: Add graphics for learning curve (TD3 vs SAC cs TQC)
-
 ### Octree CNN Features Extractor
 
 The [OctreeCnnFeaturesExtractor](drl_grasping/algorithms/common/features_extractor/octree_cnn.py) makes use of [O-CNN](https://github.com/microsoft/O-CNN) implementation to enable training on GPU. This features extractor is part of `OctreeCnnPolicy` policy that is currently implemented for TD3, SAC and TQC algorithms.
 
-TODO: Add graphics for network architecture
+<p align="center" float="middle">
+  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/svg/feature_extractor.svg" alt="Architecture of octree-based 3D CNN feature extractor"/>
+</p>
 
 ### Hyperparameters
 
