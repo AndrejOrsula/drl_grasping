@@ -15,8 +15,8 @@ SEED="77"
 ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 
 ## Robot model
-# ROBOT_MODEL="panda"
-ROBOT_MODEL="ur5_rg2"
+ROBOT_MODEL="panda"
+# ROBOT_MODEL="ur5_rg2"
 
 ## Algorithm to use
 # ALGO="sac"
@@ -24,7 +24,7 @@ ROBOT_MODEL="ur5_rg2"
 ALGO="tqc"
 
 ## Checkpoint to load
-CHECKPOINT=500000
+CHECKPOINT=0
 
 ## Path the parent training directory
 TRAINING_DIR="training"
