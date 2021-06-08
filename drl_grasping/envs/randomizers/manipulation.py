@@ -46,7 +46,8 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                  invisible_world_bottom_collision_plane: bool = True,
                  visualise_workspace: bool = False,
                  visualise_spawn_volume: bool = False,
-                 verbose: bool = False):
+                 verbose: bool = False,
+                 **kwargs):
 
         # Initialize base classes
         randomizers.abc.TaskRandomizer.__init__(self)
@@ -54,7 +55,8 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                                    randomize_after_rollouts_num=physics_rollouts_num)
         gazebo_env_randomizer.GazeboEnvRandomizer.__init__(self,
                                                            env=env,
-                                                           physics_randomizer=self)
+                                                           physics_randomizer=self,
+                                                           **kwargs)
 
         # Randomizers, their frequency and counters for different randomizers
         self._robot_random_joint_positions = robot_random_joint_positions
@@ -134,13 +136,12 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                             gazebo=gazebo)
 
             # Insert world plugins
-            # TODO: fix (currently placed in default world)
-            # if task._insert_scene_broadcaster_plugin:
-            #     task.world.to_gazebo().insert_world_plugin("ignition-gazebo-scene-broadcaster-system",
-            #                                                "ignition::gazebo::systems::SceneBroadcaster")
-            # if task._insert_user_commands_plugin:
-            #     task.world.to_gazebo().insert_world_plugin("ignition-gazebo-user-commands-system",
-            #                                                "ignition::gazebo::systems::UserCommands")
+            if task._insert_scene_broadcaster_plugin:
+                task.world.to_gazebo().insert_world_plugin("ignition-gazebo-scene-broadcaster-system",
+                                                           "ignition::gazebo::systems::SceneBroadcaster")
+            if task._insert_user_commands_plugin:
+                task.world.to_gazebo().insert_world_plugin("ignition-gazebo-user-commands-system",
+                                                           "ignition::gazebo::systems::UserCommands")
             self.__env_initialised = True
 
         # Randomize models if needed

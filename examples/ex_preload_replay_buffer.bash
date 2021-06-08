@@ -12,7 +12,6 @@ SEED="123"
 # ENV_ID="Reach-Octree-Gazebo-v0"
 # ENV_ID="Reach-OctreeWithColor-Gazebo-v0"
 ## Grasp
-# ENV_ID="Grasp-Gazebo-v0"
 # ENV_ID="Grasp-Octree-Gazebo-v0"
 ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 
@@ -27,6 +26,9 @@ ALGO="tqc"
 
 ## Path to logs, where to save the replay buffer
 LOG_DIR="training/preloaded_buffers"
+
+## Arguments for the environment
+ENV_ARGS="robot_model:\"${ROBOT_MODEL}\""
 
 ## Extra arguments to be passed into the script
 EXTRA_ARGS=""
@@ -52,7 +54,7 @@ terminate_subprocesses() {
 trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
 
 ## Arguments
-PRELOAD_BUFFER_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" "${EXTRA_ARGS}""
+PRELOAD_BUFFER_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --env-kwargs "${ENV_ARGS}" "${EXTRA_ARGS}""
 
 ## Execute train script
 PRELOAD_BUFFER_CMD="ros2 run drl_grasping preload_replay_buffer.py "${PRELOAD_BUFFER_ARGS}""

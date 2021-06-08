@@ -59,6 +59,7 @@ install(PROGRAMS
 set(EXAMPLES_DIR examples)
 install(PROGRAMS
     ${EXAMPLES_DIR}/ex_enjoy.bash
+    ${EXAMPLES_DIR}/ex_enjoy_pretrained_agent.bash
     ${EXAMPLES_DIR}/ex_optimize.bash
     ${EXAMPLES_DIR}/ex_train.bash
     ${EXAMPLES_DIR}/ex_preload_replay_buffer.bash
@@ -66,7 +67,7 @@ install(PROGRAMS
 )
 
 # Install directories
-install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch pretrained_agents DESTINATION share/${PROJECT_NAME})
 
 # Setup the project
 ament_package()

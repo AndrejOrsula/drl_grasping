@@ -103,13 +103,13 @@ def get_wrapper_class(hyperparams: Dict[str, Any]) -> Optional[Callable[[gym.Env
             wrapper_classes.append(wrapper_class)
             wrapper_kwargs.append(kwargs)
 
-        def wrap_env(env: gym.Env) -> gym.Env:
+        def wrap_env(env: gym.Env, **env_kwargs) -> gym.Env:
             """
             :param env:
             :return:
             """
-            for wrapper_class, kwargs in zip(wrapper_classes, wrapper_kwargs):
-                env = wrapper_class(env, **kwargs)
+            for wrapper_class, wrapper_class_kwargs in zip(wrapper_classes, wrapper_kwargs):
+                env = wrapper_class(env, **wrapper_class_kwargs, **env_kwargs)
             return env
 
         return wrap_env

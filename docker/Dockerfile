@@ -184,7 +184,7 @@ ARG DRL_GRASPING_GIT_BRANCH=master
 ARG DRL_GRASPING_DOCKER_VERSION=0.12.0
 RUN apt-get update && mkdir -p ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
     cd ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
-    git clone https://github.com/AndrejOrsula/drl_grasping.git -b ${DRL_GRASPING_GIT_BRANCH} && \
+    git clone --recursive https://github.com/AndrejOrsula/drl_grasping.git -b ${DRL_GRASPING_GIT_BRANCH} && \
     vcs import < drl_grasping/drl_grasping.repos ; \
     cd .. && \
     source /opt/ros/${ROS2_DISTRO}/setup.bash && \

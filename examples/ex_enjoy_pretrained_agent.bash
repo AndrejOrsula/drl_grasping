@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ## Random seed to use for both the environment and agent (-1 for random)
-SEED="77"
+SEED="69"
 
 ## ID of the environment
 ## Reach
@@ -24,16 +24,6 @@ ALGO="tqc"
 
 ## Arguments for the environment
 ENV_ARGS="robot_model:\"${ROBOT_MODEL}\""
-
-## Checkpoint to load
-CHECKPOINT=0
-
-## Path the parent training directory
-TRAINING_DIR="training"
-## Path to logs
-LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/logs"
-## Path to reward logs (enjoy)
-REWARD_LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/reward_logs"
 
 ## Extra arguments to be passed into the script
 EXTRA_ARGS=""
@@ -58,12 +48,12 @@ terminate_subprocesses() {
 }
 trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
 
+## Locate directory of pretrained agents
+PRETRAINED_AGENTS_DIR=""$(ros2 pkg prefix drl_grasping)"/share/drl_grasping/pretrained_agents"
+LOG_DIR=""${PRETRAINED_AGENTS_DIR}"/"${ENV_ID}"/"${ROBOT_MODEL}""
+
 ## Arguments
-ENJOY_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --folder "${LOG_DIR}" --reward-log "${REWARD_LOG_DIR}" --env-kwargs "${ENV_ARGS}" "${EXTRA_ARGS}""
-## Add trained agent to args in order to continue training
-if [ ! -z "${CHECKPOINT}" ]; then
-    ENJOY_ARGS=""${ENJOY_ARGS}" --load-checkpoint "${CHECKPOINT}""
-fi
+ENJOY_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --folder "${LOG_DIR}" --env-kwargs "${ENV_ARGS}" "${EXTRA_ARGS}""
 
 ## Execute enjoy script
 ENJOY_CMD="ros2 run drl_grasping enjoy.py "${ENJOY_ARGS}""

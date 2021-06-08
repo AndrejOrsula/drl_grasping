@@ -10,7 +10,6 @@ SEED="69"
 # ENV_ID="Reach-Octree-Gazebo-v0"
 # ENV_ID="Reach-OctreeWithColor-Gazebo-v0"
 ## Grasp
-# ENV_ID="Grasp-Gazebo-v0"
 # ENV_ID="Grasp-Octree-Gazebo-v0"
 ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 
@@ -45,6 +44,9 @@ LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/optimize/logs"
 ## Path to tensorboard logs
 TENSORBOARD_LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/optimize/tensorboard_logs"
 
+## Arguments for the environment
+ENV_ARGS="robot_model:\"${ROBOT_MODEL}\""
+
 ## Extra arguments to be passed into the script
 EXTRA_ARGS=""
 
@@ -69,7 +71,7 @@ terminate_subprocesses() {
 trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
 
 ## Arguments
-OPTIMIZE_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --optimize-hyperparameters --sampler "${OPTIMIZE_SAMPLER}" --pruner "${OPTIMIZE_PRUNER}" --n-timesteps "${OPTIMIZE_N_TIMESTAMPS}" --n-startup-trials "${OPTIMIZE_N_STARTUP_TRIALS}" --n-trials "${OPTIMIZE_N_TRIALS}" --n-evaluations "${OPTIMIZE_N_EVALUATIONS}" --eval-episodes "${OPTIMIZE_EVAL_EPISODES}""
+OPTIMIZE_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --optimize-hyperparameters --sampler "${OPTIMIZE_SAMPLER}" --pruner "${OPTIMIZE_PRUNER}" --n-timesteps "${OPTIMIZE_N_TIMESTAMPS}" --n-startup-trials "${OPTIMIZE_N_STARTUP_TRIALS}" --n-trials "${OPTIMIZE_N_TRIALS}" --n-evaluations "${OPTIMIZE_N_EVALUATIONS}" --eval-episodes "${OPTIMIZE_EVAL_EPISODES}" --env-kwargs "${ENV_ARGS}" "${EXTRA_ARGS}""
 ## Add preload replay buffer to args in order to preload buffer with transitions that use custom heuristic (demonstration)
 if [ ! -z "${PRELOAD_REPLAY_BUFFER}" ]; then
     OPTIMIZE_ARGS=""${OPTIMIZE_ARGS}" --preload-replay-buffer "${PRELOAD_REPLAY_BUFFER}""
