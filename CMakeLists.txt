@@ -67,7 +67,7 @@ install(PROGRAMS
 )
 
 # Install directories
-install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch pretrained_agents DESTINATION share/${PROJECT_NAME})
 
 # Setup the project
 ament_package()

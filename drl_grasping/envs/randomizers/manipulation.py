@@ -136,13 +136,12 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                             gazebo=gazebo)
 
             # Insert world plugins
-            # TODO: fix (currently placed in default world)
-            # if task._insert_scene_broadcaster_plugin:
-            #     task.world.to_gazebo().insert_world_plugin("ignition-gazebo-scene-broadcaster-system",
-            #                                                "ignition::gazebo::systems::SceneBroadcaster")
-            # if task._insert_user_commands_plugin:
-            #     task.world.to_gazebo().insert_world_plugin("ignition-gazebo-user-commands-system",
-            #                                                "ignition::gazebo::systems::UserCommands")
+            if task._insert_scene_broadcaster_plugin:
+                task.world.to_gazebo().insert_world_plugin("ignition-gazebo-scene-broadcaster-system",
+                                                           "ignition::gazebo::systems::SceneBroadcaster")
+            if task._insert_user_commands_plugin:
+                task.world.to_gazebo().insert_world_plugin("ignition-gazebo-user-commands-system",
+                                                           "ignition::gazebo::systems::UserCommands")
             self.__env_initialised = True
 
         # Randomize models if needed

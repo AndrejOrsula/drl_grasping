@@ -84,7 +84,7 @@ class Manipulation(task.Task, abc.ABC):
     _object_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
 
     _insert_scene_broadcaster_plugin: bool = True
-    _insert_user_commands_plugin: bool = False
+    _insert_user_commands_plugin: bool = True
 
     _relative_position_scaling_factor: float = 0.1
     _z_relative_orientation_scaling_factor: float = np.pi/4.0

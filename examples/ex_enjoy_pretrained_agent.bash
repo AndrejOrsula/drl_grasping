@@ -50,13 +50,7 @@ terminate_subprocesses() {
 trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
 
 ## Locate directory of pretrained agents
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-if [[ "$SCRIPT_DIR" == *"drl_grasping/install/lib/drl_grasping"* ]]; then
-    DRL_GRASPING_DIR="$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")"
-else
-    DRL_GRASPING_DIR="$(dirname "$SCRIPT_DIR")"
-fi
-PRETRAINED_AGENTS_DIR=""${DRL_GRASPING_DIR}"/pretrained_agents"
+PRETRAINED_AGENTS_DIR=""$(ros2 pkg prefix drl_grasping)"/share/drl_grasping/pretrained_agents"
 LOG_DIR=""${PRETRAINED_AGENTS_DIR}"/"${ENV_ID}"/"${ROBOT_MODEL}""
 
 ## Arguments
