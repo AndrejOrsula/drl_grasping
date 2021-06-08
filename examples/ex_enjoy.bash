@@ -43,9 +43,9 @@ EXTRA_ARGS=""
 ########################################################################################################################
 
 ## Spawn ign_moveit2 subprocess in background, while making sure to forward termination signals
-IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless.launch.py"
+IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2.launch.py"
 if [ "$ROBOT_MODEL" = "ur5_rg2" ]; then
-    IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless_ur5_rg2.launch.py"
+    IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_ur5_rg2.launch.py"
 fi
 echo "Launching ign_moveit2 in background:"
 echo "${IGN_MOVEIT2_CMD}"
