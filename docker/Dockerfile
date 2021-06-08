@@ -60,7 +60,7 @@ RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt
 ### Install ignition
 ARG IGNITION_VERSION=dome
 ENV IGNITION_VERSION=${IGNITION_VERSION}
-RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list' && \
+RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" > /etc/apt/sources.list.d/gazebo-stable.list' && \
     wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add - && \
     apt-get update && \
     apt-get install -yq --no-install-recommends \
@@ -74,22 +74,18 @@ RUN pip3 install \
         torchvision==0.8.2 \
         tqdm \
         yacs
-# RUN pip3 install \
-#         torch \
-#         torchvision \
-#         tqdm \
-#         yacs
 
 ### Install stable_baselines3
 RUN apt-get update && \
     apt-get install -yq --no-install-recommends \
-    libopenmpi-dev \
-    zlib1g-dev && \
+        libopenmpi-dev \
+        zlib1g-dev && \
     rm -rf /var/lib/apt/lists/* && \
     pip3 install \
         seaborn \
         optuna \
-        stable-baselines3[extra]
+        stable-baselines3[extra] \
+        sb3-contrib
 
 ### Set working directory for building dependencies
 ARG DRL_GRASPING_DIR=/root/drl_grasping
@@ -135,7 +131,7 @@ RUN apt-get update && \
     pip3 install . && \
     rm -rf /var/lib/apt/lists/*
 
-### Upgrade numpy (else iDynTree fails)
+### Upgrade numpy (else iDynTree fails, not sure why)
 RUN pip3 install -U \
         numpy
 
@@ -176,12 +172,8 @@ RUN pip3 install \
         trimesh \
         pcg_gazebo
 
-### Install stable-baselines3 contrib for TQC algo
-RUN pip3 install \
-        sb3-contrib
-
 ARG DRL_GRASPING_GIT_BRANCH=master
-ARG DRL_GRASPING_DOCKER_VERSION=0.12.0
+ARG DRL_GRASPING_DOCKER_VERSION=1.0.0
 RUN apt-get update && mkdir -p ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
     cd ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
     git clone --recursive https://github.com/AndrejOrsula/drl_grasping.git -b ${DRL_GRASPING_GIT_BRANCH} && \
@@ -195,6 +187,14 @@ RUN apt-get update && mkdir -p ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
 
 ### Set working project directory
 WORKDIR ${DRL_GRASPING_DIR}
+
+### Download datasets and model for the default robot
+# TODO: Optimize this step
+RUN source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+    source ${DRL_GRASPING_REPOS_DIR}/drl_grasping/install/local_setup.bash && \
+    ros2 run drl_grasping dataset_download_test.bash && \
+    git clone https://github.com/AndrejOrsula/pbr_textures.git -b 1k_test --depth 1 && \
+    ign fuel download -t model -u https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/panda
 
 ### Add entrypoint sourcing the environment
 COPY ./entrypoint.bash ./entrypoint.bash

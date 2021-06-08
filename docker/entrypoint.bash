@@ -15,7 +15,12 @@ export PYTHONPATH=${DRL_GRASPING_DEPS_DIR}/O-CNN/octree/build/python:${PYTHONPAT
 source ${DRL_GRASPING_REPOS_DIR}/drl_grasping/install/local_setup.bash
 
 # PBR textures (optional for random ground plane)
-export DRL_GRASPING_PBR_TEXTURES_DIR="${DRL_GRASPING_DIR}/pbr_textures"
+if [ -d "${DRL_GRASPING_DIR}/pbr_textures" ] 
+then
+    export DRL_GRASPING_PBR_TEXTURES_DIR="${DRL_GRASPING_DIR}/pbr_textures"
+else
+    export DRL_GRASPING_PBR_TEXTURES_DIR="${DRL_GRASPING_DIR}/default_pbr_textures"
+fi
 
 # If a CMD is passed, execute it
 exec "$@"

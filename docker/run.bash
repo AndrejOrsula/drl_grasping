@@ -58,7 +58,6 @@ docker run -it \
     -v "/etc/localtime:/etc/localtime:ro" \
     -v "/dev/input:/dev/input" \
     -v "$PWD/training:/root/drl_grasping/training" \
-    -v "$HOME/.ignition:/root/.ignition" \
     $ADDITIONAL_VOLUMES \
     --network host \
     --ipc host \
@@ -69,3 +68,6 @@ docker run -it \
     $DOCKER_OPTS \
     $IMG \
     ${@:2}
+
+    # Use this volume for custom config and models that are stored locally on your machine
+    # -v "$HOME/.ignition:/root/.ignition"
