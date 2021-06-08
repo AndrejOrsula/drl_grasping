@@ -40,6 +40,9 @@ LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/logs"
 ## Path to tensorboard logs
 TENSORBOARD_LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/tensorboard_logs"
 
+## Arguments for the environment
+ENV_ARGS="robot_model:\"${ROBOT_MODEL}\""
+
 ## Extra arguments to be passed into the script
 EXTRA_ARGS=""
 # EXTRA_ARGS="--save-replay-buffer"
@@ -65,7 +68,7 @@ terminate_subprocesses() {
 trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
 
 ## Arguments
-TRAIN_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --eval-freq "${EVAL_FREQUENCY}" --eval-episodes "${EVAL_EPISODES}" "${EXTRA_ARGS}""
+TRAIN_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --eval-freq "${EVAL_FREQUENCY}" --eval-episodes "${EVAL_EPISODES}" --env-kwargs "${ENV_ARGS}" "${EXTRA_ARGS}""
 ## Add trained agent to args in order to continue training
 if [ ! -z "${TRAINED_AGENT}" ]; then
     TRAIN_ARGS=""${TRAIN_ARGS}" --trained-agent "${LOG_DIR}"/"${ALGO}"/"${TRAINED_AGENT}""

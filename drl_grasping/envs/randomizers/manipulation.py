@@ -46,7 +46,8 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                  invisible_world_bottom_collision_plane: bool = True,
                  visualise_workspace: bool = False,
                  visualise_spawn_volume: bool = False,
-                 verbose: bool = False):
+                 verbose: bool = False,
+                 **kwargs):
 
         # Initialize base classes
         randomizers.abc.TaskRandomizer.__init__(self)
@@ -54,7 +55,8 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                                    randomize_after_rollouts_num=physics_rollouts_num)
         gazebo_env_randomizer.GazeboEnvRandomizer.__init__(self,
                                                            env=env,
-                                                           physics_randomizer=self)
+                                                           physics_randomizer=self,
+                                                           **kwargs)
 
         # Randomizers, their frequency and counters for different randomizers
         self._robot_random_joint_positions = robot_random_joint_positions

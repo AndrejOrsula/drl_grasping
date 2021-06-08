@@ -23,6 +23,9 @@ ROBOT_MODEL="panda"
 # ALGO="td3"
 ALGO="tqc"
 
+## Arguments for the environment
+ENV_ARGS="robot_model:\"${ROBOT_MODEL}\""
+
 ## Checkpoint to load
 CHECKPOINT=0
 
@@ -30,8 +33,6 @@ CHECKPOINT=0
 TRAINING_DIR="training"
 ## Path to logs
 LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/logs"
-## Path to tensorboard logs
-TENSORBOARD_LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/tensorboard_logs"
 ## Path to reward logs (enjoy)
 REWARD_LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/reward_logs"
 
@@ -59,7 +60,7 @@ terminate_subprocesses() {
 trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
 
 ## Arguments
-ENJOY_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --folder "${LOG_DIR}" --reward-log "${REWARD_LOG_DIR}""
+ENJOY_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --folder "${LOG_DIR}" --reward-log "${REWARD_LOG_DIR}" --env-kwargs "${ENV_ARGS}" "${EXTRA_ARGS}""
 ## Add trained agent to args in order to continue training
 if [ ! -z "${CHECKPOINT}" ]; then
     ENJOY_ARGS=""${ENJOY_ARGS}" --load-checkpoint "${CHECKPOINT}""
