@@ -10,7 +10,6 @@ SEED="69"
 # ENV_ID="Reach-Octree-Gazebo-v0"
 # ENV_ID="Reach-OctreeWithColor-Gazebo-v0"
 ## Grasp
-# ENV_ID="Grasp-Gazebo-v0"
 # ENV_ID="Grasp-Octree-Gazebo-v0"
 ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 
