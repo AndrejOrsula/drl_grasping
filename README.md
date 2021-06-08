@@ -10,7 +10,7 @@ Below are some animations of employing learned policies on novel scenes for Pand
   <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim_ur5_rg2.webp" alt="Evaluation of a trained policy on novel scenes for UR5 robot"/>
 </p>
 
-Example of Sim2Real transfer on a real UR5 can be seen below (trained inside simulation, no re-training in real world).
+Example of Sim2Real transfer on UR5 can be seen below (trained inside simulation, no re-training in real world).
 <p align="center" float="middle">
   <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim2real.webp" alt="Sim2Real evaluation of a trained policy on a real UR5 robot"/>
 </p>
@@ -18,6 +18,8 @@ Example of Sim2Real transfer on a real UR5 can be seen below (trained inside sim
 ## Instructions
 
 <details><summary>Local Installation (click to expand)</summary>
+
+> If you just want to try this project without lengthy installation, consider using Docker instead.
 
 ### Requirements
 
@@ -66,6 +68,8 @@ rosdep install -r --from-paths src -i -y --rosdistro ${ROS_DISTRO}
 colcon build --merge-install --symlink-install --cmake-args "-DCMAKE_BUILD_TYPE=Release"
 ```
 
+> Use `git clone --recursive https://github.com/AndrejOrsula/drl_grasping.git` if you wish to use one of the pre-trained agents.
+
 </details>
 
 <details><summary>Docker (click to expand)</summary>
@@ -94,23 +98,29 @@ sudo systemctl restart docker
 
 ### Pre-built Docker Image
 
-The easiest way to try out this project is by using a pre-built Docker image that can be pulled from [Docker Hub](https://hub.docker.com/repository/docker/andrejorsula/drl_grasping). Currently, there is only a development image available (large, but allows editing and recompiling). You can pull the latest tag with the following command.
+The easiest way to try out this project is by using a pre-built Docker image that can be pulled from [Docker Hub](https://hub.docker.com/repository/docker/andrejorsula/drl_grasping). Currently, there is only a development image available (large, but allows editing and recompiling), which also contains the default testing datasets for ease of use. You can pull the latest tag with the following command (~7.5 GB with all parent images).
 
 ```bash
 docker pull andrejorsula/drl_grasping:latest
 ```
 
-For running of the container, please use the included [docker/run.bash](docker/run.bash) script that is included with this repo. It significantly simplifies the setup with volumes and allows use of graphical interfaces for Ignition and RViZ.
+For running of the container, please use the included [docker/run.bash](docker/run.bash) script that is included with this repo. It significantly simplifies the setup with volumes and allows use of graphical interfaces for Ignition Gazebo GUI client and RViZ.
 
 ```bash
 <drl_grasping dir>/docker/run.bash andrejorsula/drl_grasping:latest /bin/bash
+```
+
+If desired, you can also run examples and scripts directly with this setup, e.g. enjoying of pre-trained agents discussed below.
+
+```bash
+<drl_grasping dir>/docker/run.bash andrejorsula/drl_grasping:latest ros2 run drl_grasping ex_enjoy_pretrained_agent.bash
 ```
 
 > If you are struggling to get CUDA working on your system with Nvidia GPU (no `nvidia-smi` output), you might need to use a different version of CUDA base image that supports the version of your driver.
 
 ### Building a New Image
 
-[Dockerfile](docker/Dockerfile) is included with this repo but all source code is pulled from GitHub when building an image. There is nothing special about it, so just build it as any other Dockerfile (`docker build . -t ...`) and adjust the arguments or file itself if needed.
+[Dockerfile](docker/Dockerfile) is included with this repo but all source code is pulled from GitHub when building an image. There is nothing special about it, so just build it as any other Dockerfile (`docker build . -t ...`) and adjust arguments or the recipe itself if needed.
 
 </details>
 
@@ -133,21 +143,39 @@ This enables:
 
 <details><summary>Using Pre-trained Agents (click to expand)</summary>
 
-### TODO
+### Enjoy Pre-trained Agents
 
+The [pretrained_agents](https://github.com/AndrejOrsula/drl_grasping_pretrained_agents) submodule contains a selection of few agents that are already trained and ready to be enjoyed (remember to `git clone --recursive`/`git submodule update --init` if you wish to use these). To use them, you can use [`ex_enjoy_pretrained_agent.bash`](examples/ex_enjoy_pretrained_agent.bash). You should see RViZ 2 and Ignition Gazebo GUI client with an agent trying to grasp one of four objects in a fully randomised novel environment, while the performance of the agent is logged in your terminal.
 
-[`ex_train`](examples/ex_train.bash)
+```bash
+ros2 run drl_grasping ex_enjoy_pretrained_agent.bash
+```
 
+The default agent is for `Grasp-OctreeWithColor-Gazebo-v0` environment with Panda robot and TQC. You can modify these to any of the other pre-trained agent directly in the example script according to the support matrix from [AndrejOrsula/drl_grasping_pretrained_agents](https://github.com/AndrejOrsula/drl_grasping_pretrained_agents).
+
+> Under the hood, all examples launch a setup ROS 2 script for interfacing MoveIt 2 and Ignition, and a corresponding Python script for enjoying or training. All examples print these commands out if you are interested in running the commands separately.
 
 </details>
 
 <details><summary>Training New Agents (click to expand)</summary>
 
-### TODO
+### Training of Agent
 
+To train your own agent, you can start with the [`ex_train.bash`](examples/ex_train.bash) example. You can customise this example script,  configuration of the environment and all hyperparameters to your needs (see below). By default, headless mode is used during training to reduce computational load. If you want to see what is going on, use `ign gazebo -g` or `ROS_DOMAIN_ID=69 rviz2` and visualise point cloud of the scene.
 
-[`ex_enjoy`](examples/ex_enjoy.bash)
+```bash
+ros2 run drl_grasping ex_train.bash
+```
 
+Depending on your hardware and hyperparameter configuration, the training can be a very lengthy process. It takes nearly three days to train an agent for 500k steps on a 130W laptop with a dedicated GPU.
+
+### Enjoying of Trained Agents
+
+To enjoy an agent that you have trained yourself, look into [`ex_enjoy.bash`](examples/ex_enjoy.bash) example. Similar to training, change the environment ID, algorithm and robot model. Furthermore, select a specific checkpoint that you want to run. RViZ 2 and Ignition Gazebo GUI client are enabled by default.
+
+```bash
+ros2 run drl_grasping ex_enjoy.bash
+```
 
 </details>
 
