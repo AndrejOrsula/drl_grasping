@@ -2,6 +2,7 @@ from gym.envs.registration import register
 
 from .reach import Reach, ReachColorImage, ReachDepthImage, ReachOctree
 from .grasp import Grasp, GraspOctree
+from .fidget_spin import FidgetSpin, FidgetSpinOctree
 
 # Reach
 REACH_MAX_EPISODE_STEPS: int = 100
@@ -184,4 +185,39 @@ register(
             'octree_n_stacked': 3,
             'octree_max_size': 75000,
             'proprieceptive_observations': True,
+            'verbose': False})
+
+
+# FidgetSpin
+FIDGET_SPIN_MAX_EPISODE_STEPS: int = 500
+FIDGET_SPIN_AGENT_RATE: float = 30.0
+FIDGET_SPIN_PHYSICS_RATE: float = 900.0
+FIDGET_SPIN_RTF: float = 10.0
+register(
+    id='FidgetSpin-Octree-Gazebo-v0',
+    entry_point='gym_ignition.runtimes.gazebo_runtime:GazeboRuntime',
+    max_episode_steps=FIDGET_SPIN_MAX_EPISODE_STEPS,
+    kwargs={'task_cls': FidgetSpinOctree,
+            'agent_rate': FIDGET_SPIN_AGENT_RATE,
+            'physics_rate': FIDGET_SPIN_PHYSICS_RATE,
+            'real_time_factor': FIDGET_SPIN_RTF,
+            'octree_depth': 4,
+            'octree_full_depth': 2,
+            'octree_include_color': False,
+            'octree_n_stacked': 1,
+            'octree_max_size': 50000,
+            'verbose': False})
+register(
+    id='FidgetSpin-OctreeWithColor-Gazebo-v0',
+    entry_point='gym_ignition.runtimes.gazebo_runtime:GazeboRuntime',
+    max_episode_steps=FIDGET_SPIN_MAX_EPISODE_STEPS,
+    kwargs={'task_cls': FidgetSpinOctree,
+            'agent_rate': FIDGET_SPIN_AGENT_RATE,
+            'physics_rate': FIDGET_SPIN_PHYSICS_RATE,
+            'real_time_factor': FIDGET_SPIN_RTF,
+            'octree_depth': 4,
+            'octree_full_depth': 2,
+            'octree_include_color': True,
+            'octree_n_stacked': 1,
+            'octree_max_size': 50000,
             'verbose': False})

@@ -1,6 +1,9 @@
 # Deep Reinforcement Learning for Robotic Grasping from Octrees
 
+> Branch info: Adds a new task for spinning a [fidget spinner](https://app.ignitionrobotics.org/AndrejOrsula/fuel/models/fidget_spinner) by the use of [Shadow Hand](https://app.ignitionrobotics.org/AndrejOrsula/fuel/models/shadow_hand). The environment is kinda hacky but it is possible to train with octree-based observations and effort-controlled joints (no good results so far though). As it is just for fun, this branch probably won't get merged into master.
+
 The focus of this project is to apply Deep Reinforcement Learning to acquire a robust policy that allows robots to grasp diverse objects from compact 3D observations in form of octrees. It is part of my [Master's Thesis](https://github.com/AndrejOrsula/master_thesis) conducted at Aalborg University, Denmark.
+
 
 Below are some animations of employing learned policies on novel scenes for Panda and UR5 robots.
 <p align="center" float="middle">

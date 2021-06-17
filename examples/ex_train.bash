@@ -11,7 +11,10 @@ SEED="42"
 # ENV_ID="Reach-OctreeWithColor-Gazebo-v0"
 ## Grasp
 # ENV_ID="Grasp-Octree-Gazebo-v0"
-ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
+# ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
+## FidgetSpin
+# ENV_ID="FidgetSpin-Octree-Gazebo-v0"
+ENV_ID="FidgetSpin-OctreeWithColor-Gazebo-v0"
 
 ## Robot model
 ROBOT_MODEL="panda"
@@ -40,34 +43,34 @@ LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/logs"
 TENSORBOARD_LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/tensorboard_logs"
 
 ## Arguments for the environment
-ENV_ARGS="robot_model:\"${ROBOT_MODEL}\""
+# ENV_ARGS="robot_model:\"${ROBOT_MODEL}\""
 
 ## Extra arguments to be passed into the script
-EXTRA_ARGS=""
-# EXTRA_ARGS="--save-replay-buffer"
+# EXTRA_ARGS=""
+EXTRA_ARGS="--save-replay-buffer"
 
 ########################################################################################################################
 ########################################################################################################################
 
-## Spawn ign_moveit2 subprocess in background, while making sure to forward termination signals
-IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless.launch.py"
-if [ "$ROBOT_MODEL" = "ur5_rg2" ]; then
-    IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless_ur5_rg2.launch.py"
-fi
-echo "Launching ign_moveit2 in background:"
-echo "${IGN_MOVEIT2_CMD}"
-echo ""
-${IGN_MOVEIT2_CMD} &
-## Kill all subprocesses when SIGINT SIGTERM EXIT are received
-subprocess_pid_ign_moveit2="${!}"
-terminate_subprocesses() {
-    echo "INFO: Caught signal, killing all subprocesses..."
-    pkill -P "${subprocess_pid_ign_moveit2}"
-}
-trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
+# ## Spawn ign_moveit2 subprocess in background, while making sure to forward termination signals
+# IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless.launch.py"
+# if [ "$ROBOT_MODEL" = "ur5_rg2" ]; then
+#     IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless_ur5_rg2.launch.py"
+# fi
+# echo "Launching ign_moveit2 in background:"
+# echo "${IGN_MOVEIT2_CMD}"
+# echo ""
+# ${IGN_MOVEIT2_CMD} &
+# ## Kill all subprocesses when SIGINT SIGTERM EXIT are received
+# subprocess_pid_ign_moveit2="${!}"
+# terminate_subprocesses() {
+#     echo "INFO: Caught signal, killing all subprocesses..."
+#     pkill -P "${subprocess_pid_ign_moveit2}"
+# }
+# trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
 
 ## Arguments
-TRAIN_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --eval-freq "${EVAL_FREQUENCY}" --eval-episodes "${EVAL_EPISODES}" --env-kwargs "${ENV_ARGS}" "${EXTRA_ARGS}""
+TRAIN_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --eval-freq "${EVAL_FREQUENCY}" --eval-episodes "${EVAL_EPISODES}""
 ## Add trained agent to args in order to continue training
 if [ ! -z "${TRAINED_AGENT}" ]; then
     TRAIN_ARGS=""${TRAIN_ARGS}" --trained-agent "${LOG_DIR}"/"${ALGO}"/"${TRAINED_AGENT}""

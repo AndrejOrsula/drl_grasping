@@ -11,7 +11,10 @@ SEED="77"
 # ENV_ID="Reach-OctreeWithColor-Gazebo-v0"
 ## Grasp
 # ENV_ID="Grasp-Octree-Gazebo-v0"
-ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
+# ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
+## FidgetSpin
+# ENV_ID="FidgetSpin-Octree-Gazebo-v0"
+ENV_ID="FidgetSpin-OctreeWithColor-Gazebo-v0"
 
 ## Robot model
 ROBOT_MODEL="panda"
@@ -23,7 +26,7 @@ ROBOT_MODEL="panda"
 ALGO="tqc"
 
 ## Arguments for the environment
-ENV_ARGS="robot_model:\"${ROBOT_MODEL}\""
+# ENV_ARGS="robot_model:\"${ROBOT_MODEL}\""
 
 ## Checkpoint to load
 CHECKPOINT=0
@@ -41,25 +44,25 @@ EXTRA_ARGS=""
 ########################################################################################################################
 ########################################################################################################################
 
-## Spawn ign_moveit2 subprocess in background, while making sure to forward termination signals
-IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2.launch.py"
-if [ "$ROBOT_MODEL" = "ur5_rg2" ]; then
-    IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_ur5_rg2.launch.py"
-fi
-echo "Launching ign_moveit2 in background:"
-echo "${IGN_MOVEIT2_CMD}"
-echo ""
-${IGN_MOVEIT2_CMD} &
-## Kill all subprocesses when SIGINT SIGTERM EXIT are received
-subprocess_pid_ign_moveit2="${!}"
-terminate_subprocesses() {
-    echo "INFO: Caught signal, killing all subprocesses..."
-    pkill -P "${subprocess_pid_ign_moveit2}"
-}
-trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
+# ## Spawn ign_moveit2 subprocess in background, while making sure to forward termination signals
+# IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2.launch.py"
+# if [ "$ROBOT_MODEL" = "ur5_rg2" ]; then
+#     IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_ur5_rg2.launch.py"
+# fi
+# echo "Launching ign_moveit2 in background:"
+# echo "${IGN_MOVEIT2_CMD}"
+# echo ""
+# ${IGN_MOVEIT2_CMD} &
+# ## Kill all subprocesses when SIGINT SIGTERM EXIT are received
+# subprocess_pid_ign_moveit2="${!}"
+# terminate_subprocesses() {
+#     echo "INFO: Caught signal, killing all subprocesses..."
+#     pkill -P "${subprocess_pid_ign_moveit2}"
+# }
+# trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
 
 ## Arguments
-ENJOY_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --folder "${LOG_DIR}" --reward-log "${REWARD_LOG_DIR}" --env-kwargs "${ENV_ARGS}" "${EXTRA_ARGS}""
+ENJOY_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --folder "${LOG_DIR}" --reward-log "${REWARD_LOG_DIR}""
 ## Add trained agent to args in order to continue training
 if [ ! -z "${CHECKPOINT}" ]; then
     ENJOY_ARGS=""${ENJOY_ARGS}" --load-checkpoint "${CHECKPOINT}""
