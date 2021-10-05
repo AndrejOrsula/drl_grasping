@@ -3,7 +3,6 @@ from drl_grasping.algorithms.common.octree_replay_buffer import preprocess_stack
 from stable_baselines3.common.policies import register_policy
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.utils import is_vectorized_observation
-from stable_baselines3.common.vec_env.obs_dict_wrapper import ObsDictWrapper
 from sb3_contrib.tqc.policies import Actor, Critic
 from sb3_contrib.tqc.policies import TQCPolicy
 from torch import nn
@@ -253,9 +252,7 @@ class OctreeCnnPolicy(TQCPolicy):
         :return: the model's action and the next state
             (used in recurrent policies)
         """
-        if isinstance(observation, dict):
-            observation = ObsDictWrapper.convert_dict(observation)
-        else:
+        if not isinstance(observation, dict):
             observation = np.array(observation)
 
         vectorized_env = is_vectorized_observation(

@@ -169,6 +169,8 @@ class GraspCurriculum():
                                                                                             self._outside_workspace_reward)
                 self._normalize_negative_reward_multiplier = 1.0/max_negative_reward
 
+        self.logger = logger.Logger(folder=None,output_formats=[logger.KVWriter])
+
     def update_success_rate(self, is_success: bool):
         """
         Update success rate using moving average over last N episodes.
@@ -479,14 +481,14 @@ class GraspCurriculum():
         return reward
 
     def _log_curriculum(self):
-        logger.record("curriculum/current_stage",
+        self.logger.record("curriculum/current_stage",
                       self._stage, exclude="tensorboard")
-        logger.record("curriculum/current_stage_id",
+        self.logger.record("curriculum/current_stage_id",
                       self._stage.value, exclude="stdout")
-        logger.record("curriculum/current_success_rate",
+        self.logger.record("curriculum/current_success_rate",
                       self._success_rate)
         if self._restart_every_n_steps > 0:
-            logger.record("curriculum/steps_until_reset",
+            self.logger.record("curriculum/steps_until_reset",
                           self._reset_step_counter)
 
     GET_REWARD = {

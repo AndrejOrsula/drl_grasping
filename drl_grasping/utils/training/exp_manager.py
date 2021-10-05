@@ -9,7 +9,6 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
 from stable_baselines3.common.utils import constant_fn
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv, VecFrameStack, VecNormalize, VecTransposeImage
-from stable_baselines3.common.vec_env.obs_dict_wrapper import ObsDictWrapper
 from torch import nn as nn
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import argparse
@@ -565,12 +564,6 @@ class ExperimentManager(object):
             if self.verbose > 0:
                 print("Wrapping into a VecTransposeImage")
             env = VecTransposeImage(env)
-
-        # check if wrapper for dict support is needed
-        if self.algo == "her":
-            if self.verbose > 0:
-                print("Wrapping into a ObsDictWrapper")
-            env = ObsDictWrapper(env)
 
         return env
 
