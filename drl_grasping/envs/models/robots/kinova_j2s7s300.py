@@ -6,12 +6,12 @@ from typing import List, Tuple
 from os import path
 
 
-class Panda(model_wrapper.ModelWrapper,
-            model_with_file.ModelWithFile):
+class KinovaJ2s7s300(model_wrapper.ModelWrapper,
+                     model_with_file.ModelWithFile):
 
     def __init__(self,
                  world: scenario.World,
-                 name: str = 'panda',
+                 name: str = 'j2s7s300',
                  position: List[float] = (0, 0, 0),
                  orientation: List[float] = (1, 0, 0, 0),
                  model_file: str = None,
@@ -19,7 +19,16 @@ class Panda(model_wrapper.ModelWrapper,
                  arm_collision: bool = True,
                  hand_collision: bool = True,
                  separate_gripper_controller: bool = True,
-                 initial_joint_positions: List[float] = (0, 0, 0, -1.57, 0, 1.57, 0.79, 0, 0)):
+                 initial_joint_positions: List[float] = (3.14159,
+                                                         3.14159,
+                                                         3.14159,
+                                                         3.14159,
+                                                         3.14159,
+                                                         3.14159,
+                                                         3.14159,
+                                                         0.0,
+                                                         0.0,
+                                                         0.0)):
 
         # Get a unique model name
         model_name = get_unique_model_name(world, name)
@@ -67,50 +76,53 @@ class Panda(model_wrapper.ModelWrapper,
     def get_model_file(self, fuel=True) -> str:
         if fuel:
             return scenario_gazebo.get_model_file_from_fuel(
-                "https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/panda")
+                "https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/kinova_j2s7s300")
         else:
-            return "panda"
+            return "kinova_j2s7s300"
 
     @classmethod
     def get_joint_names(self) -> List[str]:
-        return ["panda_joint1",
-                "panda_joint2",
-                "panda_joint3",
-                "panda_joint4",
-                "panda_joint5",
-                "panda_joint6",
-                "panda_joint7",
-                "panda_finger_joint1",
-                "panda_finger_joint2"]
+        return ["j2s7s300_joint_1",
+                "j2s7s300_joint_2",
+                "j2s7s300_joint_3",
+                "j2s7s300_joint_4",
+                "j2s7s300_joint_5",
+                "j2s7s300_joint_6",
+                "j2s7s300_joint_7",
+                "j2s7s300_joint_finger_1",
+                "j2s7s300_joint_finger_2",
+                "j2s7s300_joint_finger_3"]
 
     @classmethod
     def get_joint_limits(self) -> List[Tuple[float, float]]:
-        return [(-2.897246558310587, 2.897246558310587),
-                (-1.762782544514273, 1.762782544514273),
-                (-2.897246558310587, 2.897246558310587),
-                (-3.07177948351002, -0.06981317007977318),
-                (-2.897246558310587, 2.897246558310587),
-                (-0.0174532925199433, 3.752457891787809),
-                (-2.897246558310587, 2.897246558310587),
-                (0.0, 0.04),
-                (0.0, 0.04)]
+        return [(-31.415927, 31.415927),
+                (0.820304748437, 5.46288055874),
+                (-31.415927, 31.415927),
+                (0.5235987755980001, 5.75958653158),
+                (-31.415927, -31.415927),
+                (1.1344640138, 5.14872129338),
+                (-31.415927, 31.415927),
+                (0.0, 1.3),
+                (0.0, 1.3),
+                (0.0, 1.3)]
 
     @classmethod
     def get_base_link_name(self) -> str:
-        return "panda_link0"
+        return "j2s7s300_link_base"
 
     @classmethod
     def get_ee_link_name(self) -> str:
-        return "panda_link8"
+        return "j2s7s300_end_effector"
 
     @classmethod
     def get_gripper_link_names(self) -> List[str]:
-        return ["panda_leftfinger",
-                "panda_rightfinger"]
+        return ["j2s7s300_link_finger_1",
+                "j2s7s300_link_finger_2",
+                "j2s7s300_link_finger_3"]
 
     @classmethod
     def get_finger_count(self) -> int:
-        return 2
+        return 3
 
     def get_initial_joint_positions(self) -> List[float]:
         return self.__initial_joint_positions
@@ -165,91 +177,101 @@ class Panda(model_wrapper.ModelWrapper,
             
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>3000</position_p_gain>
+            <position_p_gain>500</position_p_gain>
             <position_d_gain>15</position_d_gain>
-            <position_i_gain>1650</position_i_gain>
-            <position_i_min>-15</position_i_min>
-            <position_i_max>15</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
+            <position_i_gain>2000</position_i_gain>
+            <position_i_min>-7</position_i_min>
+            <position_i_max>7</position_i_max>
+            <position_cmd_min>-30.5</position_cmd_min>
+            <position_cmd_max>30.5</position_cmd_max>
 
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>9500</position_p_gain>
-            <position_d_gain>47.5</position_d_gain>
-            <position_i_gain>5225</position_i_gain>
-            <position_i_min>-47.5</position_i_min>
-            <position_i_max>47.5</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
+            <position_p_gain>1100</position_p_gain>
+            <position_d_gain>25</position_d_gain>
+            <position_i_gain>5000</position_i_gain>
+            <position_i_min>-9</position_i_min>
+            <position_i_max>9</position_i_max>
+            <position_cmd_min>-30.5</position_cmd_min>
+            <position_cmd_max>30.5</position_cmd_max>
 
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>6500</position_p_gain>
-            <position_d_gain>32.5</position_d_gain>
-            <position_i_gain>3575</position_i_gain>
-            <position_i_min>-32.5</position_i_min>
-            <position_i_max>32.5</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
+            <position_p_gain>950</position_p_gain>
+            <position_d_gain>17.5</position_d_gain>
+            <position_i_gain>3500</position_i_gain>
+            <position_i_min>-8</position_i_min>
+            <position_i_max>8</position_i_max>
+            <position_cmd_min>-30.5</position_cmd_min>
+            <position_cmd_max>30.5</position_cmd_max>
 
             <joint_name>%s</joint_name>
             <initial_position>%s1.57</initial_position>
-            <position_p_gain>6000</position_p_gain>
-            <position_d_gain>30</position_d_gain>
-            <position_i_gain>3300</position_i_gain>
-            <position_i_min>-30</position_i_min>
-            <position_i_max>30</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
+            <position_p_gain>800</position_p_gain>
+            <position_d_gain>12.5</position_d_gain>
+            <position_i_gain>2500</position_i_gain>
+            <position_i_min>-5</position_i_min>
+            <position_i_max>-5</position_i_max>
+            <position_cmd_min>-30.5</position_cmd_min>
+            <position_cmd_max>30.5</position_cmd_max>
 
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>2750</position_p_gain>
-            <position_d_gain>2.75</position_d_gain>
-            <position_i_gain>1515</position_i_gain>
-            <position_i_min>-6.88</position_i_min>
-            <position_i_max>6.88</position_i_max>
-            <position_cmd_min>-12</position_cmd_min>
-            <position_cmd_max>12</position_cmd_max>
+            <position_p_gain>750</position_p_gain>
+            <position_d_gain>7.5</position_d_gain>
+            <position_i_gain>2000</position_i_gain>
+            <position_i_min>-6</position_i_min>
+            <position_i_max>6</position_i_max>
+            <position_cmd_min>-13.6</position_cmd_min>
+            <position_cmd_max>13.6</position_cmd_max>
 
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>2500</position_p_gain>
-            <position_d_gain>2.5</position_d_gain>
-            <position_i_gain>1375</position_i_gain>
-            <position_i_min>-6.25</position_i_min>
-            <position_i_max>6.25</position_i_max>
-            <position_cmd_min>-12</position_cmd_min>
-            <position_cmd_max>12</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>2000</position_p_gain>
-            <position_d_gain>2</position_d_gain>
-            <position_i_gain>1100</position_i_gain>
+            <position_p_gain>600</position_p_gain>
+            <position_d_gain>6</position_d_gain>
+            <position_i_gain>1800</position_i_gain>
             <position_i_min>-5</position_i_min>
             <position_i_max>5</position_i_max>
-            <position_cmd_min>-12</position_cmd_min>
-            <position_cmd_max>12</position_cmd_max>
+            <position_cmd_min>-13.6</position_cmd_min>
+            <position_cmd_max>13.6</position_cmd_max>
 
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>250</position_p_gain>
-            <position_d_gain>0.2</position_d_gain>
-            <position_i_gain>50</position_i_gain>
-            <position_i_min>-10</position_i_min>
-            <position_i_max>10</position_i_max>
+            <position_p_gain>400</position_p_gain>
+            <position_d_gain>4</position_d_gain>
+            <position_i_gain>1200</position_i_gain>
+            <position_i_min>-3.5</position_i_min>
+            <position_i_max>3.5</position_i_max>
+            <position_cmd_min>-13.6</position_cmd_min>
+            <position_cmd_max>13.6</position_cmd_max>
+
+            <joint_name>%s</joint_name>
+            <initial_position>%s</initial_position>
+            <position_p_gain>8</position_p_gain>
+            <position_d_gain>0.35</position_d_gain>
+            <position_i_gain>105</position_i_gain>
+            <position_i_min>-3</position_i_min>
+            <position_i_max>3</position_i_max>
             <position_cmd_min>-20</position_cmd_min>
             <position_cmd_max>20</position_cmd_max>
 
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>250</position_p_gain>
-            <position_d_gain>0.2</position_d_gain>
-            <position_i_gain>50</position_i_gain>
-            <position_i_min>-10</position_i_min>
-            <position_i_max>10</position_i_max>
+            <position_p_gain>8</position_p_gain>
+            <position_d_gain>0.35</position_d_gain>
+            <position_i_gain>105</position_i_gain>
+            <position_i_min>-3</position_i_min>
+            <position_i_max>3</position_i_max>
+            <position_cmd_min>-20</position_cmd_min>
+            <position_cmd_max>20</position_cmd_max>
+
+            <joint_name>%s</joint_name>
+            <initial_position>%s</initial_position>
+            <position_p_gain>8</position_p_gain>
+            <position_d_gain>0.35</position_d_gain>
+            <position_i_gain>105</position_i_gain>
+            <position_i_min>-3</position_i_min>
+            <position_i_max>3</position_i_max>
             <position_cmd_min>-20</position_cmd_min>
             <position_cmd_max>20</position_cmd_max>
             </sdf>
@@ -271,7 +293,9 @@ class Panda(model_wrapper.ModelWrapper,
              self.get_joint_names()[7],
              str(self.get_initial_joint_positions()[7]),
              self.get_joint_names()[8],
-             str(self.get_initial_joint_positions()[8]))
+             str(self.get_initial_joint_positions()[8]),
+             self.get_joint_names()[9],
+             str(self.get_initial_joint_positions()[9]))
 
     def __get_joint_trajectory_controller_config_joints_only(self) -> str:
         # TODO: refactor into something more sensible
@@ -282,73 +306,73 @@ class Panda(model_wrapper.ModelWrapper,
             
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>3000</position_p_gain>
+            <position_p_gain>500</position_p_gain>
             <position_d_gain>15</position_d_gain>
-            <position_i_gain>1650</position_i_gain>
-            <position_i_min>-15</position_i_min>
-            <position_i_max>15</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
+            <position_i_gain>2000</position_i_gain>
+            <position_i_min>-7</position_i_min>
+            <position_i_max>7</position_i_max>
+            <position_cmd_min>-30.5</position_cmd_min>
+            <position_cmd_max>30.5</position_cmd_max>
 
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>9500</position_p_gain>
-            <position_d_gain>47.5</position_d_gain>
-            <position_i_gain>5225</position_i_gain>
-            <position_i_min>-47.5</position_i_min>
-            <position_i_max>47.5</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
+            <position_p_gain>1100</position_p_gain>
+            <position_d_gain>25</position_d_gain>
+            <position_i_gain>5000</position_i_gain>
+            <position_i_min>-9</position_i_min>
+            <position_i_max>9</position_i_max>
+            <position_cmd_min>-30.5</position_cmd_min>
+            <position_cmd_max>30.5</position_cmd_max>
 
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>6500</position_p_gain>
-            <position_d_gain>32.5</position_d_gain>
-            <position_i_gain>3575</position_i_gain>
-            <position_i_min>-32.5</position_i_min>
-            <position_i_max>32.5</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
+            <position_p_gain>950</position_p_gain>
+            <position_d_gain>17.5</position_d_gain>
+            <position_i_gain>3500</position_i_gain>
+            <position_i_min>-8</position_i_min>
+            <position_i_max>8</position_i_max>
+            <position_cmd_min>-30.5</position_cmd_min>
+            <position_cmd_max>30.5</position_cmd_max>
+
+            <joint_name>%s</joint_name>
+            <initial_position>%s1.57</initial_position>
+            <position_p_gain>800</position_p_gain>
+            <position_d_gain>12.5</position_d_gain>
+            <position_i_gain>2500</position_i_gain>
+            <position_i_min>-5</position_i_min>
+            <position_i_max>-5</position_i_max>
+            <position_cmd_min>-30.5</position_cmd_min>
+            <position_cmd_max>30.5</position_cmd_max>
 
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>6000</position_p_gain>
-            <position_d_gain>30</position_d_gain>
-            <position_i_gain>3300</position_i_gain>
-            <position_i_min>-30</position_i_min>
-            <position_i_max>30</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
+            <position_p_gain>750</position_p_gain>
+            <position_d_gain>7.5</position_d_gain>
+            <position_i_gain>2000</position_i_gain>
+            <position_i_min>-6</position_i_min>
+            <position_i_max>6</position_i_max>
+            <position_cmd_min>-13.6</position_cmd_min>
+            <position_cmd_max>13.6</position_cmd_max>
 
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>2750</position_p_gain>
-            <position_d_gain>2.75</position_d_gain>
-            <position_i_gain>1515</position_i_gain>
-            <position_i_min>-6.88</position_i_min>
-            <position_i_max>6.88</position_i_max>
-            <position_cmd_min>-12</position_cmd_min>
-            <position_cmd_max>12</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>2500</position_p_gain>
-            <position_d_gain>2.5</position_d_gain>
-            <position_i_gain>1375</position_i_gain>
-            <position_i_min>-6.25</position_i_min>
-            <position_i_max>6.25</position_i_max>
-            <position_cmd_min>-12</position_cmd_min>
-            <position_cmd_max>12</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>2000</position_p_gain>
-            <position_d_gain>2</position_d_gain>
-            <position_i_gain>1100</position_i_gain>
+            <position_p_gain>600</position_p_gain>
+            <position_d_gain>6</position_d_gain>
+            <position_i_gain>1800</position_i_gain>
             <position_i_min>-5</position_i_min>
             <position_i_max>5</position_i_max>
-            <position_cmd_min>-12</position_cmd_min>
-            <position_cmd_max>12</position_cmd_max>
+            <position_cmd_min>-13.6</position_cmd_min>
+            <position_cmd_max>13.6</position_cmd_max>
+
+            <joint_name>%s</joint_name>
+            <initial_position>%s</initial_position>
+            <position_p_gain>400</position_p_gain>
+            <position_d_gain>4</position_d_gain>
+            <position_i_gain>1200</position_i_gain>
+            <position_i_min>-3.5</position_i_min>
+            <position_i_max>3.5</position_i_max>
+            <position_cmd_min>-13.6</position_cmd_min>
+            <position_cmd_max>13.6</position_cmd_max>
             </sdf>
             """ % \
             (self.get_joint_names()[0],
@@ -375,21 +399,31 @@ class Panda(model_wrapper.ModelWrapper,
 
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>250</position_p_gain>
-            <position_d_gain>0.2</position_d_gain>
-            <position_i_gain>50</position_i_gain>
-            <position_i_min>-10</position_i_min>
-            <position_i_max>10</position_i_max>
+            <position_p_gain>8</position_p_gain>
+            <position_d_gain>0.35</position_d_gain>
+            <position_i_gain>105</position_i_gain>
+            <position_i_min>-3</position_i_min>
+            <position_i_max>3</position_i_max>
             <position_cmd_min>-20</position_cmd_min>
             <position_cmd_max>20</position_cmd_max>
 
             <joint_name>%s</joint_name>
             <initial_position>%s</initial_position>
-            <position_p_gain>250</position_p_gain>
-            <position_d_gain>0.2</position_d_gain>
-            <position_i_gain>50</position_i_gain>
-            <position_i_min>-10</position_i_min>
-            <position_i_max>10</position_i_max>
+            <position_p_gain>8</position_p_gain>
+            <position_d_gain>0.35</position_d_gain>
+            <position_i_gain>105</position_i_gain>
+            <position_i_min>-3</position_i_min>
+            <position_i_max>3</position_i_max>
+            <position_cmd_min>-20</position_cmd_min>
+            <position_cmd_max>20</position_cmd_max>
+
+            <joint_name>%s</joint_name>
+            <initial_position>%s</initial_position>
+            <position_p_gain>8</position_p_gain>
+            <position_d_gain>0.35</position_d_gain>
+            <position_i_gain>105</position_i_gain>
+            <position_i_min>-3</position_i_min>
+            <position_i_max>3</position_i_max>
             <position_cmd_min>-20</position_cmd_min>
             <position_cmd_max>20</position_cmd_max>
             </sdf>
@@ -397,7 +431,9 @@ class Panda(model_wrapper.ModelWrapper,
             (self.get_joint_names()[7],
              str(self.get_initial_joint_positions()[7]),
              self.get_joint_names()[8],
-             str(self.get_initial_joint_positions()[8]))
+             str(self.get_initial_joint_positions()[8]),
+             self.get_joint_names()[9],
+             str(self.get_initial_joint_positions()[9]))
 
     @classmethod
     def disable_collision(self,
@@ -417,19 +453,15 @@ class Panda(model_wrapper.ModelWrapper,
                     if not line.rstrip():
                         break
 
-                    # Once `<collision>` for lower links is encountered, skip that and all lines until `</collision>` is reached
                     if not arm_collision:
-                        if '<collision name="panda_link' in line:
+                        if '<collision name="j2s7s300_link' in line and not '<collision name="j2s7s300_link_finger' in line:
                             line = original_sdf_file.readline()
                             while not '</collision>' in line:
                                 line = original_sdf_file.readline()
                             continue
 
-                    # Same as for arm, but check for hand and both fingers
                     if not hand_collision:
-                        if '<collision name="panda_hand_collision">' in line \
-                            or '<collision name="panda_leftfinger_collision">' in line \
-                                or '<collision name="panda_rightfinger_collision">' in line:
+                        if '<collision name="j2s7s300_link_finger' in line:
                             line = original_sdf_file.readline()
                             while not '</collision>' in line:
                                 line = original_sdf_file.readline()

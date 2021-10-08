@@ -34,6 +34,16 @@ class Grasp(Manipulation, abc.ABC):
                                                                  -1.57,
                                                                  0.52,
                                                                  0.52)
+    _robot_initial_joint_positions_kinova_j2s7s300: Tuple[float, ...] = (3.78,
+                                                                         4.04,
+                                                                         -1.3,
+                                                                         1.73,
+                                                                         4.0,
+                                                                         1.66,
+                                                                         -2.21,
+                                                                         0.0,
+                                                                         0.0,
+                                                                         0.0)
 
     _workspace_volume: Tuple[float, float, float] = (0.24, 0.24, 0.2)
     _workspace_centre: Tuple[float, float, float] = (

@@ -77,6 +77,14 @@ class ReachOctree(Reach, abc.ABC):
                                            is_point_cloud=True,
                                            node_name=f'drl_grasping_point_cloud_sub_{self.id}')
 
+        robot_frame_id = ''
+        if 'panda' == robot_model:
+            robot_frame_id = 'panda_link0'
+        elif 'ur5_rg2' == robot_model:
+            robot_frame_id = 'base_link'
+        elif 'kinova_j2s7s300' == robot_model:
+            robot_frame_id = 'j2s7s300_link_base'
+
         self.octree_creator = OctreeCreator(min_bound=self._octree_min_bound,
                                             max_bound=self._octree_max_bound,
                                             depth=octree_depth,
@@ -85,7 +93,7 @@ class ReachOctree(Reach, abc.ABC):
                                             use_sim_time=True,
                                             debug_draw=False,
                                             debug_write_octree=False,
-                                            robot_frame_id='panda_link0' if 'panda' == robot_model else 'base_link',
+                                            robot_frame_id=robot_frame_id,
                                             node_name=f'drl_grasping_octree_creator_{self.id}')
 
         # Additional parameters

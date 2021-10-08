@@ -238,6 +238,14 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                         arm_collision=task._robot_arm_collision,
                                         hand_collision=task._robot_hand_collision,
                                         initial_joint_positions=task._robot_initial_joint_positions)
+        elif 'kinova_j2s7s300' == task._robot_model:
+            self._robot = models.KinovaJ2s7s300(world=task.world,
+                                        position=task._robot_position,
+                                        orientation=conversions.Quaternion.to_wxyz(
+                                            task._robot_quat_xyzw),
+                                        arm_collision=task._robot_arm_collision,
+                                        hand_collision=task._robot_hand_collision,
+                                        initial_joint_positions=task._robot_initial_joint_positions)
         task.robot_name = self._robot.name()
         task.robot_base_link_name = self._robot.get_base_link_name()
         task.robot_ee_link_name = self._robot.get_ee_link_name()
