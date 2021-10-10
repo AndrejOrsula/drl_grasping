@@ -31,7 +31,7 @@ for model_name in $model_names; do
     if [[ ! -d "$HOME/.ignition/fuel/fuel.ignitionrobotics.org/$owner/models/$model_name" ]]; then
         model_uri="https://fuel.ignitionrobotics.org/1.0/$owner/models/$model_name"
         echo "Info: Downloading model '$model_uri'"
-        ign fuel download -t model -u "$model_uri" &
+        ign fuel download -t model -u "$model_uri"
     fi
 done
 for job in $(jobs -p); do
