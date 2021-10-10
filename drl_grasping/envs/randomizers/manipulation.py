@@ -251,6 +251,11 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         task.robot_ee_link_name = self._robot.get_ee_link_name()
         task.robot_gripper_link_names = self._robot.get_gripper_link_names()
 
+        # Enable contact detection for all fingers
+        for gripper_link_name in task.robot_gripper_link_names:
+            finger = self._robot.to_gazebo().get_link(link_name=gripper_link_name)
+            finger.enable_contact_detection(True)
+
         # TODO (low priority): TF2 - Move this to task
         robot_base_frame_id = self._robot.link_names()[0]
         self._tf2_broadcaster.broadcast_tf(translation=task._robot_position,
