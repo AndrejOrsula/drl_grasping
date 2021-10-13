@@ -1,8 +1,7 @@
 from drl_grasping.control import MoveIt2
 from drl_grasping.utils.math import quat_mul
-from drl_grasping.utils.conversions import orientation_6d_to_quat
+from drl_grasping.utils.conversions import orientation_6d_to_quat, quat_to_xyzw
 from gym_ignition.base import task
-from gym_ignition.rbd import conversions
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
 from itertools import count
@@ -223,7 +222,7 @@ class Manipulation(task.Task, abc.ABC):
                 if xyzw:
                     target_quat_xyzw = absolute
                 else:
-                    target_quat_xyzw = conversions.Quaternion.to_xyzw(absolute)
+                    target_quat_xyzw = quat_to_xyzw(absolute)
             elif '6d' == representation:
                 vectors = tuple(absolute[x:x + 3]
                                 for x, _ in enumerate(absolute) if x % 3 == 0)
@@ -252,7 +251,7 @@ class Manipulation(task.Task, abc.ABC):
                     relative_quat_xyzw = relative
                 else:
                     relative_quat_xyzw = \
-                        conversions.Quaternion.to_xyzw(relative)
+                        quat_to_xyzw(relative)
             elif '6d' == representation:
                 vectors = tuple(relative[x:x + 3]
                                 for x, _ in enumerate(relative) if x % 3 == 0)
@@ -285,4 +284,4 @@ class Manipulation(task.Task, abc.ABC):
         """
 
         robot = self.world.get_model(self.robot_name).to_gazebo()
-        return conversions.Quaternion.to_xyzw(robot.get_link(self.robot_ee_link_name).orientation())
+        return quat_to_xyzw(robot.get_link(self.robot_ee_link_name).orientation())

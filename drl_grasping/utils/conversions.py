@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Union
 from scipy.spatial.transform import Rotation
 import sensor_msgs
 import geometry_msgs
@@ -99,3 +99,25 @@ def orientation_quat_to_6d(quat_xyzw: Tuple[float, float, float, float]) -> Tupl
 
     # Return first two columns (already normalised)
     return (tuple(rot_mat[:, 0]), tuple(rot_mat[:, 1]))
+
+
+def quat_to_wxyz(xyzw: Union[numpy.ndarray, Tuple[float, float, float, float]]) -> numpy.ndarray:
+
+    if isinstance(xyzw, tuple):
+        return xyzw[3], xyzw[0], xyzw[1], xyzw[2]
+
+    if xyzw.shape != (4,):
+        raise ValueError(xyzw)
+
+    return xyzw[[3, 0, 1, 2]]
+
+
+def quat_to_xyzw(wxyz: Union[numpy.ndarray, Tuple[float, float, float, float]]) -> numpy.ndarray:
+
+    if isinstance(wxyz, tuple):
+        return wxyz[1], wxyz[2], wxyz[3], wxyz[0]
+
+    if wxyz.shape != (4,):
+        raise ValueError(wxyz)
+
+    return wxyz[[1, 2, 3, 0]]

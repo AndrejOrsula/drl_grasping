@@ -3,7 +3,7 @@ from drl_grasping.utils import Tf2Broadcaster
 from gym_ignition import randomizers
 from gym_ignition.randomizers import gazebo_env_randomizer
 from gym_ignition.randomizers.gazebo_env_randomizer import MakeEnvCallable
-from gym_ignition.rbd import conversions
+from drl_grasping.utils.conversions import quat_to_wxyz
 from scenario import gazebo as scenario
 from scipy.spatial import distance
 from scipy.spatial.transform import Rotation
@@ -225,7 +225,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         if 'panda' == task._robot_model:
             self._robot = models.Panda(world=task.world,
                                        position=task._robot_position,
-                                       orientation=conversions.Quaternion.to_wxyz(
+                                       orientation=quat_to_wxyz(
                                            task._robot_quat_xyzw),
                                        arm_collision=task._robot_arm_collision,
                                        hand_collision=task._robot_hand_collision,
@@ -233,7 +233,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         elif 'ur5_rg2' == task._robot_model:
             self._robot = models.UR5RG2(world=task.world,
                                         position=task._robot_position,
-                                        orientation=conversions.Quaternion.to_wxyz(
+                                        orientation=quat_to_wxyz(
                                             task._robot_quat_xyzw),
                                         arm_collision=task._robot_arm_collision,
                                         hand_collision=task._robot_hand_collision,
@@ -241,7 +241,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         elif 'kinova_j2s7s300' == task._robot_model:
             self._robot = models.KinovaJ2s7s300(world=task.world,
                                                 position=task._robot_position,
-                                                orientation=conversions.Quaternion.to_wxyz(
+                                                orientation=quat_to_wxyz(
                                                     task._robot_quat_xyzw),
                                                 arm_collision=task._robot_arm_collision,
                                                 hand_collision=task._robot_hand_collision,
@@ -283,7 +283,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         # Create camera
         camera = models.Camera(world=task.world,
                                position=task._camera_position,
-                               orientation=conversions.Quaternion.to_wxyz(
+                               orientation=quat_to_wxyz(
                                    task._camera_quat_xyzw),
                                camera_type=task._camera_type,
                                width=task._camera_width,
@@ -317,7 +317,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
 
         ground = models.Ground(world=task.world,
                                position=task._ground_position,
-                               orientation=conversions.Quaternion.to_wxyz(
+                               orientation=quat_to_wxyz(
                                    task._ground_quat_xyzw),
                                size=task._ground_size)
         task.ground_name = ground.name()
@@ -339,7 +339,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         if 'box' == task._object_type:
             object_model = models.Box(world=task.world,
                                       position=task._object_spawn_centre,
-                                      orientation=conversions.Quaternion.to_wxyz(
+                                      orientation=quat_to_wxyz(
                                           task._object_quat_xyzw),
                                       size=task._object_dimensions,
                                       mass=task._object_mass,
@@ -350,7 +350,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         elif 'sphere' == task._object_type:
             object_model = models.Sphere(world=task.world,
                                          position=task._object_spawn_centre,
-                                         orientation=conversions.Quaternion.to_wxyz(
+                                         orientation=quat_to_wxyz(
                                              task._object_quat_xyzw),
                                          radius=task._object_dimensions[0],
                                          mass=task._object_mass,
@@ -361,7 +361,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         elif 'cylinder' == task._object_type:
             object_model = models.Cylinder(world=task.world,
                                            position=task._object_spawn_centre,
-                                           orientation=conversions.Quaternion.to_wxyz(
+                                           orientation=quat_to_wxyz(
                                                task._object_quat_xyzw),
                                            radius=task._object_dimensions[0],
                                            length=task._object_dimensions[1],
@@ -491,7 +491,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         # Move pose of the camera
         camera = task.world.to_gazebo().get_model(task.camera_name)
         camera.to_gazebo().reset_base_pose(position,
-                                           conversions.Quaternion.to_wxyz(quat_xyzw))
+                                           quat_to_wxyz(quat_xyzw))
 
         # TODO (low priority): TF2 - Move this to task
         camera_base_frame_id = models.Camera.frame_id_name(task.camera_name)
@@ -567,7 +567,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
         obj = task.world.to_gazebo().get_model(
             task.object_names[0]).to_gazebo()
         obj.reset_base_pose(task._object_spawn_centre,
-                            conversions.Quaternion.to_wxyz(task._object_quat_xyzw))
+                            quat_to_wxyz(task._object_quat_xyzw))
         obj.reset_base_world_velocity([0.0, 0.0, 0.0],
                                       [0.0, 0.0, 0.0])
 

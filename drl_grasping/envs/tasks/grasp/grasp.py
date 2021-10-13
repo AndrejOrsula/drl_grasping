@@ -1,6 +1,6 @@
 from drl_grasping.envs.tasks.manipulation import Manipulation
 from drl_grasping.envs.tasks.grasp.curriculum import GraspCurriculum
-from gym_ignition.rbd import conversions
+from drl_grasping.utils.conversions import quat_to_xyzw
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
 from typing import Tuple, List, Union, Dict
@@ -496,7 +496,7 @@ class Grasp(Manipulation, abc.ABC):
 
             # Orient gripper appropriately
             ee_orientation = np.array(self.get_ee_orientation())
-            object_orientation = conversions.Quaternion.to_xyzw(
+            object_orientation = quat_to_xyzw(
                 np.array(self.get_object_orientation(self.object_names[0])))
             if self._full_3d_orientation:
                 # self.__actual_actions[4:10] = orientation_6d
