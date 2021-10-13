@@ -30,27 +30,31 @@ Example of Sim2Real transfer on UR5 can be seen below (trained inside simulation
 
 ### Dependencies
 
-These dependencies are required to use the entirety of this project. If no "(tested with `version`)" is specified, the latest release from a relevant distribution is expected to function properly.
+These are the primary dependencies required to use this project.
 
-- [Python 3](https://www.python.org/downloads) (tested with `3.8`)
-- [PyTorch](https://github.com/pytorch/pytorch#installation) (tested with `1.7`)
-- [ROS 2 Foxy](https://index.ros.org/doc/ros2/Installation/Foxy)
-- [Ignition Dome](https://ignitionrobotics.org/docs/dome/install)
-- [MoveIt 2](https://moveit.ros.org/install-moveit2/source)
+- [Python 3.8](https://www.python.org/downloads)
+- ROS 2 [Foxy](https://docs.ros.org/en/foxy/Installation.html) OR [Rolling (recommended)](https://docs.ros.org/en/rolling/Installation.html)
+- Ignition [Dome](https://ignitionrobotics.org/docs/dome/install) OR [Fortress (recommended)](https://ignitionrobotics.org/docs/fortress)
+- [MoveIt 2](https://moveit.ros.org/install-moveit2/binary)
+  - Install/build a version based on the selected ROS 2 release
+- [ros_ign](https://github.com/ignitionrobotics/ros_ign/tree/ros2)
+  - Install/build a version based on the selected combination of ROS 2 release and Ignition version
 - [gym-ignition](https://github.com/robotology/gym-ignition)
   - [AndrejOrsula/gym-ignition](https://github.com/AndrejOrsula/gym-ignition) fork is currently required
 - [O-CNN](https://github.com/microsoft/O-CNN)
   - [AndrejOrsula/O-CNN](https://github.com/AndrejOrsula/O-CNN) fork is currently required
+- [PyTorch](https://pytorch.org/get-started/locally) (last tested on 1.9.1)
+- [Stable-Baselines3](https://stable-baselines3.readthedocs.io/en/master/guide/install.html) (last tested on 1.2.0) and [sb3-contrib](https://stable-baselines3.readthedocs.io/en/master/guide/sb3_contrib.html#installation)
 
-Several other dependencies can be installed via `pip` with this one-liner.
+Python dependencies are listed under [python_requirements.txt](./python_requirements.txt). All of these (including Pytorch and Stable-Baselines3) can be installed via `pip`.
 
 ```bash
-pip3 install numpy scipy optuna seaborn stable-baselines3[extra] sb3-contrib open3d trimesh pcg-gazebo
+pip3 install -r python_requirements.txt
 ```
 
-All other dependencies are pulled from git and built together with this repository, see [drl_grasping.repos](drl_grasping.repos) for more details.
+Dependencies for robot models (e.g. [panda_ign](https://github.com/AndrejOrsula/panda_ign)/[panda_moveit2_config](https://github.com/AndrejOrsula/panda_moveit2_config)) and interaction between MoveIt 2 and Ignition ([ign_moveit2](https://github.com/AndrejOrsula/ign_moveit2)) are pulled from git and built together with this repository, see [drl_grasping.repos](drl_grasping.repos) for more details.
 
-> In case you run into any problems with dependencies along the way, check [Dockerfile](docker/Dockerfile) that includes the full instructions.
+> In case you run into any problems with dependencies along the way, please check [Dockerfile](docker/Dockerfile) that includes the full instructions.
 
 ### Building
 
@@ -63,7 +67,7 @@ mkdir -p drl_grasping/src && cd drl_grasping/src
 git clone https://github.com/AndrejOrsula/drl_grasping.git
 # Import and install dependencies
 vcs import < drl_grasping/drl_grasping.repos && cd ..
-rosdep install -r --from-paths src -i -y --rosdistro ${ROS_DISTRO}
+rosdep install -r --from-paths src -i --rosdistro ${ROS_DISTRO}
 # Build with colcon
 colcon build --merge-install --symlink-install --cmake-args "-DCMAKE_BUILD_TYPE=Release"
 ```
@@ -98,7 +102,7 @@ sudo systemctl restart docker
 
 ### Pre-built Docker Image
 
-The easiest way to try out this project is by using a pre-built Docker image that can be pulled from [Docker Hub](https://hub.docker.com/repository/docker/andrejorsula/drl_grasping). Currently, there is only a development image available (large, but allows editing and recompiling), which also contains the default testing datasets for ease of use. You can pull the latest tag with the following command (~7.5 GB with all parent images).
+The easiest way to try out this project is by using a pre-built Docker image that can be pulled from [Docker Hub](https://hub.docker.com/repository/docker/andrejorsula/drl_grasping). Currently, there is only a development image available that also contains the default testing datasets (huge, but it is easy to use and allows editing and recompiling). You can pull the `latest` tag with the following command. Alternatively, each release has also its associated tag, e.g. `1.0.0`.
 
 ```bash
 docker pull andrejorsula/drl_grasping:latest
@@ -116,7 +120,7 @@ If desired, you can also run examples and scripts directly with this setup, e.g.
 <drl_grasping dir>/docker/run.bash andrejorsula/drl_grasping:latest ros2 run drl_grasping ex_enjoy_pretrained_agent.bash
 ```
 
-> If you are struggling to get CUDA working on your system with Nvidia GPU (no `nvidia-smi` output), you might need to use a different version of CUDA base image that supports the version of your driver.
+> If you are struggling to get CUDA working on your system with Nvidia GPU (no `nvidia-smi` output), you might need to use a different version of CUDA base image that supports the version of your driver. If that is the case, you need to build yourself a new Docker image.
 
 ### Building a New Image
 
@@ -138,6 +142,10 @@ This enables:
 - Use of `drl_grasping` Python module
 - Execution of scripts and examples via `ros2 run drl_grasping <executable>`
 - Launching of setup scripts via `ros2 launch drl_grasping <launch_script>`
+
+### Debug Level
+
+Environment variable `DRL_GRASPING_DEBUG_LEVEL` can be set `DEBUG`/`INFO`/`WARN`/`ERROR`/`DISABLED` to affect the level of logging for environments.
 
 </details>
 
@@ -161,7 +169,7 @@ The default agent is for `Grasp-OctreeWithColor-Gazebo-v0` environment with Pand
 
 ### Training of Agent
 
-To train your own agent, you can start with the [`ex_train.bash`](examples/ex_train.bash) example. You can customise this example script,  configuration of the environment and all hyperparameters to your needs (see below). By default, headless mode is used during training to reduce computational load. If you want to see what is going on, use `ign gazebo -g` or `ROS_DOMAIN_ID=69 rviz2` and visualise point cloud of the scene.
+To train your own agent, you can start with the [`ex_train.bash`](examples/ex_train.bash) example. You can customise this example script,  configuration of the environment and all hyperparameters to your needs (see below). By default, headless mode is used during training to reduce computational load. If you want to see what is going on, use `ign gazebo -g` or `ROS_DOMAIN_ID=69 rviz2` (`ROS_DOMAIN_ID=69` is default for Docker image).
 
 ```bash
 ros2 run drl_grasping ex_train.bash
@@ -259,7 +267,7 @@ There are several databases with free PBR textures that you can use. Alternative
 
 ### Supported Robots
 
-Only [Franka Emika Panda](https://github.com/AndrejOrsula/panda_ign) and [UR5 with RG2 gripper](https://github.com/AndrejOrsula/ur5_rg2_ign) are supported. This project currently lacks a more generic solution that would allow to easily utilize arbitrary models, e.g. full-on [MoveIt 2](https://github.com/ros-planning/moveit2) with [ros2_control](https://github.com/ros-controls/ros2_control) implementation. Adding new models is not complicated though, just time-consuming.
+Only [Franka Emika Panda](https://github.com/AndrejOrsula/panda_ign), [UR5 with RG2 gripper](https://github.com/AndrejOrsula/ur5_rg2_ign) and [Kinova Gen2 (j2s7s300)](https://github.com/AndrejOrsula/kinova_j2s7s300_ign) are supported. This project currently lacks a more generic solution that would allow to easily utilize arbitrary models, e.g. full-on [MoveIt 2](https://github.com/ros-planning/moveit2) with [ros2_control](https://github.com/ros-controls/ros2_control) implementation. Adding new models is not complicated though, just time-consuming.
 
 
 ## Reinforcement Learning

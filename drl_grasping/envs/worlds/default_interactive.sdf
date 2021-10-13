@@ -87,7 +87,7 @@
                         <line own="bottom" target="bottom"/>
                         <line own="right" target="right"/>
                     </anchors>
-                    <property key="width" type="double">250</property>
+                    <property key="width" type="double">275</property>
                     <property key="height" type="double">110</property>
                     <property key="enabled" type="bool">true</property>
                     <property key="visible" type="bool">true</property>
