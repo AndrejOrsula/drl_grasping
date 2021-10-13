@@ -1,0 +1,15 @@
+numpy
+open3d
+optuna
+pcg_gazebo
+sb3-contrib
+scipy
+seaborn
+stable-baselines3[extra]
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch==1.9.1+cu111
+torchaudio==0.9.1
+torchvision==0.10.1+cu111
+tqdm
+trimesh
+yacs

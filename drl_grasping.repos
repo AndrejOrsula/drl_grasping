@@ -1,8 +1,4 @@
 repositories:
-  ros_ign:
-    type: git
-    url: https://github.com/ignitionrobotics/ros_ign.git
-    version: ros2
   ign_moveit2:
     type: git
     url: https://github.com/AndrejOrsula/ign_moveit2.git
@@ -31,19 +27,3 @@ repositories:
     type: git
     url: https://github.com/AndrejOrsula/kinova_j2s7s300_moveit2_config.git
     version: master
-
-  ## Unfortunately, moveit2 cannot be built with symlink-install option yet. Therefore build/install separately if possible.
-  # moveit2:
-  #   type: git
-  #   url: https://github.com/ros-planning/moveit2.git
-  #   version: master
-
-  ## Additional repos that cannot be built with colcon out of the box
-  # gym-ignition:
-  #   type: git
-  #   url: https://github.com/AndrejOrsula/gym-ignition.git
-  #   version: drl_grasping
-  # O-CNN:
-  #   type: git
-  #   url: https://github.com/microsoft/O-CNN.git
-  #   version: master

@@ -1,208 +1,214 @@
-### CUDA 11.2 does not seem to work with Pytorch on some machines (I suspect it is caused by differences in driver version, even if they are included in support matrix)
-# ARG PARENT_IMAGE=nvidia/cuda:11.2.1-cudnn8-devel-ubuntu20.04
-ARG PARENT_IMAGE=nvidia/cuda:11.0.3-cudnn8-devel-ubuntu20.04
+ARG PARENT_IMAGE=nvidia/cudagl:11.4.2-devel-ubuntu20.04
 FROM ${PARENT_IMAGE}
-
-# Enable OpenGl for ignition camera sensors (required to create context)
-COPY --from=nvidia/opengl:1.2-glvnd-runtime-ubuntu20.04 /usr/local /usr/local
-ENV NVIDIA_VISIBLE_DEVICES ${NVIDIA_VISIBLE_DEVICES:-all}
-ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
 
 ### Use bash by default
 SHELL ["/bin/bash", "-c"]
 
-### Setup timezone (in order to prevent interactive install)
-ARG TIMEZONE=Europe/Copenhagen
+### Set non-interactive installation
 ARG DEBIAN_FRONTEND=noninteractive
-RUN rm -f /etc/localtime && \
-    ln -s /usr/share/zoneinfo/"${TIMEZONE}" /etc/localtime && \
-    apt-get update && \
-    apt-get install -yq --no-install-recommends \
+
+### Set working directory
+ARG DRL_GRASPING_DIR=/root/drl_grasping
+ENV DRL_GRASPING_DIR=${DRL_GRASPING_DIR}
+WORKDIR ${DRL_GRASPING_DIR}
+
+### Install essentials, toolchain, python, cudnn...
+ARG PYTHON_VERSION=3
+RUN apt update && \
+    apt install -yq --no-install-recommends \
+        apt-utils \
         locales \
         locales-all \
-        tzdata && \
-    rm -rf /var/lib/apt/lists/*
-
-### Install toolchain
-ARG PYTHON3_VERSION=3.8
-RUN apt-get update && \
-    apt-get install -yq --no-install-recommends \
-        apt-utils \
+        tzdata \
         software-properties-common \
         git \
         wget \
         curl \
-        build-essential \
-        cmake \
-        ninja-build \
-        gnupg2 \
+        gnupg \
         lsb-release \
-        python3-pip \
-        python3-wheel \
-        python${PYTHON3_VERSION} \
-        python${PYTHON3_VERSION}-dev \
-        libpython${PYTHON3_VERSION}-dev \
+        build-essential \
+        make \
+        cmake \
+        g++ \
+        autoconf \
+        automake \
+        clang \
+        ninja-build \
+        python${PYTHON_VERSION} \
+        python${PYTHON_VERSION}-dev \
+        python${PYTHON_VERSION}-pip \
+        python${PYTHON_VERSION}-wheel \
+        python${PYTHON_VERSION}-numpy \
+        python${PYTHON_VERSION}-tk \
+        python${PYTHON_VERSION}-pybind11 \
+        libpython${PYTHON_VERSION}-dev \
+        libopenmpi-dev \
+        zlib1g-dev \
+        libcudnn8-dev \
         nano && \
     rm -rf /var/lib/apt/lists/*
 
-### Install ros2
-ARG ROS2_DISTRO=foxy
+### Install ROS 2
+ARG ROS2_DISTRO=rolling
 ENV ROS2_DISTRO=${ROS2_DISTRO}
-RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - && \
-    sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list' && \
-    apt-get update && \
-    apt-get install -yq --no-install-recommends \
-        ros-${ROS2_DISTRO}-ros-base && \
-    pip3 install \
-        argcomplete && \
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list >/dev/null && \
+    apt update && \
+    apt install -yq --no-install-recommends \
+        ros-${ROS2_DISTRO}-desktop \
+        python${PYTHON_VERSION}-colcon-common-extensions \
+        python${PYTHON_VERSION}-vcstool \
+        python${PYTHON_VERSION}-argcomplete \
+        python${PYTHON_VERSION}-rosdep && \
+    rosdep init && rosdep update && \
+    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
     rm -rf /var/lib/apt/lists/*
 
-### Install ignition
-ARG IGNITION_VERSION=dome
+### Install MoveIt 2
+RUN apt update && \
+    apt install -yq --no-install-recommends \
+        ros-${ROS2_DISTRO}-moveit-common \
+        ros-${ROS2_DISTRO}-moveit-core \
+        ros-${ROS2_DISTRO}-moveit-kinematics \
+        ros-${ROS2_DISTRO}-moveit-msgs \
+        ros-${ROS2_DISTRO}-moveit-planners \
+        ros-${ROS2_DISTRO}-moveit-planners-ompl \
+        ros-${ROS2_DISTRO}-moveit-plugins \
+        ros-${ROS2_DISTRO}-moveit-resources \
+        ros-${ROS2_DISTRO}-moveit-ros \
+        ros-${ROS2_DISTRO}-moveit-ros-occupancy-map-monitor \
+        ros-${ROS2_DISTRO}-moveit-ros-perception \
+        ros-${ROS2_DISTRO}-moveit-ros-planning \
+        ros-${ROS2_DISTRO}-moveit-ros-planning-interface \
+        ros-${ROS2_DISTRO}-moveit-runtime \
+        ros-${ROS2_DISTRO}-moveit-servo \
+        ros-${ROS2_DISTRO}-moveit-simple-controller-manager && \
+    rm -rf /var/lib/apt/lists/*
+
+### Install Ignition
+ARG IGNITION_VERSION=fortress
 ENV IGNITION_VERSION=${IGNITION_VERSION}
-RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" > /etc/apt/sources.list.d/gazebo-stable.list' && \
-    wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add - && \
-    apt-get update && \
-    apt-get install -yq --no-install-recommends \
-        ignition-${IGNITION_VERSION} && \
+RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null && \
+    apt update && \
+    apt install -yq --no-install-recommends \
+    ignition-${IGNITION_VERSION} && \
     rm -rf /var/lib/apt/lists/*
 
-### Install torch
-### Note: torch 1.8.0 does not always play nice with CUDA, restrict to 1.7.1 for now 
-RUN pip3 install \
-        torch==1.7.1 \
-        torchvision==0.8.2 \
-        tqdm \
-        yacs
-
-### Install stable_baselines3
-RUN apt-get update && \
-    apt-get install -yq --no-install-recommends \
-        libopenmpi-dev \
-        zlib1g-dev && \
+### Build ROS 2 <-> IGN
+RUN mkdir -p ros_ign/src && \
+    cd ros_ign && \
+    git clone https://github.com/ignitionrobotics/ros_ign.git --depth 1 -b ros2 src && \
+    apt update && \
+    rosdep update && \
+    rosdep install -r --from-paths . -yi --rosdistro ${ROS2_DISTRO} && \
     rm -rf /var/lib/apt/lists/* && \
-    pip3 install \
-        seaborn \
-        optuna \
-        stable-baselines3[extra] \
-        sb3-contrib
+    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+    colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release && \
+    source install/local_setup.bash
+WORKDIR ${DRL_GRASPING_DIR}
 
-### Set working directory for building dependencies
-ARG DRL_GRASPING_DIR=/root/drl_grasping
-ENV DRL_GRASPING_DIR=${DRL_GRASPING_DIR}
-ENV DRL_GRASPING_DEPS_DIR=${DRL_GRASPING_DIR}/deps
-WORKDIR ${DRL_GRASPING_DEPS_DIR}
+### Install Python requirements (Torch, SB3, ...)
+COPY ./python_requirements.txt ./python_requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r python_requirements.txt
 
 ### Build O-CNN
-RUN cd ${DRL_GRASPING_DEPS_DIR} && \
-    git clone https://github.com/AndrejOrsula/O-CNN.git && \
-    cd ${DRL_GRASPING_DEPS_DIR}/O-CNN/pytorch && \
-    python3 setup.py install --build_octree && \
+RUN git clone https://github.com/AndrejOrsula/O-CNN.git --depth 1 && \
+    cd O-CNN/pytorch && \
+    python${PYTHON_VERSION} setup.py install --build_octree && \
     cd ../octree/build && \
     cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_OPENMP=ON -DUSE_PYTHON=ON -DABI=ON -DKEY64=ON && \
     cmake --build . --config Release
-
-### Build gym_ignition (with its iDynTree dependency)
-RUN apt-get update && \
-    apt-get install -yq --no-install-recommends \
-        apt-transport-https \
-        clang-10 \
-        cmake-curses-gui \
-        valgrind \
-        libgflags-dev \
-        swig \
-        python3-numpy \
-        libxml2-dev \
-        coinor-libipopt-dev \
-        libeigen3-dev && \
-    cd ${DRL_GRASPING_DEPS_DIR} && \
-    git clone https://github.com/robotology/idyntree && \
-    mkdir -p ${DRL_GRASPING_DEPS_DIR}/idyntree/build && \
-    cd ${DRL_GRASPING_DEPS_DIR}/idyntree/build && \
-    cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS:BOOL=OFF -DIDYNTREE_USES_PYTHON=True -DIDYNTREE_USES_IPOPT:BOOL=ON && \
-    cmake --build . --target install && \
-    cd ${DRL_GRASPING_DEPS_DIR} && \
-    git clone https://github.com/AndrejOrsula/gym-ignition.git && \
-    mkdir -p ${DRL_GRASPING_DEPS_DIR}/gym-ignition/build && \
-    cd ${DRL_GRASPING_DEPS_DIR}/gym-ignition/build && \
-    cmake .. -DCMAKE_BUILD_TYPE=Release && cmake --build . && \
-    cmake --build . --target install && \
-    cd ${DRL_GRASPING_DEPS_DIR}/gym-ignition && \
-    pip3 install . && \
-    rm -rf /var/lib/apt/lists/*
-
-### Upgrade numpy (else iDynTree fails, not sure why)
-RUN pip3 install -U \
-        numpy
-
-### Install colcon, vcs toolkit and rosdep prior to building ROS-based projects
-RUN sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://repo.ros2.org/ubuntu/main $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list' && \
-    sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list' && \
-    curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - && \
-    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
-    apt-get update && \
-    apt-get install -yq --no-install-recommends \
-        python3-colcon-common-extensions \
-        python3-vcstool \
-        python3-rosdep && \
-    rosdep init && \
-    rosdep update
-# Note: Do not remove apt lists until last ROS-based project is built
-
-### Build moveit2
-RUN apt-get update && \
-    apt-get install -yq --no-install-recommends \
-        libompl-dev && \
-    mkdir -p ${DRL_GRASPING_DEPS_DIR}/moveit2/src && \
-    cd ${DRL_GRASPING_DEPS_DIR}/moveit2/src && \
-    git clone https://github.com/ros-planning/moveit2.git && \
-    vcs import < moveit2/moveit2.repos ; \
-    cd .. && \
-    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
-    rosdep install -r --from-paths . --ignore-src --rosdistro ${ROS_DISTRO} -y && \
-    colcon build --merge-install --cmake-args -DCMAKE_BUILD_TYPE=Release
-
-### Set working directory for source (repos) dir
-ENV DRL_GRASPING_REPOS_DIR=${DRL_GRASPING_DIR}/repos
-WORKDIR ${DRL_GRASPING_REPOS_DIR}
-
-### Install python dependencies for the main project
-RUN pip3 install \
-        open3d \
-        trimesh \
-        pcg_gazebo
-
-ARG DRL_GRASPING_GIT_BRANCH=master
-ARG DRL_GRASPING_DOCKER_VERSION=1.0.0
-RUN apt-get update && mkdir -p ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
-    cd ${DRL_GRASPING_REPOS_DIR}/drl_grasping/src && \
-    git clone --recursive https://github.com/AndrejOrsula/drl_grasping.git -b ${DRL_GRASPING_GIT_BRANCH} && \
-    vcs import < drl_grasping/drl_grasping.repos ; \
-    cd .. && \
-    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
-    source ${DRL_GRASPING_DEPS_DIR}/moveit2/install/local_setup.bash && \
-    rosdep install -r --from-paths src -i -y --rosdistro ${ROS_DISTRO} && \
-    colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release && \
-    rm -rf /var/lib/apt/lists/*
-
-### Set working project directory
 WORKDIR ${DRL_GRASPING_DIR}
 
-### Download datasets and model for the default robot
-# TODO: Optimize this step
-RUN source /opt/ros/${ROS2_DISTRO}/setup.bash && \
-    source ${DRL_GRASPING_REPOS_DIR}/drl_grasping/install/local_setup.bash && \
-    ros2 run drl_grasping dataset_download_test.bash && \
-    git clone https://github.com/AndrejOrsula/pbr_textures.git -b 1k_test --depth 1 && \
-    ign fuel download -t model -u https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/panda
+### Build iDynTree
+RUN apt update && \
+    apt install -yq --no-install-recommends \
+        coinor-libipopt-dev \
+        libxml2-dev \
+        qml-module-qt-labs-folderlistmodel \
+        qml-module-qt-labs-settings \
+        qml-module-qtmultimedia \
+        qml-module-qtquick-controls \
+        qml-module-qtquick-dialogs \
+        qml-module-qtquick-window2 \
+        qml-module-qtquick2 \
+        qtbase5-dev \
+        qtdeclarative5-dev \
+        qtmultimedia5-dev \
+        swig \
+        libeigen3-dev && \
+    rm -rf /var/lib/apt/lists/* && \
+    git clone https://github.com/robotology/idyntree --depth 1 && \
+    mkdir idyntree/build && \
+    cd idyntree/build && \
+    cmake .. \
+        -GNinja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS:BOOL=OFF \
+        -DIDYNTREE_USES_PYTHON=True \
+        -DIDYNTREE_USES_IPOPT:BOOL=ON && \
+    cmake --build . --target install
+WORKDIR ${DRL_GRASPING_DIR}
+
+### Build Gym-Ignition
+RUN git clone https://github.com/AndrejOrsula/gym-ignition.git --depth 1 -b drl_grasping && \
+    mkdir -p gym-ignition/build && \
+    cd gym-ignition/build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build . && \
+    cmake --build . --target install && \
+    pip install .. && \
+    pip install ../scenario
+WORKDIR ${DRL_GRASPING_DIR}
+
+### Main repository
+ARG DRL_GRASPING_GIT_BRANCH=master
+ARG DRL_GRASPING_DOCKER_VERSION=1.1.0
+RUN mkdir -p drl_grasping/src && \
+    cd drl_grasping/src && \
+    git clone https://github.com/AndrejOrsula/drl_grasping.git --recursive --depth 1 -b ${DRL_GRASPING_GIT_BRANCH} && \
+    vcs import < drl_grasping/drl_grasping.repos && \
+    cd .. && \
+    apt update && \
+    rosdep update && \
+    rosdep install -r --from-paths . -yi --rosdistro ${ROS2_DISTRO} && \
+    rm -rf /var/lib/apt/lists/* && \
+    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+    colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release && \
+    source install/local_setup.bash
+WORKDIR ${DRL_GRASPING_DIR}
+
+### Download and process default datasets (if desired)
+ARG DISABLE_DEFAULT_DATASETS
+RUN if [[ -z "${DISABLE_DEFAULT_DATASETS}" ]] ; then \
+        echo "Downloading default datasets..." && \
+        source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+        source ${DRL_GRASPING_DIR}/drl_grasping/install/local_setup.bash && \
+        export PATH=${DRL_GRASPING_DIR}/O-CNN/octree/build:${PATH} && \
+        export PYTHONPATH=${DRL_GRASPING_DIR}/O-CNN/octree/build/python:${PYTHONPATH} && \
+        ign fuel download -t model -u https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/panda && \
+        ign fuel download -t model -u https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/ur5_rg2 && \
+        ign fuel download -t model -u https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/kinova_j2s7s300 && \
+        ros2 run drl_grasping dataset_download_test.bash && \
+        ros2 run drl_grasping process_collection.py && \
+        git clone https://github.com/AndrejOrsula/pbr_textures.git --depth 1 -b 1k_test default_pbr_textures \
+    ; else \
+        echo "Default datasets are disabled. Downloading skipped." \
+    ; fi
+
+### Communicate within localhost only
+ENV ROS_LOCALHOST_ONLY=1
+### Set domain ID for ROS2 in order to not interfere with host
+ENV ROS_DOMAIN_ID=69
+
+### Set debug level
+ENV DRL_GRASPING_DEBUG_LEVEL=ERROR
 
 ### Add entrypoint sourcing the environment
 COPY ./entrypoint.bash ./entrypoint.bash
-RUN chmod +x ./entrypoint.bash
 
-### Set domain ID for ROS2 in order to not interfere with host
-### Note: ROS_LOCALHOST_ONLY prevents MoveIt2 from working, so please do not use it
-ENV ROS_DOMAIN_ID 69
-
-ENTRYPOINT ["/bin/bash", "entrypoint.bash"]
+### Set entrypoint and default command
+ENTRYPOINT ["/bin/bash", "-c", "source ${DRL_GRASPING_DIR}/entrypoint.bash && \"$@\"", "-s"]
 CMD ["/bin/bash"]
