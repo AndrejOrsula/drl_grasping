@@ -48,7 +48,7 @@ if [ "$ROBOT_MODEL" = "ur5_rg2" ]; then
     IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_ur5_rg2.launch.py"
 fi
 if [ "$ROBOT_MODEL" = "kinova_j2s7s300" ]; then
-    IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_headless_kinova_j2s7s300.launch.py"
+    IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_kinova_j2s7s300.launch.py"
 fi
 echo "Launching ign_moveit2 in background:"
 echo "${IGN_MOVEIT2_CMD}"
