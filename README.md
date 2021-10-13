@@ -46,7 +46,7 @@ These are the primary dependencies required to use this project.
 - [PyTorch](https://pytorch.org/get-started/locally) (last tested on 1.9.1)
 - [Stable-Baselines3](https://stable-baselines3.readthedocs.io/en/master/guide/install.html) (last tested on 1.2.0) and [sb3-contrib](https://stable-baselines3.readthedocs.io/en/master/guide/sb3_contrib.html#installation)
 
-Python dependencies are listed under [python_requirements.txt](./python_requirements.txt). All of these (including Pytorch and Stable-Baselines3) can be installed via `pip`.
+Python dependencies are listed under [python_requirements.txt](./docker/python_requirements.txt). All of these (including Pytorch and Stable-Baselines3) can be installed via `pip`.
 
 ```bash
 pip3 install -r python_requirements.txt
