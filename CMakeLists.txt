@@ -67,7 +67,7 @@ install(PROGRAMS
 )
 
 # Install directories
-install(DIRECTORY launch pretrained_agents DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch drl_grasping/envs/worlds pretrained_agents DESTINATION share/${PROJECT_NAME})
 
 # Setup the project
 ament_package()
