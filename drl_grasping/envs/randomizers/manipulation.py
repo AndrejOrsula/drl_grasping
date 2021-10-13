@@ -238,10 +238,23 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                         arm_collision=task._robot_arm_collision,
                                         hand_collision=task._robot_hand_collision,
                                         initial_joint_positions=task._robot_initial_joint_positions)
+        elif 'kinova_j2s7s300' == task._robot_model:
+            self._robot = models.KinovaJ2s7s300(world=task.world,
+                                                position=task._robot_position,
+                                                orientation=conversions.Quaternion.to_wxyz(
+                                                    task._robot_quat_xyzw),
+                                                arm_collision=task._robot_arm_collision,
+                                                hand_collision=task._robot_hand_collision,
+                                                initial_joint_positions=task._robot_initial_joint_positions)
         task.robot_name = self._robot.name()
         task.robot_base_link_name = self._robot.get_base_link_name()
         task.robot_ee_link_name = self._robot.get_ee_link_name()
         task.robot_gripper_link_names = self._robot.get_gripper_link_names()
+
+        # Enable contact detection for all fingers
+        for gripper_link_name in task.robot_gripper_link_names:
+            finger = self._robot.to_gazebo().get_link(link_name=gripper_link_name)
+            finger.enable_contact_detection(True)
 
         # TODO (low priority): TF2 - Move this to task
         robot_base_frame_id = self._robot.link_names()[0]
@@ -309,6 +322,11 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                size=task._ground_size)
         task.ground_name = ground.name()
 
+        # Enable contact detection
+        link = ground.to_gazebo().get_link(
+            link_name=ground.link_names()[0])
+        link.enable_contact_detection(True)
+
         # Execute a paused run to process model insertion
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
@@ -353,6 +371,10 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                            static=task._object_static,
                                            color=task._object_color)
         task.object_names.append(object_model.name())
+        # Enable contact detection
+        link = object_model.to_gazebo().get_link(
+            link_name=object_model.link_names()[0])
+        link.enable_contact_detection(True)
 
         # Execute a paused run to process model insertion
         if not gazebo.run(paused=True):
@@ -532,6 +554,11 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                                                default=''))
         task.ground_name = plane.name()
 
+        # Enable contact detection
+        link = plane.to_gazebo().get_link(
+            link_name=plane.link_names()[0])
+        link.enable_contact_detection(True)
+
     def reset_default_object_pose(self,
                                   task: SupportedTasks):
 
@@ -567,6 +594,10 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                 model_name = model.name()
                 self.task.object_names.append(model_name)
                 self.__object_positions[model_name] = position
+                # Enable contact detection
+                link = model.to_gazebo().get_link(
+                    link_name=model.link_names()[0])
+                link.enable_contact_detection(True)
             except:
                 # TODO (low priority): Automatically blacklist a model if Gazebo does not accept it
                 pass
@@ -594,6 +625,10 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                 model_name = model.name()
                 self.task.object_names.append(model_name)
                 self.__object_positions[model_name] = position
+                # Enable contact detection
+                link = model.to_gazebo().get_link(
+                    link_name=model.link_names()[0])
+                link.enable_contact_detection(True)
             except:
                 pass
 

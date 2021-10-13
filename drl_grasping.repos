@@ -23,6 +23,14 @@ repositories:
     type: git
     url: https://github.com/AndrejOrsula/ur5_rg2_moveit2_config.git
     version: master
+  kinova_j2s7s300_ign:
+    type: git
+    url: https://github.com/AndrejOrsula/kinova_j2s7s300_ign.git
+    version: master
+  kinova_j2s7s300_moveit2_config:
+    type: git
+    url: https://github.com/AndrejOrsula/kinova_j2s7s300_moveit2_config.git
+    version: master
 
   ## Unfortunately, moveit2 cannot be built with symlink-install option yet. Therefore build/install separately if possible.
   # moveit2:
