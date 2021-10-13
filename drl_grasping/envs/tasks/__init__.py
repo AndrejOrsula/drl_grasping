@@ -1,10 +1,20 @@
+from gym import logger as gym_logger
+from gym_ignition.utils import logger as gym_ign_logger
 from gym.envs.registration import register
+from ament_index_python.packages import get_package_share_directory
+from os import path, environ
 
 from .reach import Reach, ReachColorImage, ReachDepthImage, ReachOctree
 from .grasp import Grasp, GraspOctree
 
-from ament_index_python.packages import get_package_share_directory
-from os import path
+# Set debug level
+debug_level = environ.get('DRL_GRASPING_DEBUG_LEVEL', default='ERROR')
+gym_ign_logger.set_level(
+    level=getattr(gym_logger, debug_level),
+    scenario_level=getattr(gym_logger, debug_level)
+)
+
+# Get path for worlds
 worlds_dir = path.join(get_package_share_directory('drl_grasping'), 'worlds')
 
 # Reach
