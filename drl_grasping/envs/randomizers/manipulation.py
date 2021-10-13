@@ -587,6 +587,7 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                                                                 volume=task._object_spawn_volume,
                                                                 np_random=task.np_random)
             try:
+                model_name = ''
                 model = models.RandomObject(world=task.world,
                                             position=position,
                                             orientation=quat_random,
@@ -598,9 +599,9 @@ class ManipulationGazeboEnvRandomizer(gazebo_env_randomizer.GazeboEnvRandomizer,
                 link = model.to_gazebo().get_link(
                     link_name=model.link_names()[0])
                 link.enable_contact_detection(True)
-            except:
-                # TODO (low priority): Automatically blacklist a model if Gazebo does not accept it
-                pass
+            except Exception as ex:
+                print("Model " + model_name +
+                      " could not be insterted. Reason: " + str(ex))
 
     def randomize_object_primitives(self,
                                     task: SupportedTasks):
