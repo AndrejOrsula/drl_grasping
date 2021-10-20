@@ -5,7 +5,9 @@
 ### Added
 
 ### Changed
- 
+
+- Instead of all fingers, more than half `n//2 + 1` need to be in contact for a grasp to be successful.
+
 ### Fixed
  
 

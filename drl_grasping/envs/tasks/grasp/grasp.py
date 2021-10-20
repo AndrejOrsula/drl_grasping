@@ -367,11 +367,11 @@ class Grasp(Manipulation, abc.ABC):
                         grasp_candidates[model_name].append(contact.points)
 
         # Determine what grasp candidates are indeed grasped objects
-        # First make sure it has contact with all fingers
+        # First make sure it has contact with more than half of the fingers
         # Then make sure that their normals are dissimilar
         grasped_objects = []
         for model_name, contact_points_list in grasp_candidates.items():
-            if len(contact_points_list) < len(self.robot_gripper_link_names):
+            if len(contact_points_list) < len(self.robot_gripper_link_names)//2+1:
                 continue
 
             # Compute average normal of all finger-object collisions
