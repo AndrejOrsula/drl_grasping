@@ -1,10 +1,10 @@
-# This module adds a monkey patch to TQC `_store_transition` function
-# The only difference is that if info contains 'curriculum.restart_exploration' key set to True, the ent_coef and its optimizer will be reset.
-
+# This module adds a monkey patch to TQC `_store_transition` function - The only difference is that if info contains 'curriculum.restart_exploration' key set to True, the ent_coef and its optimizer will be reset.
 # Note: needs to be included before `from sb3_contrib import TQC` in the module that uses this
 
-from drl_grasping.algorithms.common import off_policy_algorithm
+# Note: Import monkey patch of off_policy_algorithm before TQC
+from drl_grasping.drl_octree.algorithms import off_policy_algorithm
 from sb3_contrib import TQC
+
 from stable_baselines3.common.buffers import ReplayBuffer
 from typing import Any, Dict, List
 import numpy as np
@@ -23,7 +23,8 @@ def _setup_model_store_init_and_reset_ent_coef(self) -> None:
     # Target entropy is used when learning the entropy coefficient
     if self.target_entropy == "auto":
         # automatically set target entropy if needed
-        self.target_entropy = -np.prod(self.env.action_space.shape).astype(np.float32)
+        self.target_entropy = - \
+            np.prod(self.env.action_space.shape).astype(np.float32)
     else:
         # Force conversion
         # this will also throw an error for unexpected string
@@ -49,8 +50,10 @@ def _setup_model_store_init_and_reset_ent_coef(self) -> None:
 
         # Note: we optimize the log of the entropy coeff which is slightly different from the paper
         # as discussed in https://github.com/rail-berkeley/softlearning/issues/37
-        self.log_ent_coef = th.log(th.ones(1, device=self.device) * init_value).requires_grad_(True)
-        self.ent_coef_optimizer = th.optim.Adam([self.log_ent_coef], lr=self.lr_schedule(1))
+        self.log_ent_coef = th.log(
+            th.ones(1, device=self.device) * init_value).requires_grad_(True)
+        self.ent_coef_optimizer = th.optim.Adam(
+            [self.log_ent_coef], lr=self.lr_schedule(1))
     else:
         # Force conversion to float
         # this will throw an error if a malformed string (different from 'auto')

@@ -8,11 +8,11 @@ import os
 import yaml
 
 # Note: Import monkey patch of OffPolicyAlgorithm before stable_baselines3 OffPolicyAlgorithm
-from drl_grasping.algorithms.common import off_policy_algorithm
+from drl_grasping.drl_octree.algorithms import off_policy_algorithm
 # Note: Import monkey patch of SAC before stable_baselines3 SAC
-from drl_grasping.algorithms import sac
+from drl_grasping.drl_octree.algorithms import sac
 # Note: Import monkey patch of TQC before stable_baselines3 TQC
-from drl_grasping.algorithms import tqc
+from drl_grasping.drl_octree.algorithms import tqc
 
 from stable_baselines3 import A2C, DDPG, DQN, HER, PPO, SAC, TD3
 from sb3_contrib import QRDQN, TQC

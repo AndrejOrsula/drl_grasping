@@ -9,8 +9,9 @@ import yaml
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, VecEnvWrapper
 
-from drl_grasping.utils.training import ALGOS, create_test_env, get_latest_run_id, get_saved_hyperparams
-from drl_grasping.utils.training.utils import StoreDict
+from drl_grasping import envs as drl_grasping_envs
+from drl_grasping.utils import ALGOS, create_test_env, get_latest_run_id, get_saved_hyperparams
+from drl_grasping.utils.utils import StoreDict
 
 
 def main(args=None):

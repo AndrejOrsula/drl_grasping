@@ -1,7 +1,7 @@
 from collections import deque
 from drl_grasping.envs.tasks.grasp import Grasp
-from drl_grasping.perception import CameraSubscriber, OctreeCreator
-from drl_grasping.utils.conversions import orientation_quat_to_6d
+from drl_grasping.envs.perception import CameraSubscriber, OctreeCreator
+from drl_grasping.envs.utils.conversions import orientation_quat_to_6d
 from gym_ignition.utils.typing import Observation
 from gym_ignition.utils.typing import ObservationSpace
 from typing import Tuple

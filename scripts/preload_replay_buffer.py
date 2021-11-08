@@ -11,8 +11,9 @@ import seaborn
 import torch as th
 from stable_baselines3.common.utils import set_random_seed
 
-from drl_grasping.utils.training.exp_manager import ExperimentManager
-from drl_grasping.utils.training.utils import ALGOS, StoreDict
+from drl_grasping import envs as drl_grasping_envs
+from drl_grasping.utils.exp_manager import ExperimentManager
+from drl_grasping.utils.utils import ALGOS, StoreDict
 
 seaborn.set()
 

@@ -1,9 +1,9 @@
 from drl_grasping.envs import tasks, models
-from drl_grasping.utils import Tf2Broadcaster
+from drl_grasping.envs.utils import Tf2Broadcaster
 from gym_ignition import randomizers
 from gym_ignition.randomizers import gazebo_env_randomizer
 from gym_ignition.randomizers.gazebo_env_randomizer import MakeEnvCallable
-from drl_grasping.utils.conversions import quat_to_wxyz
+from drl_grasping.envs.utils.conversions import quat_to_wxyz
 from scenario import gazebo as scenario
 from scipy.spatial import distance
 from scipy.spatial.transform import Rotation

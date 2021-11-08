@@ -1,7 +1,6 @@
 from collections import deque
 from drl_grasping.envs.tasks.reach import Reach
-from drl_grasping.perception import CameraSubscriber
-from drl_grasping.perception import OctreeCreator
+from drl_grasping.envs.perception import CameraSubscriber, OctreeCreator
 from gym_ignition.utils.typing import Observation
 from gym_ignition.utils.typing import ObservationSpace
 from typing import Tuple

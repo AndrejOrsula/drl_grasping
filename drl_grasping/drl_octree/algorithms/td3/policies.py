@@ -1,22 +1,21 @@
-from drl_grasping.algorithms.common.features_extractor import OctreeCnnFeaturesExtractor
-from drl_grasping.algorithms.common.octree_replay_buffer import preprocess_stacked_octree_batch
+from drl_grasping.drl_octree.features_extractor import OctreeCnnFeaturesExtractor
+from drl_grasping.drl_octree.replay_buffer import preprocess_stacked_octree_batch
 from stable_baselines3.common.policies import register_policy, ContinuousCritic
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.utils import is_vectorized_observation
-from stable_baselines3.sac.policies import Actor
-from stable_baselines3.sac.policies import SACPolicy
+from stable_baselines3.td3.policies import Actor
+from stable_baselines3.td3.policies import TD3Policy
 from torch import nn
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 import gym
 import numpy as np
-import torch as th
-
 import ocnn
+import torch as th
 
 
 class ActorOctreeCnn(Actor):
     """
-    Actor network (policy) for SAC.
+    Actor network (policy) for TD3.
     Overriden to not preprocess observations (unnecessary conversion into float)
 
     :param observation_space: Obervation space
@@ -26,17 +25,6 @@ class ActorOctreeCnn(Actor):
         (a CNN when using images, a nn.Flatten() layer otherwise)
     :param features_dim: Number of features
     :param activation_fn: Activation function
-    :param use_sde: Whether to use State Dependent Exploration or not
-    :param log_std_init: Initial value for the log standard deviation
-    :param full_std: Whether to use (n_features x n_actions) parameters
-        for the std instead of only (n_features,) when using gSDE.
-    :param sde_net_arch: Network architecture for extracting features
-        when using gSDE. If None, the latent features from the policy will be used.
-        Pass an empty list to use the states as features.
-    :param use_expln: Use ``expln()`` function instead of ``exp()`` when using gSDE to ensure
-        a positive standard deviation (cf paper). It allows to keep variance
-        above zero and prevent it from growing too fast. In practice, ``exp()`` is usually enough.
-    :param clip_mean: Clip the mean output when using gSDE to avoid numerical instability.
     :param normalize_images: Whether to normalize images or not,
          dividing by 255.0 (True by default)
     """
@@ -49,12 +37,6 @@ class ActorOctreeCnn(Actor):
         features_extractor: nn.Module,
         features_dim: int,
         activation_fn: Type[nn.Module] = nn.ReLU,
-        use_sde: bool = False,
-        log_std_init: float = -3,
-        full_std: bool = True,
-        sde_net_arch: Optional[List[int]] = None,
-        use_expln: bool = False,
-        clip_mean: float = 2.0,
         normalize_images: bool = True,
     ):
         super(ActorOctreeCnn, self).__init__(
@@ -64,12 +46,6 @@ class ActorOctreeCnn(Actor):
             features_extractor=features_extractor,
             features_dim=features_dim,
             activation_fn=activation_fn,
-            use_sde=use_sde,
-            log_std_init=log_std_init,
-            full_std=full_std,
-            sde_net_arch=sde_net_arch,
-            use_expln=use_expln,
-            clip_mean=clip_mean,
             normalize_images=normalize_images)
 
     def extract_features(self, obs: th.Tensor) -> th.Tensor:
@@ -154,26 +130,19 @@ class ContinuousCriticOctreeCnn(ContinuousCritic):
         # return self.features_extractor(preprocessed_obs)
 
 
-class OctreeCnnPolicy(SACPolicy):
+class OctreeCnnPolicy(TD3Policy):
     """
-    Policy class (with both actor and critic) for SAC.
-    Overriden to not preprocess observations (unnecessary conversion into float)
+    Policy class (with both actor and critic) for TD3.
+    This class includes OctreeCnnFeaturesExtractor by default
 
     :param observation_space: Observation space
     :param action_space: Action space
     :param lr_schedule: Learning rate schedule (could be constant)
     :param net_arch: The specification of the policy and value networks.
     :param activation_fn: Activation function
-    :param use_sde: Whether to use State Dependent Exploration or not
-    :param log_std_init: Initial value for the log standard deviation
-    :param sde_net_arch: Network architecture for extracting features
-        when using gSDE. If None, the latent features from the policy will be used.
-        Pass an empty list to use the states as features.
-    :param use_expln: Use ``expln()`` function instead of ``exp()`` when using gSDE to ensure
-        a positive standard deviation (cf paper). It allows to keep variance
-        above zero and prevent it from growing too fast. In practice, ``exp()`` is usually enough.
-    :param clip_mean: Clip the mean output when using gSDE to avoid numerical instability.
-    :param features_extractor_class: Features extractor to use (``OctreeCnnFeaturesExtractor``).
+    :param features_extractor_class: Features extractor to use.
+    :param features_extractor_kwargs: Keyword arguments
+        to pass to the features extractor.
     :param normalize_images: Whether to normalize images or not,
          dividing by 255.0 (True by default)
     :param optimizer_class: The optimizer to use,
@@ -189,15 +158,9 @@ class OctreeCnnPolicy(SACPolicy):
         self,
         observation_space: gym.spaces.Space,
         action_space: gym.spaces.Space,
-        # lr_schedule: Schedule, # Note: removed because hinting of Shedule results in import error
         lr_schedule,
         net_arch: Optional[Union[List[int], Dict[str, List[int]]]] = None,
         activation_fn: Type[nn.Module] = nn.ReLU,
-        use_sde: bool = False,
-        log_std_init: float = -3,
-        sde_net_arch: Optional[List[int]] = None,
-        use_expln: bool = False,
-        clip_mean: float = 2.0,
         features_extractor_class: Type[BaseFeaturesExtractor] = OctreeCnnFeaturesExtractor,
         features_extractor_kwargs: Optional[Dict[str, Any]] = None,
         normalize_images: bool = True,
@@ -216,11 +179,6 @@ class OctreeCnnPolicy(SACPolicy):
             lr_schedule,
             net_arch,
             activation_fn,
-            use_sde,
-            log_std_init,
-            sde_net_arch,
-            use_expln,
-            clip_mean,
             features_extractor_class,
             features_extractor_kwargs,
             normalize_images,

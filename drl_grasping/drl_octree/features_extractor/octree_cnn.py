@@ -1,4 +1,4 @@
-from drl_grasping.algorithms.common.features_extractor.modules import *
+from drl_grasping.drl_octree.features_extractor.modules import *
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 import gym
 import ocnn

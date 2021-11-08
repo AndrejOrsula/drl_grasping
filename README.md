@@ -1,6 +1,6 @@
 # Deep Reinforcement Learning for Robotic Grasping from Octrees
 
-The focus of this project is to apply Deep Reinforcement Learning to acquire a robust policy that allows robots to grasp diverse objects from compact 3D observations in form of octrees. It is part of my [Master's Thesis](https://github.com/AndrejOrsula/master_thesis) conducted at Aalborg University, Denmark.
+The focus of this project is to apply Deep Reinforcement Learning to acquire a robust policy that allows robots to grasp diverse objects from compact 3D observations in form of octrees.
 
 Below are some animations of employing learned policies on novel scenes for Panda and UR5 robots.
 <p align="center" float="middle">
@@ -276,7 +276,7 @@ This project makes direct use of [stable-baselines3](https://github.com/DLR-RM/s
 
 ### Octree CNN Features Extractor
 
-The [OctreeCnnFeaturesExtractor](drl_grasping/algorithms/common/features_extractor/octree_cnn.py) makes use of [O-CNN](https://github.com/microsoft/O-CNN) implementation to enable training on GPU. This features extractor is part of `OctreeCnnPolicy` policy that is currently implemented for TD3, SAC and TQC algorithms. Network architecture of this feature extractor is illustrated below.
+The [OctreeCnnFeaturesExtractor](drl_grasping/drl_octree/features_extractor/octree_cnn.py) makes use of [O-CNN](https://github.com/microsoft/O-CNN) implementation to enable training on GPU. This features extractor is part of `OctreeCnnPolicy` policy that is currently implemented for TD3, SAC and TQC algorithms. Network architecture of this feature extractor is illustrated below.
 
 <p align="center" float="middle">
   <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/svg/feature_extractor.svg" alt="Architecture of octree-based 3D CNN feature extractor"/>

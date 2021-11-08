@@ -6,11 +6,17 @@
 
 ### Changed
 
-- Instead of all fingers, more than half `n//2 + 1` need to be in contact for a grasp to be successful.
-- Fix grasp checking for grippers with more than 2 fingers
+- Instead of all fingers, more than half (`n//2 + 1`) are now needed to be in contact for a grasp to be successful
+- Major refactoring of `drl_grasping` module
+  - Refactored into two primary submodules that can be imported separately
+    - `drl_octree` that contains octree CNN-based policy
+    - `envs` that contain the environment itself
+  - `utils` submodule still contains boilerplate for RL training and evaluation
+
 
 ### Fixed
  
+- Fix grasp checking for grippers with more than 2 fingers.
 
 ## [[1.1.0] - 2021-10-13](https://github.com/AndrejOrsula/drl_grasping/releases/tag/1.1.0)
  

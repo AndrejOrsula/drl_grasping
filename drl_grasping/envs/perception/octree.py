@@ -1,4 +1,4 @@
-from drl_grasping.utils import conversions
+from drl_grasping.envs.utils import conversions
 from geometry_msgs.msg import Transform
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node

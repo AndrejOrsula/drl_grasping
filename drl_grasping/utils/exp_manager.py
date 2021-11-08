@@ -22,9 +22,9 @@ from stable_baselines3.common.preprocessing import is_image_space, is_image_spac
 import yaml
 
 # Register custom envs
-from drl_grasping.utils.training.callbacks import SaveVecNormalizeCallback, TrialEvalCallback, CheckpointCallbackWithReplayBuffer
-from drl_grasping.utils.training.hyperparams_opt import HYPERPARAMS_SAMPLER
-from drl_grasping.utils.training.utils import ALGOS, get_callback_list, get_latest_run_id, get_wrapper_class, linear_schedule
+from drl_grasping.utils.callbacks import SaveVecNormalizeCallback, TrialEvalCallback, CheckpointCallbackWithReplayBuffer
+from drl_grasping.utils.hyperparams_opt import HYPERPARAMS_SAMPLER
+from drl_grasping.utils.utils import ALGOS, get_callback_list, get_latest_run_id, get_wrapper_class, linear_schedule
 
 
 class ExperimentManager(object):
@@ -259,7 +259,7 @@ class ExperimentManager(object):
     def read_hyperparameters(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         # Load hyperparameters from yaml file
         hyperparams_dir = os.path.abspath(os.path.join(os.path.realpath(__file__),
-                                                       *4*[os.path.pardir],
+                                                       *3*[os.path.pardir],
                                                        'hyperparams'))
         with open(f"{hyperparams_dir}/{self.algo}.yml", "r") as f:
             hyperparams_dict = yaml.safe_load(f)

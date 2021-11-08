@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from drl_grasping.perception import OctreeCreator
+from drl_grasping.envs.perception import OctreeCreator
 from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2
 import ocnn

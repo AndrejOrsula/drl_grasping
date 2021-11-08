@@ -1,22 +1,21 @@
-from drl_grasping.algorithms.common.features_extractor import OctreeCnnFeaturesExtractor
-from drl_grasping.algorithms.common.octree_replay_buffer import preprocess_stacked_octree_batch
-from stable_baselines3.common.policies import register_policy
+from drl_grasping.drl_octree.features_extractor import OctreeCnnFeaturesExtractor
+from drl_grasping.drl_octree.replay_buffer import preprocess_stacked_octree_batch
+from stable_baselines3.common.policies import register_policy, ContinuousCritic
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.utils import is_vectorized_observation
-from sb3_contrib.tqc.policies import Actor, Critic
-from sb3_contrib.tqc.policies import TQCPolicy
+from stable_baselines3.sac.policies import Actor
+from stable_baselines3.sac.policies import SACPolicy
 from torch import nn
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 import gym
 import numpy as np
-import torch as th
-
 import ocnn
+import torch as th
 
 
 class ActorOctreeCnn(Actor):
     """
-    Actor network (policy) for TQC.
+    Actor network (policy) for SAC.
     Overriden to not preprocess observations (unnecessary conversion into float)
 
     :param observation_space: Obervation space
@@ -87,9 +86,20 @@ class ActorOctreeCnn(Actor):
         # return self.features_extractor(preprocessed_obs)
 
 
-class CriticOctreeCnn(Critic):
+class ContinuousCriticOctreeCnn(ContinuousCritic):
     """
-    Critic network (q-value function) for TQC.
+    Critic network(s) for DDPG/SAC/TD3.
+    Overriden to not preprocess observations (unnecessary conversion into float)
+
+    It represents the action-state value function (Q-value function).
+    Compared to A2C/PPO critics, this one represents the Q-value
+    and takes the continuous action as input. It is concatenated with the state
+    and then fed to the network which outputs a single value: Q(s, a).
+    For more recent algorithms like SAC/TD3, multiple networks
+    are created to give different estimates.
+
+    By default, it creates two critic networks used to reduce overestimation
+    thanks to clipped Q-learning (cf TD3 paper).
 
     :param observation_space: Obervation space
     :param action_space: Action space
@@ -100,6 +110,7 @@ class CriticOctreeCnn(Critic):
     :param activation_fn: Activation function
     :param normalize_images: Whether to normalize images or not,
          dividing by 255.0 (True by default)
+    :param n_critics: Number of critic networks to create.
     :param share_features_extractor: Whether the features extractor is shared or not
         between the actor and the critic (this saves computation time)
     """
@@ -113,11 +124,10 @@ class CriticOctreeCnn(Critic):
         features_dim: int,
         activation_fn: Type[nn.Module] = nn.ReLU,
         normalize_images: bool = True,
-        n_quantiles: int = 25,
         n_critics: int = 2,
         share_features_extractor: bool = True,
     ):
-        super(CriticOctreeCnn, self).__init__(
+        super().__init__(
             observation_space=observation_space,
             action_space=action_space,
             net_arch=net_arch,
@@ -125,7 +135,6 @@ class CriticOctreeCnn(Critic):
             features_dim=features_dim,
             activation_fn=activation_fn,
             normalize_images=normalize_images,
-            n_quantiles=n_quantiles,
             n_critics=n_critics,
             share_features_extractor=share_features_extractor)
 
@@ -144,9 +153,9 @@ class CriticOctreeCnn(Critic):
         # return self.features_extractor(preprocessed_obs)
 
 
-class OctreeCnnPolicy(TQCPolicy):
+class OctreeCnnPolicy(SACPolicy):
     """
-    Policy class (with both actor and critic) for TQC.
+    Policy class (with both actor and critic) for SAC.
     Overriden to not preprocess observations (unnecessary conversion into float)
 
     :param observation_space: Observation space
@@ -163,15 +172,14 @@ class OctreeCnnPolicy(TQCPolicy):
         a positive standard deviation (cf paper). It allows to keep variance
         above zero and prevent it from growing too fast. In practice, ``exp()`` is usually enough.
     :param clip_mean: Clip the mean output when using gSDE to avoid numerical instability.
-    :param features_extractor_class: Features extractor to use.
-    :param features_extractor_kwargs: Keyword arguments
-        to pass to the feature extractor.
+    :param features_extractor_class: Features extractor to use (``OctreeCnnFeaturesExtractor``).
     :param normalize_images: Whether to normalize images or not,
          dividing by 255.0 (True by default)
     :param optimizer_class: The optimizer to use,
         ``th.optim.Adam`` by default
     :param optimizer_kwargs: Additional keyword arguments,
         excluding the learning rate, to pass to the optimizer
+    :param n_critics: Number of critic networks to create.
     :param share_features_extractor: Whether to share or not the features extractor
         between the actor and the critic (this saves computation time)
     """
@@ -180,8 +188,9 @@ class OctreeCnnPolicy(TQCPolicy):
         self,
         observation_space: gym.spaces.Space,
         action_space: gym.spaces.Space,
+        # lr_schedule: Schedule, # Note: removed because hinting of Shedule results in import error
         lr_schedule,
-        net_arch: Optional[List[int]] = None,
+        net_arch: Optional[Union[List[int], Dict[str, List[int]]]] = None,
         activation_fn: Type[nn.Module] = nn.ReLU,
         use_sde: bool = False,
         log_std_init: float = -3,
@@ -193,7 +202,6 @@ class OctreeCnnPolicy(TQCPolicy):
         normalize_images: bool = True,
         optimizer_class: Type[th.optim.Optimizer] = th.optim.Adam,
         optimizer_kwargs: Optional[Dict[str, Any]] = None,
-        n_quantiles: int = 25,
         n_critics: int = 2,
         share_features_extractor: bool = True,
         separate_networks_for_stacks: bool = True,
@@ -202,24 +210,24 @@ class OctreeCnnPolicy(TQCPolicy):
         features_extractor_kwargs.update(
             {'separate_networks_for_stacks': separate_networks_for_stacks})
         super(OctreeCnnPolicy, self).__init__(
-            observation_space=observation_space,
-            action_space=action_space,
-            lr_schedule=lr_schedule,
-            net_arch=net_arch,
-            activation_fn=activation_fn,
-            use_sde=use_sde,
-            log_std_init=log_std_init,
-            sde_net_arch=sde_net_arch,
-            use_expln=use_expln,
-            clip_mean=clip_mean,
-            features_extractor_class=features_extractor_class,
-            features_extractor_kwargs=features_extractor_kwargs,
-            normalize_images=normalize_images,
-            optimizer_class=optimizer_class,
-            optimizer_kwargs=optimizer_kwargs,
-            n_quantiles=n_quantiles,
-            n_critics=n_critics,
-            share_features_extractor=share_features_extractor)
+            observation_space,
+            action_space,
+            lr_schedule,
+            net_arch,
+            activation_fn,
+            use_sde,
+            log_std_init,
+            sde_net_arch,
+            use_expln,
+            clip_mean,
+            features_extractor_class,
+            features_extractor_kwargs,
+            normalize_images,
+            optimizer_class,
+            optimizer_kwargs,
+            n_critics,
+            share_features_extractor,
+        )
 
         self._separate_networks_for_stacks = separate_networks_for_stacks
         self._debug_write_octree = debug_write_octree
@@ -229,10 +237,10 @@ class OctreeCnnPolicy(TQCPolicy):
             self.actor_kwargs, features_extractor)
         return ActorOctreeCnn(**actor_kwargs).to(self.device)
 
-    def make_critic(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> Critic:
+    def make_critic(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> ContinuousCritic:
         critic_kwargs = self._update_features_extractor(
             self.critic_kwargs, features_extractor)
-        return CriticOctreeCnn(**critic_kwargs).to(self.device)
+        return ContinuousCriticOctreeCnn(**critic_kwargs).to(self.device)
 
     def predict(
         self,

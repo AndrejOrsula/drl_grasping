@@ -1,6 +1,6 @@
 from drl_grasping.envs.tasks.manipulation import Manipulation
 from drl_grasping.envs.tasks.grasp.curriculum import GraspCurriculum
-from drl_grasping.utils.conversions import quat_to_xyzw
+from drl_grasping.envs.utils.conversions import quat_to_xyzw
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
 from typing import Tuple, List, Union, Dict

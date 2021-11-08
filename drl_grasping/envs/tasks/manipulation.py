@@ -1,6 +1,6 @@
-from drl_grasping.control import MoveIt2
-from drl_grasping.utils.math import quat_mul
-from drl_grasping.utils.conversions import orientation_6d_to_quat, quat_to_xyzw
+from drl_grasping.envs.control import MoveIt2
+from drl_grasping.envs.utils.math import quat_mul
+from drl_grasping.envs.utils.conversions import orientation_6d_to_quat, quat_to_xyzw
 from gym_ignition.base import task
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
