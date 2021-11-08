@@ -388,13 +388,13 @@ class Grasp(Manipulation, abc.ABC):
                 normal_angles.append(
                     np.arccos(np.clip(np.dot(n1, n2), -1.0, 1.0)))
 
-            # Angle between at least two normals must be larger than 0.5*pi/(number_of_fingers)
-            sufficient_angle = 0.5*np.pi/len(self.robot_gripper_link_names)
+            # Angle between at least two normals must be larger than 0.25*pi
+            sufficient_angle = 0.25*np.pi
             for angle in normal_angles:
                 if angle > sufficient_angle:
                     # If sufficient, add to list and process other candidates
                     grasped_objects.append(model_name)
-                    continue
+                    break
 
         return grasped_objects
 

@@ -7,6 +7,7 @@
 ### Changed
 
 - Instead of all fingers, more than half `n//2 + 1` need to be in contact for a grasp to be successful.
+- Fix grasp checking for grippers with more than 2 fingers
 
 ### Fixed
  
