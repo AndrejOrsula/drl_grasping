@@ -4,6 +4,8 @@
 
 ### Added
 
+- (WIP) `lunalab_summit_xl_gen` is now added to the supported robot models.
+
 ### Changed
 
 - Instead of all fingers, more than half (`n//2 + 1`) are now needed to be in contact for a grasp to be successful
@@ -12,7 +14,7 @@
     - `drl_octree` that contains octree CNN-based policy
     - `envs` that contain the environment itself
   - `utils` submodule still contains boilerplate for RL training and evaluation
-
+- A single configurable launch script [sim.launch.py](./launch/sim.launch.py) now replaces all previous variations. Use its launch arguments to select robot model and enable/disable RViz2 GUI.
 
 ### Fixed
  

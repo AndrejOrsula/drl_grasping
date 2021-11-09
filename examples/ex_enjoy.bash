@@ -17,6 +17,7 @@ ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
 ROBOT_MODEL="panda"
 # ROBOT_MODEL="ur5_rg2"
 # ROBOT_MODEL="kinova_j2s7s300"
+# ROBOT_MODEL="lunalab_summit_xl_gen"
 
 ## Algorithm to use
 # ALGO="sac"
@@ -43,12 +44,10 @@ EXTRA_ARGS=""
 ########################################################################################################################
 
 ## Spawn ign_moveit2 subprocess in background, while making sure to forward termination signals
-IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2.launch.py"
-if [ "$ROBOT_MODEL" = "ur5_rg2" ]; then
-    IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_ur5_rg2.launch.py"
-fi
+IGN_MOVEIT2_CMD="ros2 launch drl_grasping sim.launch.py robot_model:=${ROBOT_MODEL} enable_rviz:=true"
 if [ "$ROBOT_MODEL" = "kinova_j2s7s300" ]; then
-    IGN_MOVEIT2_CMD="ros2 launch drl_grasping ign_moveit2_kinova_j2s7s300.launch.py"
+    # Robot name for `kinova_j2s7s300` is different
+    IGN_MOVEIT2_CMD="${IGN_MOVEIT2_CMD} robot_name:=j2s7s300"
 fi
 echo "Launching ign_moveit2 in background:"
 echo "${IGN_MOVEIT2_CMD}"
