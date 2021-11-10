@@ -92,8 +92,14 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         # Setup initial pose
         initial_pose = scenario.Pose(position, orientation)
 
+        # Determine whether to insert from string or file
+        if use_xacro:
+            insert_fn = scenario_gazebo.World.insert_model_from_string
+        else:
+            insert_fn = scenario_gazebo.World.insert_model_from_file
+
         # Insert the model
-        ok_model = world.to_gazebo().insert_model(model_file, initial_pose, model_name)
+        ok_model = insert_fn(world.to_gazebo(), model_file, initial_pose, model_name)
         if not ok_model:
             raise RuntimeError("Failed to insert " + model_name)
 

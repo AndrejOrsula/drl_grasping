@@ -9,6 +9,10 @@ def xacro2sdf(
 ) -> str:
     """Convert xacro (URDF variant) with given arguments to SDF and return as a string."""
 
+    # Convert all values in mappings to strings
+    for keys, values in mappings.items():
+        mappings[keys] = str(values)
+
     # Convert xacro to URDF
     urdf_xml = xacro.process(input_file_name=input_file_path, mappings=mappings)
 
