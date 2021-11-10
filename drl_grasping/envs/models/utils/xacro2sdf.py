@@ -21,7 +21,7 @@ def xacro2sdf(
         result = subprocess.run(
             ["ign", "sdf", "-p", tmp_urdf.name], stdout=subprocess.PIPE
         )
-        sdf_xml = str(result.stdout)
+        sdf_xml = result.stdout.decode("utf-8")
 
         # Remap package name to model name, such that meshes can be located by Ignition
         if model_path_remap is not None:
