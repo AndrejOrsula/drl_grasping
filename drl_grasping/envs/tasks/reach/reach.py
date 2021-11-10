@@ -16,43 +16,51 @@ class Reach(Manipulation, abc.ABC):
     _workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
 
     _object_enable: bool = True
-    _object_type: str = 'box'
+    _object_type: str = "box"
     _object_dimensions: List[float] = [0.05, 0.05, 0.05]
     _object_collision: bool = False
     _object_visual: bool = True
     _object_static: bool = True
     _object_color: Tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
-    _object_spawn_centre: Tuple[float, float, float] = \
-        (_workspace_centre[0],
-         _workspace_centre[1],
-         _workspace_centre[2])
+    _object_spawn_centre: Tuple[float, float, float] = (
+        _workspace_centre[0],
+        _workspace_centre[1],
+        _workspace_centre[2],
+    )
     _object_spawn_volume_proportion: float = 0.75
-    _object_spawn_volume: Tuple[float, float, float] = \
-        (_object_spawn_volume_proportion*_workspace_volume[0],
-         _object_spawn_volume_proportion*_workspace_volume[1],
-         _object_spawn_volume_proportion*_workspace_volume[2])
+    _object_spawn_volume: Tuple[float, float, float] = (
+        _object_spawn_volume_proportion * _workspace_volume[0],
+        _object_spawn_volume_proportion * _workspace_volume[1],
+        _object_spawn_volume_proportion * _workspace_volume[2],
+    )
 
-    def __init__(self,
-                 agent_rate: float,
-                 robot_model: str,
-                 restrict_position_goal_to_workspace: bool,
-                 sparse_reward: bool,
-                 act_quick_reward: float,
-                 required_accuracy: float,
-                 verbose: bool,
-                 **kwargs):
+    def __init__(
+        self,
+        agent_rate: float,
+        robot_model: str,
+        restrict_position_goal_to_workspace: bool,
+        sparse_reward: bool,
+        act_quick_reward: float,
+        required_accuracy: float,
+        verbose: bool,
+        **kwargs,
+    ):
 
         # Initialize the Task base class
-        Manipulation.__init__(self,
-                              agent_rate=agent_rate,
-                              robot_model=robot_model,
-                              restrict_position_goal_to_workspace=restrict_position_goal_to_workspace,
-                              verbose=verbose,
-                              **kwargs)
+        Manipulation.__init__(
+            self,
+            agent_rate=agent_rate,
+            robot_model=robot_model,
+            restrict_position_goal_to_workspace=restrict_position_goal_to_workspace,
+            verbose=verbose,
+            **kwargs,
+        )
 
         # Additional parameters
         self._sparse_reward: bool = sparse_reward
-        self._act_quick_reward = act_quick_reward if act_quick_reward >= 0.0 else -act_quick_reward
+        self._act_quick_reward = (
+            act_quick_reward if act_quick_reward >= 0.0 else -act_quick_reward
+        )
         self._required_accuracy: float = required_accuracy
 
         # Flag indicating if the task is done (performance - get_reward + is_done)
@@ -65,20 +73,14 @@ class Reach(Manipulation, abc.ABC):
 
         # 0:3 - (x, y, z) displacement
         #     - rescaled to metric units before use
-        return gym.spaces.Box(low=-1.0,
-                              high=1.0,
-                              shape=(3,),
-                              dtype=np.float32)
+        return gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
 
     def create_observation_space(self) -> ObservationSpace:
 
         # 0:3 - (x, y, z) end effector position
         # 3:6 - (x, y, z) target position
         # Note: These could theoretically be restricted to the workspace and object spawn area instead of inf
-        return gym.spaces.Box(low=-np.inf,
-                              high=np.inf,
-                              shape=(6,),
-                              dtype=np.float32)
+        return gym.spaces.Box(low=-np.inf, high=np.inf, shape=(6,), dtype=np.float32)
 
     def set_action(self, action: Action):
 
@@ -104,8 +106,7 @@ class Reach(Manipulation, abc.ABC):
         target_position = self.get_target_position()
 
         # Create the observation
-        observation = Observation(np.concatenate([ee_position,
-                                                  target_position]))
+        observation = Observation(np.concatenate([ee_position, target_position]))
 
         if self._verbose:
             print(f"\nobservation: {observation}")
@@ -166,11 +167,17 @@ class Reach(Manipulation, abc.ABC):
         target_position = self.get_target_position()
 
         # Compute the current distance to the target
-        return np.linalg.norm([ee_position[0] - target_position[0],
-                               ee_position[1] - target_position[1],
-                               ee_position[2] - target_position[2]])
+        return np.linalg.norm(
+            [
+                ee_position[0] - target_position[0],
+                ee_position[1] - target_position[1],
+                ee_position[2] - target_position[2],
+            ]
+        )
 
     def get_target_position(self) -> Tuple[float, float, float]:
 
         target_object = self.world.get_model(self.object_names[0]).to_gazebo()
-        return target_object.get_link(link_name=target_object.link_names()[0]).position()
+        return target_object.get_link(
+            link_name=target_object.link_names()[0]
+        ).position()

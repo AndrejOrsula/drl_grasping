@@ -24,7 +24,7 @@ Example of Sim2Real transfer on UR5 can be seen below (trained inside simulation
 ### Requirements
 
 - **OS:** Ubuntu 20.04 (Focal)
-  - Others might work, but they were not tested. 
+  - Others might work, but they were not tested.
 - **GPU:** CUDA is required to process octree observations on GPU.
   - Everything else should function normally on CPU, i.e. environments with other observation types.
 
@@ -82,7 +82,7 @@ colcon build --merge-install --symlink-install --cmake-args "-DCMAKE_BUILD_TYPE=
 
 - **OS:** Any system that supports [Docker](https://docs.docker.com/get-docker) should work (Linux, Windows, macOS).
   - Only Ubuntu 20.04 was tested.
-- **GPU:** CUDA is required to process octree observations on GPU. Therefore, only Docker images with CUDA support are currently available, however, it should be possible to use the pre-built image even on systems without a dedicated GPU. 
+- **GPU:** CUDA is required to process octree observations on GPU. Therefore, only Docker images with CUDA support are currently available, however, it should be possible to use the pre-built image even on systems without a dedicated GPU.
 
 ### Dependencies
 
@@ -225,7 +225,7 @@ The included [ManipulationGazeboEnvRandomizer](drl_grasping/envs/randomizers/man
   - Random type (box, sphere and cylinder are currently supported)
   - Random color, scale, mass, friction
 - Object model - mesh geometry
-  - Random type (see [Object Model Database](#object-model-database)) 
+  - Random type (see [Object Model Database](#object-model-database))
   - Random scale, mass, friction
 - Object pose
 - Ground plane texture
@@ -300,7 +300,7 @@ Hyperparameters for training of RL agents can be found in [hyperparams](hyperpar
     └── utils           # Other utilities, used across the module
 ├── examples            # Examples for training and enjoying RL agents
 ├── hyperparams         # Hyperparameters for training RL agents
-├── scripts             # Helpful scripts for training, evaluating, ... 
+├── scripts             # Helpful scripts for training, evaluating, ...
 ├── launch              # ROS 2 launch scripts that can be used to help with setup
 ├── docker              # Dockerfile for this project
 └── drl_grasping.repos  # List of other dependencies created for `drl_grasping`

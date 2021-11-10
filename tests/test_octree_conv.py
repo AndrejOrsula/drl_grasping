@@ -19,12 +19,13 @@ class OctreeCreatorTest(Node):
         except:
             if not rclpy.ok():
                 import sys
+
                 sys.exit("ROS 2 could not be initialised")
         Node.__init__(self, "octree_creator_test")
 
-        self.__point_cloud_sub = self.create_subscription(PointCloud2,
-                                                          "rgbd_camera/points",
-                                                          self.point_cloud_callback, 1)
+        self.__point_cloud_sub = self.create_subscription(
+            PointCloud2, "rgbd_camera/points", self.point_cloud_callback, 1
+        )
 
         self.octree_creator = OctreeCreator()
 
@@ -49,7 +50,7 @@ class OctreeCreatorTest(Node):
         octree_batch = ocnn.octree_batch([octree]).cuda()
 
         # Extract features from the octree
-        data = ocnn.octree_property(octree_batch, 'feature', depth).cuda()
+        data = ocnn.octree_property(octree_batch, "feature", depth).cuda()
         assert data.size(1) == channels
 
         # Test simple convolution
@@ -70,16 +71,17 @@ class OctreeCreatorTest(Node):
         num_outputs = 5
 
         # Pad octree to a specific, fixed length
-        print(f'Original size: {octree.shape}')
+        print(f"Original size: {octree.shape}")
         padded_size = 1000000
-        octree_padded = torch.nn.ConstantPad1d(
-            (0, padded_size - octree.shape[0]), 0)(octree)
+        octree_padded = torch.nn.ConstantPad1d((0, padded_size - octree.shape[0]), 0)(
+            octree
+        )
 
         # Create batch from the octree and move it to VRAM (it has to be in VRAM for the next step)
         octree_batch = ocnn.octree_batch([octree_padded]).cuda()
 
         # Extract features from the octree
-        data = ocnn.octree_property(octree_batch, 'feature', depth).cuda()
+        data = ocnn.octree_property(octree_batch, "feature", depth).cuda()
         assert data.size(1) == channels
 
         # Test simple convolution

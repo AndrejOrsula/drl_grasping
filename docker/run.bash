@@ -70,5 +70,5 @@ docker run -it \
     $IMG \
     ${@:2}
 
-    # Use this volume for custom config and models that are stored locally on your machine
-    # -v "$HOME/.ignition:/root/.ignition"
+# Use this volume for custom config and models that are stored locally on your machine
+# -v "$HOME/.ignition:/root/.ignition"

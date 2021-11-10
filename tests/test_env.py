@@ -29,18 +29,20 @@ def main(args=None):
     make_env = functools.partial(make_env_from_id, env_id=env_id)
 
     # Wrap environment with randomizer
-    env = ManipulationGazeboEnvRandomizer(env=make_env,
-                                          object_random_pose=True,
-                                          object_models_rollouts_num=1,
-                                          object_random_use_mesh_models=True,
-                                          object_random_model_count=3,
-                                          ground_model_rollouts_num=1)
+    env = ManipulationGazeboEnvRandomizer(
+        env=make_env,
+        object_random_pose=True,
+        object_models_rollouts_num=1,
+        object_random_use_mesh_models=True,
+        object_random_model_count=3,
+        ground_model_rollouts_num=1,
+    )
 
     # Initialize random seed
     env.seed(42)
 
     # Enable rendering
-    env.render('human')
+    env.render("human")
 
     # Check it
     check_env(env, warn=True, skip_render_check=True)

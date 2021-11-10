@@ -1,5 +1,5 @@
 # CHANGELOG
-  
+
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
@@ -17,11 +17,11 @@
 - A single configurable launch script [sim.launch.py](./launch/sim.launch.py) now replaces all previous variations. Use its launch arguments to select robot model and enable/disable RViz2 GUI.
 
 ### Fixed
- 
+
 - Fix grasp checking for grippers with more than 2 fingers.
 
 ## [[1.1.0] - 2021-10-13](https://github.com/AndrejOrsula/drl_grasping/releases/tag/1.1.0)
- 
+
 ### Added
 
 - `kinova_j2s7s300` is now added to the supported robot models.
@@ -42,7 +42,7 @@
 
 
 ## [[1.0.0] - 2021-06-08](https://github.com/AndrejOrsula/drl_grasping/releases/tag/1.0.0)
- 
+
 ### Added
 
 - Initial version of this project.

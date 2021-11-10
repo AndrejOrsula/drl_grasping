@@ -11,14 +11,16 @@ from stable_baselines3.common.off_policy_algorithm import OffPolicyAlgorithm
 def _setup_model_with_separate_octree_batches_for_stacks(self) -> None:
     self._setup_lr_schedule()
     self.set_random_seed(self.seed)
-    if 'separate_networks_for_stacks' in self.policy_kwargs:
+    if "separate_networks_for_stacks" in self.policy_kwargs:
         self.replay_buffer = ReplayBuffer(
             self.buffer_size,
             self.observation_space,
             self.action_space,
             self.device,
             optimize_memory_usage=self.optimize_memory_usage,
-            separate_networks_for_stacks=self.policy_kwargs['separate_networks_for_stacks'],
+            separate_networks_for_stacks=self.policy_kwargs[
+                "separate_networks_for_stacks"
+            ],
         )
     else:
         self.replay_buffer = ReplayBuffer(

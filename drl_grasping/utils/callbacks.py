@@ -4,7 +4,11 @@ from typing import Optional
 import numpy as np
 import optuna
 from matplotlib import pyplot as plt
-from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, CheckpointCallback
+from stable_baselines3.common.callbacks import (
+    BaseCallback,
+    EvalCallback,
+    CheckpointCallback,
+)
 from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv
 
 
@@ -59,7 +63,13 @@ class SaveVecNormalizeCallback(BaseCallback):
         only one file will be kept.
     """
 
-    def __init__(self, save_freq: int, save_path: str, name_prefix: Optional[str] = None, verbose: int = 0):
+    def __init__(
+        self,
+        save_freq: int,
+        save_path: str,
+        name_prefix: Optional[str] = None,
+        verbose: int = 0,
+    ):
         super(SaveVecNormalizeCallback, self).__init__(verbose)
         self.save_freq = save_freq
         self.save_path = save_path
@@ -73,7 +83,9 @@ class SaveVecNormalizeCallback(BaseCallback):
     def _on_step(self) -> bool:
         if self.n_calls % self.save_freq == 0:
             if self.name_prefix is not None:
-                path = os.path.join(self.save_path, f"{self.name_prefix}_{self.num_timesteps}_steps.pkl")
+                path = os.path.join(
+                    self.save_path, f"{self.name_prefix}_{self.num_timesteps}_steps.pkl"
+                )
             else:
                 path = os.path.join(self.save_path, "vecnormalize.pkl")
             if self.model.get_vec_normalize_env() is not None:
@@ -121,12 +133,16 @@ class PlotNoiseRatioCallback(BaseCallback):
             self.deterministic_actions = np.array(self.deterministic_actions)
             self.noises = np.array(self.noises)
 
-            plt.figure("Deterministic action and noise during exploration", figsize=(6.4, 4.8))
+            plt.figure(
+                "Deterministic action and noise during exploration", figsize=(6.4, 4.8)
+            )
             # plt.title('Deterministic action and noise during exploration', fontsize=14)
             plt.xlabel("Timesteps", fontsize=14)
             plt.xticks(fontsize=13)
             plt.ylabel("Action", fontsize=14)
-            plt.plot(x, self.deterministic_actions, label="deterministic action", linewidth=2)
+            plt.plot(
+                x, self.deterministic_actions, label="deterministic action", linewidth=2
+            )
             plt.plot(x, self.noises, label="exploration noise", linewidth=2)
             plt.plot(x, self.noisy_actions, label="noisy action", linewidth=2)
             plt.legend(fontsize=13)
@@ -148,14 +164,25 @@ class CheckpointCallbackWithReplayBuffer(CheckpointCallback):
     :param verbose:
     """
 
-    def __init__(self, save_freq: int, save_path: str, name_prefix: str = "rl_model", save_replay_buffer: bool = False, verbose: int = 0):
-        super(CheckpointCallbackWithReplayBuffer, self).__init__(save_freq, save_path, name_prefix, verbose)
+    def __init__(
+        self,
+        save_freq: int,
+        save_path: str,
+        name_prefix: str = "rl_model",
+        save_replay_buffer: bool = False,
+        verbose: int = 0,
+    ):
+        super(CheckpointCallbackWithReplayBuffer, self).__init__(
+            save_freq, save_path, name_prefix, verbose
+        )
         self.save_replay_buffer = save_replay_buffer
         # self.save_replay_buffer = hasattr(self.model, "save_replay_buffer") and save_replay_buffer
 
     def _on_step(self) -> bool:
         if self.n_calls % self.save_freq == 0:
-            path = os.path.join(self.save_path, f"{self.name_prefix}_{self.num_timesteps}_steps")
+            path = os.path.join(
+                self.save_path, f"{self.name_prefix}_{self.num_timesteps}_steps"
+            )
             self.model.save(path)
             if self.verbose > 0:
                 print(f"Saving model checkpoint to {path}")

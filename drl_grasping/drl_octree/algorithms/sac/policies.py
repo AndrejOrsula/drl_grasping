@@ -69,7 +69,8 @@ class ActorOctreeCnn(Actor):
             sde_net_arch=sde_net_arch,
             use_expln=use_expln,
             clip_mean=clip_mean,
-            normalize_images=normalize_images)
+            normalize_images=normalize_images,
+        )
 
     def extract_features(self, obs: th.Tensor) -> th.Tensor:
         """
@@ -136,7 +137,8 @@ class ContinuousCriticOctreeCnn(ContinuousCritic):
             activation_fn=activation_fn,
             normalize_images=normalize_images,
             n_critics=n_critics,
-            share_features_extractor=share_features_extractor)
+            share_features_extractor=share_features_extractor,
+        )
 
     def extract_features(self, obs: th.Tensor) -> th.Tensor:
         """
@@ -197,7 +199,9 @@ class OctreeCnnPolicy(SACPolicy):
         sde_net_arch: Optional[List[int]] = None,
         use_expln: bool = False,
         clip_mean: float = 2.0,
-        features_extractor_class: Type[BaseFeaturesExtractor] = OctreeCnnFeaturesExtractor,
+        features_extractor_class: Type[
+            BaseFeaturesExtractor
+        ] = OctreeCnnFeaturesExtractor,
         features_extractor_kwargs: Optional[Dict[str, Any]] = None,
         normalize_images: bool = True,
         optimizer_class: Type[th.optim.Optimizer] = th.optim.Adam,
@@ -208,7 +212,8 @@ class OctreeCnnPolicy(SACPolicy):
         debug_write_octree: bool = False,
     ):
         features_extractor_kwargs.update(
-            {'separate_networks_for_stacks': separate_networks_for_stacks})
+            {"separate_networks_for_stacks": separate_networks_for_stacks}
+        )
         super(OctreeCnnPolicy, self).__init__(
             observation_space,
             action_space,
@@ -232,14 +237,20 @@ class OctreeCnnPolicy(SACPolicy):
         self._separate_networks_for_stacks = separate_networks_for_stacks
         self._debug_write_octree = debug_write_octree
 
-    def make_actor(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> Actor:
+    def make_actor(
+        self, features_extractor: Optional[BaseFeaturesExtractor] = None
+    ) -> Actor:
         actor_kwargs = self._update_features_extractor(
-            self.actor_kwargs, features_extractor)
+            self.actor_kwargs, features_extractor
+        )
         return ActorOctreeCnn(**actor_kwargs).to(self.device)
 
-    def make_critic(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> ContinuousCritic:
+    def make_critic(
+        self, features_extractor: Optional[BaseFeaturesExtractor] = None
+    ) -> ContinuousCritic:
         critic_kwargs = self._update_features_extractor(
-            self.critic_kwargs, features_extractor)
+            self.critic_kwargs, features_extractor
+        )
         return ContinuousCriticOctreeCnn(**critic_kwargs).to(self.device)
 
     def predict(
@@ -263,19 +274,20 @@ class OctreeCnnPolicy(SACPolicy):
         if not isinstance(observation, dict):
             observation = np.array(observation)
 
-        vectorized_env = is_vectorized_observation(
-            observation, self.observation_space)
+        vectorized_env = is_vectorized_observation(observation, self.observation_space)
 
         if self._debug_write_octree:
-            ocnn.write_octree(th.from_numpy(observation[-1]), 'octree.octree')
+            ocnn.write_octree(th.from_numpy(observation[-1]), "octree.octree")
 
         # Make batch out of tensor (consisting of n-stacked octrees)
         octree_batch = preprocess_stacked_octree_batch(
-            observation, self.device, separate_batches=self._separate_networks_for_stacks)
+            observation,
+            self.device,
+            separate_batches=self._separate_networks_for_stacks,
+        )
 
         with th.no_grad():
-            actions = self._predict(octree_batch,
-                                    deterministic=deterministic)
+            actions = self._predict(octree_batch, deterministic=deterministic)
         # Convert to numpy
         actions = actions.cpu().numpy()
 
@@ -287,12 +299,14 @@ class OctreeCnnPolicy(SACPolicy):
                 # Actions could be on arbitrary scale, so clip the actions to avoid
                 # out of bound error (e.g. if sampling from a Gaussian distribution)
                 actions = np.clip(
-                    actions, self.action_space.low, self.action_space.high)
+                    actions, self.action_space.low, self.action_space.high
+                )
 
         if not vectorized_env:
             if state is not None:
                 raise ValueError(
-                    "Error: The environment must be vectorized when using recurrent policies.")
+                    "Error: The environment must be vectorized when using recurrent policies."
+                )
             actions = actions[0]
 
         return actions, state

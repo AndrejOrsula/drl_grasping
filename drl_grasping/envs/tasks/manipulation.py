@@ -19,43 +19,48 @@ class Manipulation(task.Task, abc.ABC):
     _robot_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
     _robot_arm_collision: bool = True
     _robot_hand_collision: bool = True
-    _robot_initial_joint_positions_panda: Tuple[float, ...] = (0.0,
-                                                               0.0,
-                                                               0.0,
-                                                               -1.57,
-                                                               0.0,
-                                                               1.57,
-                                                               0.79,
-                                                               0.0,
-                                                               0.0)
-    _robot_initial_joint_positions_ur5_rg2: Tuple[float, ...] = (0.0,
-                                                                 0.0,
-                                                                 1.57,
-                                                                 0.0,
-                                                                 -1.57,
-                                                                 -1.57,
-                                                                 0.0,
-                                                                 0.0)
-    _robot_initial_joint_positions_kinova_j2s7s300: Tuple[float, ...] = (3.6787,
-                                                                         4.0701,
-                                                                         -1.7164,
-                                                                         2.1397,
-                                                                         1.0536,
-                                                                         5.1487,
-                                                                         0.9393,
-                                                                         0.0,
-                                                                         0.0,
-                                                                         0.0)
+    _robot_initial_joint_positions_panda: Tuple[float, ...] = (
+        0.0,
+        0.0,
+        0.0,
+        -1.57,
+        0.0,
+        1.57,
+        0.79,
+        0.0,
+        0.0,
+    )
+    _robot_initial_joint_positions_ur5_rg2: Tuple[float, ...] = (
+        0.0,
+        0.0,
+        1.57,
+        0.0,
+        -1.57,
+        -1.57,
+        0.0,
+        0.0,
+    )
+    _robot_initial_joint_positions_kinova_j2s7s300: Tuple[float, ...] = (
+        3.6787,
+        4.0701,
+        -1.7164,
+        2.1397,
+        1.0536,
+        5.1487,
+        0.9393,
+        0.0,
+        0.0,
+        0.0,
+    )
 
     _workspace_centre: Tuple[float, float, float] = (0.5, 0, 0.25)
     _workspace_volume: Tuple[float, float, float] = (1.0, 1.0, 1.0)
 
     _camera_enable: bool = False
-    _camera_type: str = 'rgbd_camera'
-    _camera_render_engine: str = 'ogre2'
+    _camera_type: str = "rgbd_camera"
+    _camera_render_engine: str = "ogre2"
     _camera_position: Tuple[float, float, float] = (0.5, 0, 1)
-    _camera_quat_xyzw: Tuple[float, float,
-                             float, float] = (-0.707, 0, 0.707, 0)
+    _camera_quat_xyzw: Tuple[float, float, float, float] = (-0.707, 0, 0.707, 0)
     _camera_width: int = 128
     _camera_height: int = 128
     _camera_update_rate: int = 10
@@ -74,36 +79,40 @@ class Manipulation(task.Task, abc.ABC):
 
     _object_enable: bool = False
     # 'box' [x, y, z], 'sphere' [radius], 'cylinder' [radius, height]
-    _object_type: str = 'box'
+    _object_type: str = "box"
     _object_dimensions: List[float] = [0.05, 0.05, 0.05]
     _object_mass: float = 0.1
     _object_collision: bool = True
     _object_visual: bool = True
     _object_static: bool = False
     _object_color: Tuple[float, float, float, float] = (0.8, 0.8, 0.8, 1.0)
-    _object_spawn_centre: Tuple[float, float, float] = \
-        (_workspace_centre[0],
-         _workspace_centre[1],
-         _workspace_centre[2])
+    _object_spawn_centre: Tuple[float, float, float] = (
+        _workspace_centre[0],
+        _workspace_centre[1],
+        _workspace_centre[2],
+    )
     _object_spawn_volume_proportion: float = 0.75
-    _object_spawn_volume: Tuple[float, float, float] = \
-        (_object_spawn_volume_proportion*_workspace_volume[0],
-         _object_spawn_volume_proportion*_workspace_volume[1],
-         _object_spawn_volume_proportion*_workspace_volume[2])
+    _object_spawn_volume: Tuple[float, float, float] = (
+        _object_spawn_volume_proportion * _workspace_volume[0],
+        _object_spawn_volume_proportion * _workspace_volume[1],
+        _object_spawn_volume_proportion * _workspace_volume[2],
+    )
     _object_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
 
     _insert_scene_broadcaster_plugin: bool = True
     _insert_user_commands_plugin: bool = True
 
     _relative_position_scaling_factor: float = 0.1
-    _z_relative_orientation_scaling_factor: float = np.pi/4.0
+    _z_relative_orientation_scaling_factor: float = np.pi / 4.0
 
-    def __init__(self,
-                 agent_rate: float,
-                 robot_model: str,
-                 restrict_position_goal_to_workspace: bool,
-                 verbose: bool,
-                 **kwargs):
+    def __init__(
+        self,
+        agent_rate: float,
+        robot_model: str,
+        restrict_position_goal_to_workspace: bool,
+        verbose: bool,
+        **kwargs,
+    ):
         # Add to ids
         self.id = next(self._ids)
 
@@ -111,16 +120,23 @@ class Manipulation(task.Task, abc.ABC):
         task.Task.__init__(self, agent_rate=agent_rate)
 
         self._robot_model = robot_model
-        if 'panda' == robot_model:
-            self._robot_initial_joint_positions = self._robot_initial_joint_positions_panda
-        elif 'ur5_rg2' == robot_model:
-            self._robot_initial_joint_positions = self._robot_initial_joint_positions_ur5_rg2
-        elif 'kinova_j2s7s300' == robot_model:
-            self._robot_initial_joint_positions = self._robot_initial_joint_positions_kinova_j2s7s300
+        if "panda" == robot_model:
+            self._robot_initial_joint_positions = (
+                self._robot_initial_joint_positions_panda
+            )
+        elif "ur5_rg2" == robot_model:
+            self._robot_initial_joint_positions = (
+                self._robot_initial_joint_positions_ur5_rg2
+            )
+        elif "kinova_j2s7s300" == robot_model:
+            self._robot_initial_joint_positions = (
+                self._robot_initial_joint_positions_kinova_j2s7s300
+            )
 
         # Control (MoveIt2)
-        self.moveit2 = MoveIt2(robot_model=robot_model,
-                               node_name=f'ign_moveit2_py_{self.id}')
+        self.moveit2 = MoveIt2(
+            robot_model=robot_model, node_name=f"ign_moveit2_py_{self.id}"
+        )
 
         # Names of important models
         self.robot_name = None
@@ -172,11 +188,11 @@ class Manipulation(task.Task, abc.ABC):
 
         pass
 
-    def set_position_goal(self,
-                          absolute: Union[Tuple[float, float, float],
-                                          None] = None,
-                          relative: Union[Tuple[float, float, float],
-                                          None] = None):
+    def set_position_goal(
+        self,
+        absolute: Union[Tuple[float, float, float], None] = None,
+        relative: Union[Tuple[float, float, float], None] = None,
+    ):
 
         target_pos = None
 
@@ -190,9 +206,11 @@ class Manipulation(task.Task, abc.ABC):
             current_pos = self.get_ee_position()
 
             # Compute target position
-            target_pos = [current_pos[0] + relative_pos[0],
-                          current_pos[1] + relative_pos[1],
-                          current_pos[2] + relative_pos[2]]
+            target_pos = [
+                current_pos[0] + relative_pos[0],
+                current_pos[1] + relative_pos[1],
+                current_pos[2] + relative_pos[2],
+            ]
 
         if target_pos is not None:
             # Restrict target position to a limited workspace
@@ -200,37 +218,41 @@ class Manipulation(task.Task, abc.ABC):
                 centre = self._workspace_centre
                 volume = self._workspace_volume
                 for i in range(3):
-                    target_pos[i] = min(centre[i] + volume[i]/2,
-                                        max(centre[i] - volume[i]/2,
-                                            target_pos[i]))
+                    target_pos[i] = min(
+                        centre[i] + volume[i] / 2,
+                        max(centre[i] - volume[i] / 2, target_pos[i]),
+                    )
             # Set position goal
             self.moveit2.set_position_goal(target_pos)
         else:
-            print('error: Neither absolute or relative position is set')
+            print("error: Neither absolute or relative position is set")
 
-    def set_orientation_goal(self,
-                             absolute: Union[Tuple[float, ...], None] = None,
-                             relative: Union[Tuple[float, ...], None] = None,
-                             representation: str = 'quat',
-                             xyzw: bool = True):
+    def set_orientation_goal(
+        self,
+        absolute: Union[Tuple[float, ...], None] = None,
+        relative: Union[Tuple[float, ...], None] = None,
+        representation: str = "quat",
+        xyzw: bool = True,
+    ):
 
         target_quat_xyzw = None
 
         if absolute is not None:
             # Convert absolute orientation representation to quaternion
-            if 'quat' == representation:
+            if "quat" == representation:
                 if xyzw:
                     target_quat_xyzw = absolute
                 else:
                     target_quat_xyzw = quat_to_xyzw(absolute)
-            elif '6d' == representation:
-                vectors = tuple(absolute[x:x + 3]
-                                for x, _ in enumerate(absolute) if x % 3 == 0)
-                target_quat_xyzw = orientation_6d_to_quat(
-                    vectors[0], vectors[1])
-            elif 'z' == representation:
+            elif "6d" == representation:
+                vectors = tuple(
+                    absolute[x : x + 3] for x, _ in enumerate(absolute) if x % 3 == 0
+                )
+                target_quat_xyzw = orientation_6d_to_quat(vectors[0], vectors[1])
+            elif "z" == representation:
                 target_quat_xyzw = Rotation.from_euler(
-                    'xyz', [np.pi, 0, absolute]).as_quat()
+                    "xyz", [np.pi, 0, absolute]
+                ).as_quat()
 
         elif relative is not None:
             # Get current orientation
@@ -238,29 +260,29 @@ class Manipulation(task.Task, abc.ABC):
 
             # For 'z' representation, result should always point down
             # Therefore, create a new quatertnion that contains only yaw component
-            if 'z' == representation:
-                current_yaw = Rotation.from_quat(
-                    current_quat_xyzw).as_euler('xyz')[2]
+            if "z" == representation:
+                current_yaw = Rotation.from_quat(current_quat_xyzw).as_euler("xyz")[2]
                 current_quat_xyzw = Rotation.from_euler(
-                    'xyz', [np.pi, 0, current_yaw]).as_quat()
+                    "xyz", [np.pi, 0, current_yaw]
+                ).as_quat()
 
             # Convert relative orientation representation to quaternion
             relative_quat_xyzw = None
-            if 'quat' == representation:
+            if "quat" == representation:
                 if xyzw:
                     relative_quat_xyzw = relative
                 else:
-                    relative_quat_xyzw = \
-                        quat_to_xyzw(relative)
-            elif '6d' == representation:
-                vectors = tuple(relative[x:x + 3]
-                                for x, _ in enumerate(relative) if x % 3 == 0)
-                relative_quat_xyzw = orientation_6d_to_quat(
-                    vectors[0], vectors[1])
-            elif 'z' == representation:
+                    relative_quat_xyzw = quat_to_xyzw(relative)
+            elif "6d" == representation:
+                vectors = tuple(
+                    relative[x : x + 3] for x, _ in enumerate(relative) if x % 3 == 0
+                )
+                relative_quat_xyzw = orientation_6d_to_quat(vectors[0], vectors[1])
+            elif "z" == representation:
                 relative *= self._z_relative_orientation_scaling_factor
                 relative_quat_xyzw = Rotation.from_euler(
-                    'xyz', [0, 0, relative]).as_quat()
+                    "xyz", [0, 0, relative]
+                ).as_quat()
 
             # Compute target position (combine quaternions)
             target_quat_xyzw = quat_mul(current_quat_xyzw, relative_quat_xyzw)
@@ -271,7 +293,7 @@ class Manipulation(task.Task, abc.ABC):
             # Set orientation goal
             self.moveit2.set_orientation_goal(target_quat_xyzw)
         else:
-            print('error: Neither absolute or relative orientation is set')
+            print("error: Neither absolute or relative orientation is set")
 
     def get_ee_position(self) -> Tuple[float, float, float]:
 

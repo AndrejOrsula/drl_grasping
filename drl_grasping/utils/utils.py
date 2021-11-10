@@ -9,8 +9,10 @@ import yaml
 
 # Note: Import monkey patch of OffPolicyAlgorithm before stable_baselines3 OffPolicyAlgorithm
 from drl_grasping.drl_octree.algorithms import off_policy_algorithm
+
 # Note: Import monkey patch of SAC before stable_baselines3 SAC
 from drl_grasping.drl_octree.algorithms import sac
+
 # Note: Import monkey patch of TQC before stable_baselines3 TQC
 from drl_grasping.drl_octree.algorithms import tqc
 
@@ -18,7 +20,12 @@ from stable_baselines3 import A2C, DDPG, DQN, HER, PPO, SAC, TD3
 from sb3_contrib import QRDQN, TQC
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv, VecFrameStack
+from stable_baselines3.common.vec_env import (
+    DummyVecEnv,
+    SubprocVecEnv,
+    VecEnv,
+    VecFrameStack,
+)
 
 
 ALGOS = {
@@ -44,7 +51,9 @@ def flatten_dict_observations(env: gym.Env) -> gym.Env:
         return gym.wrappers.FlattenDictWrapper(env, dict_keys=list(keys))
 
 
-def get_wrapper_class(hyperparams: Dict[str, Any]) -> Optional[Callable[[gym.Env], gym.Env]]:
+def get_wrapper_class(
+    hyperparams: Dict[str, Any]
+) -> Optional[Callable[[gym.Env], gym.Env]]:
     """
     Get one or more Gym environment wrapper class specified as a hyper parameter
     "env_wrapper".
@@ -96,10 +105,8 @@ def get_wrapper_class(hyperparams: Dict[str, Any]) -> Optional[Callable[[gym.Env
                 kwargs = wrapper_dict[wrapper_name]
             else:
                 kwargs = {}
-            wrapper_module = importlib.import_module(
-                get_module_name(wrapper_name))
-            wrapper_class = getattr(
-                wrapper_module, get_class_name(wrapper_name))
+            wrapper_module = importlib.import_module(get_module_name(wrapper_name))
+            wrapper_class = getattr(wrapper_module, get_class_name(wrapper_name))
             wrapper_classes.append(wrapper_class)
             wrapper_kwargs.append(kwargs)
 
@@ -108,7 +115,9 @@ def get_wrapper_class(hyperparams: Dict[str, Any]) -> Optional[Callable[[gym.Env
             :param env:
             :return:
             """
-            for wrapper_class, wrapper_class_kwargs in zip(wrapper_classes, wrapper_kwargs):
+            for wrapper_class, wrapper_class_kwargs in zip(
+                wrapper_classes, wrapper_kwargs
+            ):
                 env = wrapper_class(env, **wrapper_class_kwargs, **env_kwargs)
             return env
 
@@ -167,10 +176,8 @@ def get_callback_list(hyperparams: Dict[str, Any]) -> List[BaseCallback]:
                 kwargs = callback_dict[callback_name]
             else:
                 kwargs = {}
-            callback_module = importlib.import_module(
-                get_module_name(callback_name))
-            callback_class = getattr(
-                callback_module, get_class_name(callback_name))
+            callback_module = importlib.import_module(get_module_name(callback_name))
+            callback_class = getattr(callback_module, get_class_name(callback_name))
             callbacks.append(callback_class(**kwargs))
 
     return callbacks
@@ -227,6 +234,7 @@ def create_test_env(
                 os.makedirs(log_dir, exist_ok=True)
             env = Monitor(env, filename=monitor_path)
             return env
+
         return _init
 
     if vec_env_cls is None:
@@ -297,12 +305,18 @@ def get_latest_run_id(log_path: str, env_id: str) -> int:
     for path in glob.glob(log_path + f"/{env_id}_[0-9]*"):
         file_name = path.split("/")[-1]
         ext = file_name.split("_")[-1]
-        if env_id == "_".join(file_name.split("_")[:-1]) and ext.isdigit() and int(ext) > max_run_id:
+        if (
+            env_id == "_".join(file_name.split("_")[:-1])
+            and ext.isdigit()
+            and int(ext) > max_run_id
+        ):
             max_run_id = int(ext)
     return max_run_id
 
 
-def get_saved_hyperparams(stats_path: str, norm_reward: bool = False, test_mode: bool = False) -> Tuple[Dict[str, Any], str]:
+def get_saved_hyperparams(
+    stats_path: str, norm_reward: bool = False, test_mode: bool = False
+) -> Tuple[Dict[str, Any], str]:
     """
     :param stats_path:
     :param norm_reward:
@@ -332,7 +346,9 @@ def get_saved_hyperparams(stats_path: str, norm_reward: bool = False, test_mode:
                     normalize_kwargs["norm_reward"] = norm_reward
             else:
                 normalize_kwargs = {
-                    "norm_obs": hyperparams["normalize"], "norm_reward": norm_reward}
+                    "norm_obs": hyperparams["normalize"],
+                    "norm_reward": norm_reward,
+                }
             hyperparams["normalize_kwargs"] = normalize_kwargs
     return hyperparams, stats_path
 
@@ -347,8 +363,7 @@ class StoreDict(argparse.Action):
 
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs
-        super(StoreDict, self).__init__(
-            option_strings, dest, nargs=nargs, **kwargs)
+        super(StoreDict, self).__init__(option_strings, dest, nargs=nargs, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         arg_dict = {}
