@@ -6,20 +6,21 @@ from typing import List
 
 
 class Sphere(model_wrapper.ModelWrapper):
-
-    def __init__(self,
-                 world: scenario.World,
-                 name: str = 'sphere',
-                 position: List[float] = (0, 0, 0),
-                 orientation: List[float] = (1, 0, 0, 0),
-                 radius: float = 0.025,
-                 mass: float = 0.1,
-                 static: bool = False,
-                 collision: bool = True,
-                 friction: float = 1.0,
-                 visual: bool = True,
-                 gui_only: bool = False,
-                 color: List[float] = (0.8, 0.8, 0.8, 1.0)):
+    def __init__(
+        self,
+        world: scenario.World,
+        name: str = "sphere",
+        position: List[float] = (0, 0, 0),
+        orientation: List[float] = (1, 0, 0, 0),
+        radius: float = 0.025,
+        mass: float = 0.1,
+        static: bool = False,
+        collision: bool = True,
+        friction: float = 1.0,
+        visual: bool = True,
+        gui_only: bool = False,
+        color: List[float] = (0.8, 0.8, 0.8, 1.0),
+    ):
 
         # Get a unique model name
         model_name = get_unique_model_name(world, name)
@@ -28,25 +29,25 @@ class Sphere(model_wrapper.ModelWrapper):
         initial_pose = scenario.Pose(position, orientation)
 
         # Create SDF string for the model
-        sdf = self.get_sdf(model_name=model_name,
-                           radius=radius,
-                           mass=mass,
-                           static=static,
-                           collision=collision,
-                           friction=friction,
-                           visual=visual,
-                           gui_only=gui_only,
-                           color=color)
+        sdf = self.get_sdf(
+            model_name=model_name,
+            radius=radius,
+            mass=mass,
+            static=static,
+            collision=collision,
+            friction=friction,
+            visual=visual,
+            gui_only=gui_only,
+            color=color,
+        )
 
         # Convert it into a file
         sdf_file = misc.string_to_file(sdf)
 
         # Insert the model
-        ok_model = world.to_gazebo().insert_model(sdf_file,
-                                                  initial_pose,
-                                                  model_name)
+        ok_model = world.to_gazebo().insert_model(sdf_file, initial_pose, model_name)
         if not ok_model:
-            raise RuntimeError('Failed to insert ' + model_name)
+            raise RuntimeError("Failed to insert " + model_name)
 
         # Get the model
         model = world.get_model(model_name)
@@ -55,21 +56,22 @@ class Sphere(model_wrapper.ModelWrapper):
         model_wrapper.ModelWrapper.__init__(self, model=model)
 
     @classmethod
-    def get_sdf(self,
-                model_name: str,
-                radius: float,
-                mass: float,
-                static: bool,
-                collision: bool,
-                friction: float,
-                visual: bool,
-                gui_only: bool,
-                color: List[float]) -> str:
+    def get_sdf(
+        self,
+        model_name: str,
+        radius: float,
+        mass: float,
+        static: bool,
+        collision: bool,
+        friction: float,
+        visual: bool,
+        gui_only: bool,
+        color: List[float],
+    ) -> str:
         # Inertia is identical for all axes
-        inertia_xx_yy_zz = (mass*radius**2)*2/5
+        inertia_xx_yy_zz = (mass * radius ** 2) * 2 / 5
 
-        return \
-            f'''<sdf version="1.7">
+        return f'''<sdf version="1.7">
                 <model name="{model_name}">
                     <static>{"true" if static else "false"}</static>
                     <link name="{model_name}_link">

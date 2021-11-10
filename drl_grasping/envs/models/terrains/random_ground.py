@@ -8,17 +8,18 @@ import os
 
 
 class RandomGround(model_wrapper.ModelWrapper):
-
-    def __init__(self,
-                 world: scenario.World,
-                 name: str = 'ground',
-                 position: List[float] = (0, 0, 0),
-                 orientation: List[float] = (1, 0, 0, 0),
-                 size: List[float] = (1.0, 1.0),
-                 collision_thickness: float = 0.05,
-                 friction: float = 5.0,
-                 texture_dir: str = None,
-                 np_random=None):
+    def __init__(
+        self,
+        world: scenario.World,
+        name: str = "ground",
+        position: List[float] = (0, 0, 0),
+        orientation: List[float] = (1, 0, 0, 0),
+        size: List[float] = (1.0, 1.0),
+        collision_thickness: float = 0.05,
+        friction: float = 5.0,
+        texture_dir: str = None,
+        np_random=None,
+    ):
 
         if np_random is None:
             np_random = np.random.default_rng()
@@ -39,17 +40,16 @@ class RandomGround(model_wrapper.ModelWrapper):
             textures = os.listdir(texture_dir)
             # Keep only texture directories if texture_dir is a git repo (ugly fix)
             try:
-                textures.remove('.git')
+                textures.remove(".git")
             except:
                 pass
             try:
-                textures.remove('README.md')
+                textures.remove("README.md")
             except:
                 pass
 
             # Choose a random texture from these
-            random_texture_dir = os.path.join(texture_dir,
-                                              np_random.choice(textures))
+            random_texture_dir = os.path.join(texture_dir, np_random.choice(textures))
 
             # List all files
             texture_files = os.listdir(random_texture_dir)
@@ -57,18 +57,17 @@ class RandomGround(model_wrapper.ModelWrapper):
             # Extract the appropriate files
             for texture in texture_files:
                 texture_lower = texture.lower()
-                if 'basecolor' in texture_lower or 'albedo' in texture_lower:
+                if "basecolor" in texture_lower or "albedo" in texture_lower:
                     albedo_map = os.path.join(random_texture_dir, texture)
-                elif 'normal' in texture_lower:
+                elif "normal" in texture_lower:
                     normal_map = os.path.join(random_texture_dir, texture)
-                elif 'roughness' in texture_lower:
+                elif "roughness" in texture_lower:
                     roughness_map = os.path.join(random_texture_dir, texture)
-                elif 'specular' in texture_lower or 'metalness' in texture_lower:
+                elif "specular" in texture_lower or "metalness" in texture_lower:
                     metalness_map = os.path.join(random_texture_dir, texture)
 
         # Create SDF string for the model
-        sdf = \
-            f'''<sdf version="1.7">
+        sdf = f"""<sdf version="1.7">
             <model name="{model_name}">
                 <static>true</static>
                 <link name="{model_name}_link">
@@ -110,7 +109,7 @@ class RandomGround(model_wrapper.ModelWrapper):
                                         % normal_map if normal_map is not None else ""}
                                     {"<roughness_map>%s</roughness_map>"
                                         % roughness_map if roughness_map is not None else ""}
-                                    {"<metalness_map>%s</metalness_map>" 
+                                    {"<metalness_map>%s</metalness_map>"
                                         % metalness_map if metalness_map is not None else ""}
                                 </metal>
                             </pbr>
@@ -118,17 +117,15 @@ class RandomGround(model_wrapper.ModelWrapper):
                     </visual>
                 </link>
             </model>
-        </sdf>'''
+        </sdf>"""
 
         # Convert it into a file
         sdf_file = misc.string_to_file(sdf)
 
         # Insert the model
-        ok_model = world.to_gazebo().insert_model(sdf_file,
-                                                  initial_pose,
-                                                  model_name)
+        ok_model = world.to_gazebo().insert_model(sdf_file, initial_pose, model_name)
         if not ok_model:
-            raise RuntimeError('Failed to insert ' + model_name)
+            raise RuntimeError("Failed to insert " + model_name)
 
         # Get the model
         model = world.get_model(model_name)

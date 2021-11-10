@@ -6,15 +6,16 @@ from typing import List
 
 
 class Ground(model_wrapper.ModelWrapper):
-
-    def __init__(self,
-                 world: scenario.World,
-                 name: str = 'ground',
-                 position: List[float] = (0, 0, 0),
-                 orientation: List[float] = (1, 0, 0, 0),
-                 size: List[float] = (1.0, 1.0),
-                 collision_thickness=0.05,
-                 friction: float = 5.0):
+    def __init__(
+        self,
+        world: scenario.World,
+        name: str = "ground",
+        position: List[float] = (0, 0, 0),
+        orientation: List[float] = (1, 0, 0, 0),
+        size: List[float] = (1.0, 1.0),
+        collision_thickness=0.05,
+        friction: float = 5.0,
+    ):
 
         # Get a unique model name
         model_name = get_unique_model_name(world, name)
@@ -23,8 +24,7 @@ class Ground(model_wrapper.ModelWrapper):
         initial_pose = scenario.Pose(position, orientation)
 
         # Create SDF string for the model
-        sdf = \
-            f'''<sdf version="1.7">
+        sdf = f"""<sdf version="1.7">
             <model name="{model_name}">
                 <static>true</static>
                 <link name="{model_name}_link">
@@ -62,17 +62,15 @@ class Ground(model_wrapper.ModelWrapper):
                     </visual>
                 </link>
             </model>
-        </sdf>'''
+        </sdf>"""
 
         # Convert it into a file
         sdf_file = misc.string_to_file(sdf)
 
         # Insert the model
-        ok_model = world.to_gazebo().insert_model(sdf_file,
-                                                  initial_pose,
-                                                  model_name)
+        ok_model = world.to_gazebo().insert_model(sdf_file, initial_pose, model_name)
         if not ok_model:
-            raise RuntimeError('Failed to insert ' + model_name)
+            raise RuntimeError("Failed to insert " + model_name)
 
         # Get the model
         model = world.get_model(model_name)
