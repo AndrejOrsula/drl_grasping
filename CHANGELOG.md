@@ -5,6 +5,7 @@
 ### Added
 
 - (WIP) `lunalab_summit_xl_gen` is now added to the supported robot models.
+- Configuration of pre-commit git hooks
 
 ### Changed
 
@@ -15,6 +16,8 @@
     - `envs` that contain the environment itself
   - `utils` submodule still contains boilerplate for RL training and evaluation
 - A single configurable launch script [sim.launch.py](./launch/sim.launch.py) now replaces all previous variations. Use its launch arguments to select robot model and enable/disable RViz2 GUI.
+- Changed PEP 8 python formatting for black to improve consistency.
+- Changed bash formatter to beautysh (minor changes).
 
 ### Fixed
 
