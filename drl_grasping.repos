@@ -27,3 +27,7 @@ repositories:
     type: git
     url: https://github.com/AndrejOrsula/kinova_j2s7s300_moveit2_config.git
     version: master
+  lunalab_summit_xl_gen:
+    type: git
+    url: https://gitlab.uni.lu/spacer/phd/AndrejOrsula/lunalab_summit_xl_gen.git
+    version: ros2
