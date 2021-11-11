@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
 from stable_baselines3.common.env_checker import check_env
-from drl_grasping.envs.randomizers import ManipulationGazeboEnvRandomizer
+from drl_grasping.envs.randomizers import (
+    ManipulationGazeboEnvRandomizer,
+    ManipulationPlanetaryGazeboEnvRandomizer,
+)
 from gym_ignition.utils import logger
 import functools
 import gym
@@ -12,8 +15,11 @@ import gym
 # env_id="Reach-Octree-Gazebo-v0"
 # env_id="Reach-OctreeWithColor-Gazebo-v0"
 # Grasp
-env_id = "Grasp-Octree-Gazebo-v0"
+# env_id = "Grasp-Octree-Gazebo-v0"
 # env_id = "Grasp-OctreeWithColor-Gazebo-v0"
+# GraspPlanetary
+env_id = "GraspPlanetary-OctreeWithColor-Gazebo-v0"
+# env_id = "GraspPlanetary-OctreeWithColor-Gazebo-v0"
 
 
 def make_env_from_id(env_id: str, **kwargs) -> gym.Env:
@@ -23,19 +29,41 @@ def make_env_from_id(env_id: str, **kwargs) -> gym.Env:
 def main(args=None):
 
     # Set verbosity
-    logger.set_level(gym.logger.ERROR)
+    logger.set_level(gym.logger.WARN)
 
     # Create a partial function passing the environment id
     make_env = functools.partial(make_env_from_id, env_id=env_id)
 
+    # # Wrap environment with randomizer
+    # env = ManipulationGazeboEnvRandomizer(
+    #     env=make_env,
+    #     object_random_pose=True,
+    #     object_models_rollouts_num=1,
+    #     object_random_use_mesh_models=True,
+    #     object_random_model_count=3,
+    #     ground_model_rollouts_num=1,
+    # )
+
     # Wrap environment with randomizer
-    env = ManipulationGazeboEnvRandomizer(
+    env = ManipulationPlanetaryGazeboEnvRandomizer(
         env=make_env,
+        physics_rollouts_num=0,
+        robot_random_joint_positions=False,
+        robot_random_joint_positions_std=0.1,
+        camera_pose_rollouts_num=0,
+        camera_random_pose_distance=1.0,
+        camera_random_pose_height_range=(0.1, 0.7),
+        camera_noise_mean=None,
+        camera_noise_stddev=None,
+        ground_model_rollouts_num=0,
         object_random_pose=True,
-        object_models_rollouts_num=1,
-        object_random_use_mesh_models=True,
-        object_random_model_count=3,
-        ground_model_rollouts_num=1,
+        object_random_use_mesh_models=False,
+        object_models_rollouts_num=0,
+        object_random_model_count=1,
+        invisible_world_bottom_collision_plane=True,
+        visualise_workspace=False,
+        visualise_spawn_volume=False,
+        verbose=True,
     )
 
     # Initialize random seed

@@ -1,1 +1,2 @@
 from .manipulation import ManipulationGazeboEnvRandomizer
+from .manipulation_planetary import ManipulationPlanetaryGazeboEnvRandomizer

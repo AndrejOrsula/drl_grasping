@@ -11,13 +11,15 @@ SEED="42"
 # ENV_ID="Reach-OctreeWithColor-Gazebo-v0"
 ## Grasp
 # ENV_ID="Grasp-Octree-Gazebo-v0"
-ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
+# ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
+## GraspPlanetary
+ENV_ID="GraspPlanetary-OctreeWithColor-Gazebo-v0"
 
 ## Robot model
-ROBOT_MODEL="panda"
+# ROBOT_MODEL="panda"
 # ROBOT_MODEL="ur5_rg2"
 # ROBOT_MODEL="kinova_j2s7s300"
-# ROBOT_MODEL="lunalab_summit_xl_gen"
+ROBOT_MODEL="lunalab_summit_xl_gen"
 
 ## Algorithm to use
 # ALGO="sac"

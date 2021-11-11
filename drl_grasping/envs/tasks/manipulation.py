@@ -52,6 +52,18 @@ class Manipulation(task.Task, abc.ABC):
         0.0,
         0.0,
     )
+    _robot_initial_joint_positions_lunalab_summit_xl_gen: Tuple[float, ...] = (
+        3.6787,
+        4.0701,
+        -1.7164,
+        2.1397,
+        1.0536,
+        5.1487,
+        0.9393,
+        0.0,
+        0.0,
+        0.0,
+    )
 
     _workspace_centre: Tuple[float, float, float] = (0.5, 0, 0.25)
     _workspace_volume: Tuple[float, float, float] = (1.0, 1.0, 1.0)
@@ -131,6 +143,10 @@ class Manipulation(task.Task, abc.ABC):
         elif "kinova_j2s7s300" == robot_model:
             self._robot_initial_joint_positions = (
                 self._robot_initial_joint_positions_kinova_j2s7s300
+            )
+        elif "lunalab_summit_xl_gen" == robot_model:
+            self._robot_initial_joint_positions = (
+                self._robot_initial_joint_positions_lunalab_summit_xl_gen
             )
 
         # Control (MoveIt2)
