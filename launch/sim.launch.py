@@ -8,10 +8,13 @@ from launch.conditions import (
     LaunchConfigurationEquals,
     LaunchConfigurationNotEquals,
     IfCondition,
-    UnlessCondition,
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import (
+    LaunchConfiguration,
+    PathJoinSubstitution,
+    PythonExpression,
+)
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from os import path
@@ -52,8 +55,21 @@ def generate_launch_description() -> LaunchDescription:
                 ("log_level", log_level),
             ],
             condition=(
-                LaunchConfigurationNotEquals(robot_name, "lunalab_summit_xl_gen")
-                and IfCondition(enable_rviz)
+                IfCondition(
+                    PythonExpression(
+                        [
+                            "'",
+                            robot_model,
+                            "'",
+                            " != ",
+                            "'lunalab_summit_xl_gen'",
+                            " and ",
+                            "'",
+                            enable_rviz,
+                            "'",
+                        ]
+                    )
+                )
             ),
         ),
         IncludeLaunchDescription(
@@ -70,8 +86,21 @@ def generate_launch_description() -> LaunchDescription:
                 ("log_level", log_level),
             ],
             condition=(
-                LaunchConfigurationNotEquals(robot_name, "lunalab_summit_xl_gen")
-                and UnlessCondition(enable_rviz)
+                IfCondition(
+                    PythonExpression(
+                        [
+                            "'",
+                            robot_model,
+                            "'",
+                            " != ",
+                            "'lunalab_summit_xl_gen'",
+                            " and not ",
+                            "'",
+                            enable_rviz,
+                            "'",
+                        ]
+                    )
+                )
             ),
         ),
         ### lunalab_summit_xl_gen ###
@@ -94,7 +123,7 @@ def generate_launch_description() -> LaunchDescription:
                 ("use_sim_time", use_sim_time),
                 ("log_level", log_level),
             ],
-            condition=LaunchConfigurationEquals(robot_name, "lunalab_summit_xl_gen"),
+            condition=LaunchConfigurationEquals("robot_model", "lunalab_summit_xl_gen"),
         ),
         # Launch move_group of MoveIt 2
         IncludeLaunchDescription(
@@ -114,7 +143,7 @@ def generate_launch_description() -> LaunchDescription:
                 ("use_sim_time", use_sim_time),
                 ("log_level", log_level),
             ],
-            condition=LaunchConfigurationEquals(robot_name, "lunalab_summit_xl_gen"),
+            condition=LaunchConfigurationEquals("robot_model", "lunalab_summit_xl_gen"),
         ),
     ]
 
@@ -135,7 +164,9 @@ def generate_launch_description() -> LaunchDescription:
                 log_level,
             ],
             parameters=[{"use_sim_time": use_sim_time}],
-            condition=LaunchConfigurationEquals("robot_name", "lunalab_summit_xl_gen"),
+            condition=LaunchConfigurationNotEquals(
+                "robot_model", "lunalab_summit_xl_gen"
+            ),
         ),
     ]
 
@@ -170,7 +201,7 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
         ),
         DeclareLaunchArgument(
             "robot_model",
-            default_value="kinova_j2s7s300",
+            default_value="lunalab_summit_xl_gen",
             description="Name of the robot to use. Supported options are: 'panda', 'ur5_rg2', 'kinova_j2s7s300' and 'lunalab_summit_xl_gen'.",
         ),
         DeclareLaunchArgument(
