@@ -38,6 +38,8 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         "lunalab_summit_xl_gen",
     )
 
+    # TODO: Remove non-instance robot prefix when possible
+    _prefix = "robot_"
     PREFIX_SUMMIT_XL = "summit_xl_"
     PREFIX_MANIPULATOR = "j2s7s300_"
 
@@ -224,7 +226,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
 
     @classmethod
     def get_ee_link_name(self) -> str:
-        return (self._prefix + self.PREFIX_MANIPULATOR + "end_effector",)
+        return self._prefix + self.PREFIX_MANIPULATOR + "end_effector"
 
     def get_initial_joint_positions(self) -> List[float]:
         return self._initial_joint_positions
