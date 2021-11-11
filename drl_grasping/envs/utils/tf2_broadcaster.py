@@ -15,7 +15,7 @@ import rclpy
 class Tf2Broadcaster(Node):
     def __init__(
         self,
-        parent_frame_id: str = "world",
+        parent_frame_id: str = "drl_grasping_world",
         child_frame_id: str = "unknown_child_id",
         use_sim_time: bool = True,
         node_name: str = "drl_grasping_camera_tf_broadcaster",
