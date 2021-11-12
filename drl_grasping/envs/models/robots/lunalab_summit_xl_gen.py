@@ -5,19 +5,24 @@ from gym_ignition.utils.scenario import get_unique_model_name
 from os import path
 from scenario import core as scenario
 from scenario import gazebo as scenario_gazebo
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Optional, Dict
 
 
 class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
 
-    DEFAULT_XACRO_FILE = path.join(
-        get_package_share_directory("lunalab_summit_xl_gen_description"),
+    ROBOT_MODEL_NAME: str = "lunalab_summit_xl_gen"
+    DEFAULT_PREFIX: str = "robot_"
+    __PREFIX_MOBILE_BASE: str = "summit_xl_"
+    __PREFIX_MANIPULATOR: str = "j2s7s300_"
+
+    __DEFAULT_XACRO_FILE = path.join(
+        get_package_share_directory(ROBOT_MODEL_NAME + "_description"),
         "urdf",
-        "lunalab_summit_xl_gen.urdf.xacro",
+        ROBOT_MODEL_NAME + ".urdf.xacro",
     )
-    DEFAULT_XACRO_MAPPINGS = {
-        "name": "lunalab_summit_xl_gen",
-        "prefix": "robot_",
+    __DEFAULT_XACRO_MAPPINGS: Dict = {
+        "name": ROBOT_MODEL_NAME,
+        "prefix": DEFAULT_PREFIX,
         "safety_limits": True,
         "safety_soft_limit_margin": 0.17453293,
         "safety_k_position": 20,
@@ -33,56 +38,66 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         # "hand_collision": True,
         # "separate_gripper_controller": True,
     }
-    XACRO_MODEL_PATH_REMAP = (
-        "lunalab_summit_xl_gen_description",
-        "lunalab_summit_xl_gen",
+    __XACRO_MODEL_PATH_REMAP: Tuple[str, str] = (
+        ROBOT_MODEL_NAME + "_description",
+        ROBOT_MODEL_NAME,
     )
 
-    # TODO: Remove non-instance robot prefix when possible
-    _prefix = "robot_"
-    PREFIX_SUMMIT_XL = "summit_xl_"
-    PREFIX_MANIPULATOR = "j2s7s300_"
+    DEFAULT_ARM_JOINT_POSITIONS: List[float] = (
+        0.0,
+        3.490658503988659,
+        0.0,
+        5.235987755982989,
+        0.0,
+        1.7453292519943295,
+        0.0,
+    )
+    OPEN_GRIPPER_JOINT_POSITIONS: List[float] = (
+        0.2,
+        0.2,
+        0.2,
+    )
+    CLOSED_GRIPPER_JOINT_POSITIONS: List[float] = (
+        1.2,
+        1.2,
+        1.2,
+    )
+    DEFAULT_GRIPPER_JOINT_POSITIONS: List[float] = OPEN_GRIPPER_JOINT_POSITIONS
 
     def __init__(
         self,
         world: scenario.World,
-        name: str = "lunalab_summit_xl_gen",
-        prefix: str = "robot_",
+        name: str = ROBOT_MODEL_NAME,
+        prefix: str = DEFAULT_PREFIX,
         position: List[float] = (0, 0, 0),
         orientation: List[float] = (1, 0, 0, 0),
         model_file: str = None,
         use_fuel: bool = False,
         use_xacro: bool = True,
-        xacro_file: str = DEFAULT_XACRO_FILE,
-        xacro_mappings: Dict = {},
-        initial_joint_positions: List[float] = (
-            0.0,
-            3.14159265359,
-            0.0,
-            3.14159265359,
-            0.0,
-            3.14159265359,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ),
+        xacro_file: str = __DEFAULT_XACRO_FILE,
+        xacro_mappings: Dict = __DEFAULT_XACRO_MAPPINGS,
+        initial_arm_joint_positions: List[float] = DEFAULT_ARM_JOINT_POSITIONS,
+        initial_gripper_joint_positions: List[float] = OPEN_GRIPPER_JOINT_POSITIONS,
+        **kwargs,
     ):
 
         # Store params that are needed internally
-        self._prefix = prefix
-        self._initial_joint_positions = initial_joint_positions
+        self.__prefix = prefix
+        self.__initial_arm_joint_positions = initial_arm_joint_positions
+        self.__initial_gripper_joint_positions = initial_gripper_joint_positions
 
         # Allow passing of custom model file as an argument
         if model_file is None:
             if use_xacro:
                 # Generate SDF from xacro
-                mappings = self.DEFAULT_XACRO_MAPPINGS
+                mappings = self.__DEFAULT_XACRO_MAPPINGS
+                mappings.update(kwargs)
                 mappings.update(xacro_mappings)
+                mappings.update({"prefix": prefix})
                 model_file = xacro2sdf(
                     input_file_path=xacro_file,
                     mappings=mappings,
-                    model_path_remap=self.XACRO_MODEL_PATH_REMAP,
+                    model_path_remap=self.__XACRO_MODEL_PATH_REMAP,
                 )
             else:
                 # Otherwise, use the default SDF file (local or fuel)
@@ -109,59 +124,95 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         model = world.get_model(model_name)
 
         # Set initial joint configuration
-        if not model.to_gazebo().reset_joint_positions(
-            self.get_initial_joint_positions(), self.get_joint_names()
-        ):
-            raise RuntimeError("Failed to set initial robot joint positions")
+        self.set_initial_joint_positions(model)
 
         # Initialize base class
         super().__init__(model=model)
 
+    def set_initial_joint_positions(self, model):
+
+        model = model.to_gazebo()
+        if not model.reset_joint_positions(
+            self.initial_arm_joint_positions, self.arm_joint_names
+        ):
+            raise RuntimeError("Failed to set initial positions of arm's joints")
+        if not model.reset_joint_positions(
+            self.initial_gripper_joint_positions, self.gripper_joint_names
+        ):
+            raise RuntimeError("Failed to set initial positions of gripper's joints")
+
     @classmethod
-    def get_model_file(self, fuel=False) -> str:
+    def get_model_file(cls, fuel=False) -> str:
+
         if fuel:
             # TODO: Add "lunalab_summit_xl_gen" to Fuel
             raise NotImplementedError
             return scenario_gazebo.get_model_file_from_fuel(
-                "https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/lunalab_summit_xl_gen"
+                "https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/"
+                + cls.ROBOT_MODEL_NAME
             )
         else:
-            return "lunalab_summit_xl_gen"
+            return cls.ROBOT_MODEL_NAME
 
-    @classmethod
-    def get_joint_names(self) -> List[str]:
+    # Prefix
+
+    @property
+    def prefix(self) -> str:
+
+        return self.__prefix
+
+    # Joints
+
+    @property
+    def joint_names(self) -> List[str]:
+
+        return self.move_base_joint_names + self.manipulator_joint_names
+
+    @property
+    def move_base_joint_names(self) -> List[str]:
+
         return [
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_1",
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_2",
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_3",
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_4",
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_5",
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_6",
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_7",
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_finger_1",
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_finger_2",
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_finger_3",
+            self.prefix + self.__PREFIX_MOBILE_BASE + "back_left_wheel_joint",
+            self.prefix + self.__PREFIX_MOBILE_BASE + "back_right_wheel_joint",
+            self.prefix + self.__PREFIX_MOBILE_BASE + "front_left_wheel_joint",
+            self.prefix + self.__PREFIX_MOBILE_BASE + "front_right_wheel_joint",
         ]
 
-    @classmethod
-    def get_passive_joint_names(self) -> List[str]:
+    @property
+    def manipulator_joint_names(self) -> List[str]:
+
+        return self.arm_joint_names + self.gripper_joint_names
+
+    @property
+    def arm_joint_names(self) -> List[str]:
+
         return [
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_finger_tip_1",
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_finger_tip_2",
-            self._prefix + self.PREFIX_MANIPULATOR + "joint_finger_tip_3",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_1",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_2",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_3",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_4",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_5",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_6",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_7",
         ]
 
-    @classmethod
-    def get_wheel_joint_names(self) -> List[str]:
+    @property
+    def gripper_joint_names(self) -> List[str]:
+
         return [
-            self._prefix + self.PREFIX_SUMMIT_XL + "back_left_wheel_joint",
-            self._prefix + self.PREFIX_SUMMIT_XL + "back_right_wheel_joint",
-            self._prefix + self.PREFIX_SUMMIT_XL + "front_left_wheel_joint",
-            self._prefix + self.PREFIX_SUMMIT_XL + "front_right_wheel_joint",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_finger_1",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_finger_2",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_finger_3",
         ]
 
-    @classmethod
-    def get_joint_limits(self) -> List[Tuple[float, float]]:
+    @property
+    def move_base_joint_limits(self) -> Optional[List[Tuple[float, float]]]:
+
+        return None
+
+    @property
+    def arm_joint_limits(self) -> Optional[List[Tuple[float, float]]]:
+
         return [
             (-6.283185307179586, 6.283185307179586),
             (0.8203047484373349, 5.462880558742252),
@@ -170,63 +221,148 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
             (-6.283185307179586, 6.283185307179586),
             (1.1344640137963142, 5.148721293383272),
             (-6.283185307179586, 6.283185307179586),
+        ]
+
+    @property
+    def gripper_joint_limits(self) -> Optional[List[Tuple[float, float]]]:
+
+        return [
             (0.0, 1.51),
             (0.0, 1.51),
             (0.0, 1.51),
         ]
 
-    @classmethod
-    def get_finger_count(self) -> int:
-        return 3
+    @property
+    def gripper_joints_close_towards_positive(self) -> bool:
 
-    @classmethod
-    def get_base_footprint_name(self) -> str:
-        return self._prefix + self.PREFIX_SUMMIT_XL + "base_footprint"
+        False
 
-    @classmethod
-    def get_wheel_link_names(self) -> List[str]:
+    @property
+    def initial_arm_joint_positions(self) -> List[float]:
+
+        return self.__initial_arm_joint_positions
+
+    @property
+    def initial_gripper_joint_positions(self) -> List[float]:
+
+        return self.__initial_gripper_joint_positions
+
+    # Passive joints
+
+    @property
+    def passive_joint_names(self) -> List[str]:
+
+        return self.manipulator_passive_joint_names + self.move_base_passive_joint_names
+
+    @property
+    def move_base_passive_joint_names(self) -> List[str]:
+
+        return []
+
+    @property
+    def manipulator_passive_joint_names(self) -> List[str]:
+
+        return self.arm_passive_joint_names + self.gripper_passive_joint_names
+
+    @property
+    def arm_passive_joint_names(self) -> List[str]:
+
+        return []
+
+    @property
+    def gripper_passive_joint_names(self) -> List[str]:
+
         return [
-            self._prefix + self.PREFIX_SUMMIT_XL + "back_left_wheel",
-            self._prefix + self.PREFIX_SUMMIT_XL + "back_right_wheel",
-            self._prefix + self.PREFIX_SUMMIT_XL + "front_left_wheel",
-            self._prefix + self.PREFIX_SUMMIT_XL + "front_right_wheel",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_finger_tip_1",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_finger_tip_2",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint_finger_tip_3",
         ]
 
-    @classmethod
-    def get_chassis_link_names(self) -> List[str]:
-        return [self._prefix + self.PREFIX_SUMMIT_XL + "base_link"]
+    @property
+    def joint_limits(self) -> List[Tuple[float, float]]:
+
+        return self.arm_joint_limits + self.gripper_joint_limits
+
+    # Links
 
     @classmethod
-    def get_arm_link_names(self) -> List[str]:
+    def get_robot_base_link_name(cls, prefix) -> str:
+
+        return prefix + cls.__PREFIX_MOBILE_BASE + "base_footprint"
+
+    @property
+    def robot_base_link_name(self) -> str:
+
+        return self.get_robot_base_link_name(self.prefix)
+
+    @classmethod
+    def get_arm_base_link_name(cls, prefix) -> str:
+
+        # Same as `self.arm_link_names[0]``
+        return prefix + cls.__PREFIX_MANIPULATOR + "link_base"
+
+    @property
+    def arm_base_link_name(self) -> str:
+
+        return self.get_arm_base_link_name(self.prefix)
+
+    @classmethod
+    def get_ee_link_name(cls, prefix) -> str:
+
+        return prefix + cls.__PREFIX_MANIPULATOR + "end_effector"
+
+    @property
+    def ee_link_name(self) -> str:
+
+        return self.get_ee_link_name(self.prefix)
+
+    @classmethod
+    def get_wheel_link_names(cls, prefix) -> List[str]:
+
         return [
-            self._prefix + self.PREFIX_MANIPULATOR + "link_base",
-            self._prefix + self.PREFIX_MANIPULATOR + "link_1",
-            self._prefix + self.PREFIX_MANIPULATOR + "link_2",
-            self._prefix + self.PREFIX_MANIPULATOR + "link_3",
-            self._prefix + self.PREFIX_MANIPULATOR + "link_4",
-            self._prefix + self.PREFIX_MANIPULATOR + "link_5",
-            self._prefix + self.PREFIX_MANIPULATOR + "link_6",
-            self._prefix + self.PREFIX_MANIPULATOR + "link_7",
+            prefix + cls.__PREFIX_MOBILE_BASE + "back_left_wheel",
+            prefix + cls.__PREFIX_MOBILE_BASE + "back_right_wheel",
+            prefix + cls.__PREFIX_MOBILE_BASE + "front_left_wheel",
+            prefix + cls.__PREFIX_MOBILE_BASE + "front_right_wheel",
         ]
 
+    @property
+    def wheel_link_names(self) -> List[str]:
+
+        return self.get_wheel_link_names(self.prefix)
+
     @classmethod
-    def get_gripper_link_names(self) -> List[str]:
+    def get_arm_link_names(cls, prefix) -> List[str]:
+
         return [
-            self._prefix + self.PREFIX_MANIPULATOR + "link_finger_1",
-            self._prefix + self.PREFIX_MANIPULATOR + "link_finger_2",
-            self._prefix + self.PREFIX_MANIPULATOR + "link_finger_3",
-            self._prefix + self.PREFIX_MANIPULATOR + "link_finger_tip_1",
-            self._prefix + self.PREFIX_MANIPULATOR + "link_finger_tip_2",
-            self._prefix + self.PREFIX_MANIPULATOR + "link_finger_tip_3",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_base",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_1",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_2",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_3",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_4",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_5",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_6",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_7",
         ]
 
-    @classmethod
-    def get_base_link_name(self) -> str:
-        return self.get_arm_link_names()[0]
+    @property
+    def arm_link_names(self) -> List[str]:
+
+        return self.get_arm_link_names(self.prefix)
 
     @classmethod
-    def get_ee_link_name(self) -> str:
-        return self._prefix + self.PREFIX_MANIPULATOR + "end_effector"
+    def get_gripper_link_names(cls, prefix) -> List[str]:
 
-    def get_initial_joint_positions(self) -> List[float]:
-        return self._initial_joint_positions
+        return [
+            prefix + cls.__PREFIX_MANIPULATOR + "link_finger_1",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_finger_2",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_finger_3",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_finger_tip_1",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_finger_tip_2",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_finger_tip_3",
+        ]
+
+    @property
+    def gripper_link_names(self) -> List[str]:
+
+        return self.get_gripper_link_names(self.prefix)
