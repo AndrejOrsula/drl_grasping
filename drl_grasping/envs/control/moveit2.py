@@ -39,7 +39,7 @@ class MoveIt2(MoveIt2Interface):
                 node_name=node_name,
             )
 
-        self._moveit2_executor = MultiThreadedExecutor(1)
+        self._moveit2_executor = MultiThreadedExecutor(2)
         self._moveit2_executor.add_node(self)
         thread = Thread(target=self._moveit2_executor.spin, args=())
         thread.daemon = True
