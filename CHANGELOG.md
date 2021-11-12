@@ -18,6 +18,7 @@
 - A single configurable launch script [sim.launch.py](./launch/sim.launch.py) now replaces all previous variations. Use its launch arguments to select robot model and enable/disable RViz2 GUI.
 - Changed PEP 8 python formatting for black to improve consistency.
 - Changed bash formatter to beautysh (minor changes).
+- Custom SDF world `default_interactive` is no longer used in favour of enabling/disabling interactive mode through a parameter.
 
 ### Fixed
 
