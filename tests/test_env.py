@@ -21,6 +21,17 @@ import gym
 env_id = "GraspPlanetary-OctreeWithColor-Gazebo-v0"
 # env_id = "GraspPlanetary-OctreeWithColor-Gazebo-v0"
 
+from gym_ignition.utils import logger as gym_ign_logger
+from gym import logger as gym_logger
+from os import environ
+
+# Set debug level
+debug_level = environ.get("DRL_GRASPING_DEBUG_LEVEL", default="ERROR").upper()
+gym_ign_logger.set_level(
+    level=getattr(gym_logger, debug_level),
+    scenario_level=getattr(gym_logger, debug_level),
+)
+
 
 def make_env_from_id(env_id: str, **kwargs) -> gym.Env:
     return gym.make(env_id, **kwargs)
@@ -70,7 +81,7 @@ def main(args=None):
     env.seed(42)
 
     # Enable rendering
-    env.render("human")
+    # env.render("human")
 
     # Check it
     check_env(env, warn=True, skip_render_check=True)
