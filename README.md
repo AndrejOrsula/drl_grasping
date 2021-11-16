@@ -225,7 +225,7 @@ The included [ManipulationGazeboEnvRandomizer](drl_grasping/envs/randomizers/man
   - Random type (box, sphere and cylinder are currently supported)
   - Random color, scale, mass, friction
 - Object model - mesh geometry
-  - Random type (see [Object Model Database](#object-model-database))
+  - Random type (see [Dataset of Object Models](#dataset-of-object-models))
   - Random scale, mass, friction
 - Object pose
 - Ground plane texture
