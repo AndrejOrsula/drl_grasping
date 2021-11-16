@@ -143,9 +143,25 @@ This enables:
 - Execution of scripts and examples via `ros2 run drl_grasping <executable>`
 - Launching of setup scripts via `ros2 launch drl_grasping <launch_script>`
 
-### Debug Level
+### Environment variables
 
-Environment variable `DRL_GRASPING_DEBUG_LEVEL` can be set `DEBUG`/`INFO`/`WARN`/`ERROR`/`DISABLED` to affect the level of logging for environments.
+#### `DRL_GRASPING_SENSORS_RENDER_ENGINE`
+
+Environment variable `DRL_GRASPING_SENSORS_RENDER_ENGINE` can be changed to select the rendering engine used by sensors.
+
+Defaults to `"ogre2"`.
+
+#### `DRL_GRASPING_BROADCAST_INTERACTIVE_GUI`
+
+Similarly, environment variable `DRL_GRASPING_BROADCAST_INTERACTIVE_GUI` can be set to `"true"`/`"1"` (case insensitive) to enable use of Ignition Gazebo GUI with interactive commands (e.g. `TransformControl` tool). To open a new instance of GUI client, use `ign gazebo -g`.
+
+Defaults to `"false"`.
+
+#### `DRL_GRASPING_DEBUG_LEVEL`
+
+Environment variable `DRL_GRASPING_DEBUG_LEVEL` can be set `"DEBUG"`/`"INFO"`/`"WARN"`/`"ERROR"`/`"DISABLED"` (case insensitive) to affect the level of logging for environments.
+
+Defaults to `"ERROR"`.
 
 </details>
 

@@ -4,8 +4,11 @@
 
 ### Added
 
-- (WIP) `lunalab_summit_xl_gen` is now added to the supported robot models.
+- Added support for mobile manipulators.
+- `lunalab_summit_xl_gen` is now added to the supported robot models.
 - Configuration of pre-commit git hooks
+- Support for `DRL_GRASPING_BROADCAST_INTERACTIVE_GUI` environment variable.
+- Support for `DRL_GRASPING_SENSORS_RENDER_ENGINE` environment variable
 
 ### Changed
 
@@ -18,7 +21,7 @@
 - A single configurable launch script [sim.launch.py](./launch/sim.launch.py) now replaces all previous variations. Use its launch arguments to select robot model and enable/disable RViz2 GUI.
 - Changed PEP 8 python formatting for black to improve consistency.
 - Changed bash formatter to beautysh (minor changes).
-- Custom SDF world `default_interactive` is no longer used in favour of enabling/disabling interactive mode through a parameter.
+- Custom SDF world `default_interactive` is no longer used in favour of enabling/disabling interactive mode through `DRL_GRASPING_BROADCAST_INTERACTIVE_GUI` environment variable.
 
 ### Fixed
 

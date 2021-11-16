@@ -203,6 +203,10 @@ ENV ROS_LOCALHOST_ONLY=1
 ### Set domain ID for ROS2 in order to not interfere with host
 ENV ROS_DOMAIN_ID=69
 
+### Select rendering engine for sensors
+ENV DRL_GRASPING_SENSORS_RENDER_ENGINE=ogre2
+### Disable broadcasting of interactive GUI by default
+ENV DRL_GRASPING_BROADCAST_INTERACTIVE_GUI=false
 ### Set debug level
 ENV DRL_GRASPING_DEBUG_LEVEL=ERROR
 

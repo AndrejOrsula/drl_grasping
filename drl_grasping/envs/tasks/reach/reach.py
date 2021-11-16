@@ -12,26 +12,26 @@ class Reach(Manipulation, abc.ABC):
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
     _robot_arm_collision: bool = False
     _robot_hand_collision: bool = False
-    _workspace_centre: Tuple[float, float, float] = (0.45, 0, 0.25)
-    _workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
+    workspace_centre: Tuple[float, float, float] = (0.45, 0, 0.25)
+    workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
 
-    _object_enable: bool = True
-    _object_type: str = "box"
-    _object_dimensions: List[float] = [0.05, 0.05, 0.05]
-    _object_collision: bool = False
-    _object_visual: bool = True
-    _object_static: bool = True
-    _object_color: Tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
+    object_enable: bool = True
+    object_type: str = "box"
+    object_dimensions: List[float] = [0.05, 0.05, 0.05]
+    object_collision: bool = False
+    object_visual: bool = True
+    object_static: bool = True
+    object_color: Tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
     _object_spawn_centre: Tuple[float, float, float] = (
-        _workspace_centre[0],
-        _workspace_centre[1],
-        _workspace_centre[2],
+        workspace_centre[0],
+        workspace_centre[1],
+        workspace_centre[2],
     )
-    _object_spawn_volume_proportion: float = 0.75
-    _object_spawn_volume: Tuple[float, float, float] = (
-        _object_spawn_volume_proportion * _workspace_volume[0],
-        _object_spawn_volume_proportion * _workspace_volume[1],
-        _object_spawn_volume_proportion * _workspace_volume[2],
+    object_spawn_volume_proportion: float = 0.75
+    object_spawn_volume: Tuple[float, float, float] = (
+        object_spawn_volume_proportion * workspace_volume[0],
+        object_spawn_volume_proportion * workspace_volume[1],
+        object_spawn_volume_proportion * workspace_volume[2],
     )
 
     def __init__(

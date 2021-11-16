@@ -120,7 +120,7 @@ def quat_to_wxyz(
 ) -> numpy.ndarray:
 
     if isinstance(xyzw, tuple):
-        return xyzw[3], xyzw[0], xyzw[1], xyzw[2]
+        return (xyzw[3], xyzw[0], xyzw[1], xyzw[2])
 
     if xyzw.shape != (4,):
         raise ValueError(xyzw)
@@ -133,7 +133,7 @@ def quat_to_xyzw(
 ) -> numpy.ndarray:
 
     if isinstance(wxyz, tuple):
-        return wxyz[1], wxyz[2], wxyz[3], wxyz[0]
+        return (wxyz[1], wxyz[2], wxyz[3], wxyz[0])
 
     if wxyz.shape != (4,):
         raise ValueError(wxyz)

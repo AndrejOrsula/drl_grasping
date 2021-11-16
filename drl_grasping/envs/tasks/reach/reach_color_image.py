@@ -25,7 +25,7 @@ class ReachColorImage(Reach, abc.ABC):
         0.9230002,
         0.3823192,
     )
-    _camera_ros2_bridge_color: bool = True
+    _camera_publish_color: bool = True
 
     def __init__(
         self,
@@ -54,7 +54,7 @@ class ReachColorImage(Reach, abc.ABC):
 
         # Perception (RGB camera)
         self.camera_sub = CameraSubscriber(
-            topic=f"/{self._camera_type}",
+            topic=f"/{self.camera_type}",
             is_point_cloud=False,
             node_name=f"drl_grasping_rgb_camera_sub_{self.id}",
         )
@@ -65,7 +65,7 @@ class ReachColorImage(Reach, abc.ABC):
         return gym.spaces.Box(
             low=0,
             high=255,
-            shape=(self._camera_height, self._camera_width, 3),
+            shape=(self.camera_height, self.camera_width, 3),
             dtype=np.uint8,
         )
 
@@ -76,7 +76,7 @@ class ReachColorImage(Reach, abc.ABC):
 
         # Reshape and create the observation
         color_image = np.array(image.data, dtype=np.uint8).reshape(
-            self._camera_height, self._camera_width, 3
+            self.camera_height, self.camera_width, 3
         )
 
         observation = Observation(color_image)

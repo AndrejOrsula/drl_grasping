@@ -30,32 +30,32 @@ class GraspPlanetary(Manipulation, abc.ABC):
         0.0,
     )
 
-    _workspace_volume: Tuple[float, float, float] = (0.24, 0.24, 0.2)
-    _workspace_centre: Tuple[float, float, float] = (0.7, 0.0, _workspace_volume[2] / 2)
+    workspace_volume: Tuple[float, float, float] = (0.24, 0.24, 0.2)
+    workspace_centre: Tuple[float, float, float] = (0.7, 0.0, workspace_volume[2] / 2)
 
-    _ground_enable: bool = True
-    _ground_position: Tuple[float, float, float] = (0.25, 0, 0)
-    _ground_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-    _ground_size: Tuple[float, float] = (2.5, 2.5)
+    terrain_enable: bool = True
+    terrain_position: Tuple[float, float, float] = (0.25, 0, 0)
+    terrain_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
+    terrain_size: Tuple[float, float] = (2.5, 2.5)
 
-    _object_enable: bool = True
+    object_enable: bool = True
     # 'box' [x, y, z], 'sphere' [radius], 'cylinder' [radius, height]
-    _object_type: str = "box"
-    _object_dimensions: List[float] = [0.05, 0.05, 0.05]
-    _object_mass: float = 0.1
-    _object_collision: bool = True
-    _object_visual: bool = True
-    _object_static: bool = False
-    _object_color: Tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
+    object_type: str = "box"
+    object_dimensions: List[float] = [0.05, 0.05, 0.05]
+    object_mass: float = 0.1
+    object_collision: bool = True
+    object_visual: bool = True
+    object_static: bool = False
+    object_color: Tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
     _object_spawn_centre: Tuple[float, float, float] = (
-        _workspace_centre[0],
-        _workspace_centre[1],
+        workspace_centre[0],
+        workspace_centre[1],
         0.15,
     )
-    _object_spawn_volume_proportion: float = 0.75
-    _object_spawn_volume: Tuple[float, float, float] = (
-        _object_spawn_volume_proportion * _workspace_volume[0],
-        _object_spawn_volume_proportion * _workspace_volume[1],
+    object_spawn_volume_proportion: float = 0.75
+    object_spawn_volume: Tuple[float, float, float] = (
+        object_spawn_volume_proportion * workspace_volume[0],
+        object_spawn_volume_proportion * workspace_volume[1],
         0.05,
     )
 
@@ -138,7 +138,7 @@ class GraspPlanetary(Manipulation, abc.ABC):
         self._gripper_dead_zone: float = gripper_dead_zone
         self._full_3d_orientation: bool = full_3d_orientation
 
-        self._original_workspace_volume = self._workspace_volume
+        self._original_workspace_volume = self.workspace_volume
 
         # Indicates whether gripper is opened or closed
         self._gripper_state = 1.0
@@ -397,11 +397,11 @@ class GraspPlanetary(Manipulation, abc.ABC):
 
     def check_ground_collision(self) -> bool:
         """
-        Returns true if robot links are in collision with the ground.
+        Returns true if robot links are in collision with the terrain.
         """
 
-        ground = self.world.get_model(self.ground_name)
-        for contact in ground.contacts():
+        terrain = self.world.get_model(self.terrain_name)
+        for contact in terrain.contacts():
             if (
                 self.robot_name in contact.body_b
                 and not self.robot_base_link_name in contact.body_b
@@ -419,14 +419,14 @@ class GraspPlanetary(Manipulation, abc.ABC):
         """
 
         ws_min_bound = (
-            self._workspace_centre[0] - self._workspace_volume[0] / 2 - extra_padding,
-            self._workspace_centre[1] - self._workspace_volume[1] / 2 - extra_padding,
-            self._workspace_centre[2] - self._workspace_volume[2] / 2 - extra_padding,
+            self.workspace_centre[0] - self.workspace_volume[0] / 2 - extra_padding,
+            self.workspace_centre[1] - self.workspace_volume[1] / 2 - extra_padding,
+            self.workspace_centre[2] - self.workspace_volume[2] / 2 - extra_padding,
         )
         ws_max_bound = (
-            self._workspace_centre[0] + self._workspace_volume[0] / 2 + extra_padding,
-            self._workspace_centre[1] + self._workspace_volume[1] / 2 + extra_padding,
-            self._workspace_centre[2] + self._workspace_volume[2] / 2 + extra_padding,
+            self.workspace_centre[0] + self.workspace_volume[0] / 2 + extra_padding,
+            self.workspace_centre[1] + self.workspace_volume[1] / 2 + extra_padding,
+            self.workspace_centre[2] + self.workspace_volume[2] / 2 + extra_padding,
         )
 
         return all(
@@ -449,10 +449,10 @@ class GraspPlanetary(Manipulation, abc.ABC):
             self._original_workspace_volume[2],
         )
         if affect_reachable_ws:
-            self._workspace_volume = new_volume
-        self._object_spawn_volume = (
-            self._object_spawn_volume_proportion * new_volume[0],
-            self._object_spawn_volume_proportion * new_volume[1],
+            self.workspace_volume = new_volume
+        self.object_spawn_volume = (
+            self.object_spawn_volume_proportion * new_volume[0],
+            self.object_spawn_volume_proportion * new_volume[1],
             new_volume[2],
         )
 

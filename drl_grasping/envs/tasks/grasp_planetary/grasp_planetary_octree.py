@@ -13,50 +13,50 @@ import numpy as np
 class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
 
     # Overwrite parameters for ManipulationGazeboEnvRandomizer
-    _camera_enable: bool = True
-    _camera_type: str = "auto"
-    _camera_width: int = 32
-    _camera_height: int = 32
+    camera_enable: bool = True
+    camera_type: str = "auto"
+    camera_width: int = 128
+    camera_height: int = 128
     # TODO: Camera frequence - make it just a little bit faster than control loop, it seems to be enough
-    _camera_update_rate: float = 2.55
-    _camera_horizontal_fov: float = 0.9
-    _camera_vertical_fov: float = 0.9
-    _camera_position: Tuple[float, float, float] = (0.95, -0.55, 0.25)
-    _camera_quat_xyzw: Tuple[float, float, float, float] = (
+    camera_update_rate: float = 2.55
+    camera_horizontal_fov: float = 0.9
+    camera_vertical_fov: float = 0.9
+    camera_position: Tuple[float, float, float] = (0.95, -0.55, 0.25)
+    camera_quat_xyzw: Tuple[float, float, float, float] = (
         -0.0402991,
         -0.0166924,
         0.9230002,
         0.3823192,
     )
-    _camera_ros2_bridge_points: bool = True
+    camera_publish_points: bool = True
 
-    _workspace_volume: Tuple[float, float, float] = (0.24, 0.24, 0.24)
-    _workspace_centre: Tuple[float, float, float] = (0.7, 0.0, _workspace_volume[2] / 2)
+    workspace_volume: Tuple[float, float, float] = (0.24, 0.24, 0.24)
+    workspace_centre: Tuple[float, float, float] = (0.7, 0.0, workspace_volume[2] / 2)
 
     # Size of octree (boundary size)
     _octree_size: float = 0.24
     # A small offset to include ground in the observations
     _octree_ground_offset: float = 0.01
     _octree_min_bound: Tuple[float, float, float] = (
-        _workspace_centre[0] - _octree_size / 2,
-        _workspace_centre[1] - _octree_size / 2,
+        workspace_centre[0] - _octree_size / 2,
+        workspace_centre[1] - _octree_size / 2,
         0.0 - _octree_ground_offset,
     )
     _octree_max_bound: Tuple[float, float, float] = (
-        _workspace_centre[0] + _octree_size / 2,
-        _workspace_centre[1] + _octree_size / 2,
+        workspace_centre[0] + _octree_size / 2,
+        workspace_centre[1] + _octree_size / 2,
         (_octree_size) - _octree_ground_offset,
     )
 
     _object_spawn_centre: Tuple[float, float, float] = (
-        _workspace_centre[0],
-        _workspace_centre[1],
+        workspace_centre[0],
+        workspace_centre[1],
         0.15,
     )
-    _object_spawn_volume_proportion: float = 0.75
-    _object_spawn_volume: Tuple[float, float, float] = (
-        _object_spawn_volume_proportion * _workspace_volume[0],
-        _object_spawn_volume_proportion * _workspace_volume[1],
+    object_spawn_volume_proportion: float = 0.75
+    object_spawn_volume: Tuple[float, float, float] = (
+        object_spawn_volume_proportion * workspace_volume[0],
+        object_spawn_volume_proportion * workspace_volume[1],
         0.075,
     )
 
@@ -140,13 +140,13 @@ class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
         )
 
         if octree_include_color:
-            self._camera_type = "rgbd_camera"
+            self.camera_type = "rgbd_camera"
         else:
-            self._camera_type = "depth_camera"
+            self.camera_type = "depth_camera"
 
         # Perception (RGB-D camera - point cloud)
         self.camera_sub = CameraSubscriber(
-            topic=f"/{self._camera_type}/points",
+            topic=f"/{self.camera_type}/points",
             is_point_cloud=True,
             node_name=f"drl_grasping_point_cloud_sub_{self.id}",
         )

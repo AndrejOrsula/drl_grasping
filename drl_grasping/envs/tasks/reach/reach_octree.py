@@ -26,24 +26,24 @@ class ReachOctree(Reach, abc.ABC):
         0.9230002,
         0.3823192,
     )
-    _camera_ros2_bridge_points: bool = True
+    _camera_publish_points: bool = True
 
-    _workspace_centre: Tuple[float, float, float] = (0.45, 0, 0.25)
-    _workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
+    workspace_centre: Tuple[float, float, float] = (0.45, 0, 0.25)
+    workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
 
     _octree_min_bound: Tuple[float, float, float] = (0.15, -0.3, 0.0)
     _octree_max_bound: Tuple[float, float, float] = (0.75, 0.3, 0.6)
 
     _object_spawn_centre: Tuple[float, float, float] = (
-        _workspace_centre[0],
-        _workspace_centre[1],
-        _workspace_centre[2],
+        workspace_centre[0],
+        workspace_centre[1],
+        workspace_centre[2],
     )
-    _object_spawn_volume_proportion: float = 0.75
-    _object_spawn_volume: Tuple[float, float, float] = (
-        _object_spawn_volume_proportion * _workspace_volume[0],
-        _object_spawn_volume_proportion * _workspace_volume[1],
-        _object_spawn_volume_proportion * _workspace_volume[2],
+    object_spawn_volume_proportion: float = 0.75
+    object_spawn_volume: Tuple[float, float, float] = (
+        object_spawn_volume_proportion * workspace_volume[0],
+        object_spawn_volume_proportion * workspace_volume[1],
+        object_spawn_volume_proportion * workspace_volume[2],
     )
 
     def __init__(
@@ -77,13 +77,13 @@ class ReachOctree(Reach, abc.ABC):
         )
 
         if octree_include_color:
-            self._camera_type = "rgbd_camera"
+            self.camera_type = "rgbd_camera"
         else:
-            self._camera_type = "depth_camera"
+            self.camera_type = "depth_camera"
 
         # Perception (RGB-D camera - point cloud)
         self.camera_sub = CameraSubscriber(
-            topic=f"/{self._camera_type}/points",
+            topic=f"/{self.camera_type}/points",
             is_point_cloud=True,
             node_name=f"drl_grasping_point_cloud_sub_{self.id}",
         )

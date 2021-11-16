@@ -27,7 +27,7 @@ class ReachDepthImage(Reach, abc.ABC):
         0.9230002,
         0.3823192,
     )
-    _camera_ros2_bridge_depth: bool = True
+    _camera_publish_depth: bool = True
 
     def __init__(
         self,
@@ -56,7 +56,7 @@ class ReachDepthImage(Reach, abc.ABC):
 
         # Perception (RGB camera)
         self.camera_sub = CameraSubscriber(
-            topic=f"/{self._camera_type}",
+            topic=f"/{self.camera_type}",
             is_point_cloud=False,
             node_name=f"drl_grasping_depth_camera_sub_{self.id}",
         )
@@ -67,7 +67,7 @@ class ReachDepthImage(Reach, abc.ABC):
         return gym.spaces.Box(
             low=0,
             high=np.inf,
-            shape=(self._camera_height, self._camera_width, 1),
+            shape=(self.camera_height, self.camera_width, 1),
             dtype=np.float32,
         )
 
@@ -78,7 +78,7 @@ class ReachDepthImage(Reach, abc.ABC):
 
         # Construct from buffer and reshape
         depth_image = np.frombuffer(image.data, dtype=np.float32).reshape(
-            self._camera_height, self._camera_width, 1
+            self.camera_height, self.camera_width, 1
         )
         # Replace all instances of infinity with 0
         depth_image[depth_image == np.inf] = 0.0

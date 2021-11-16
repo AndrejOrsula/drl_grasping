@@ -18,19 +18,12 @@ import gym
 # env_id = "Grasp-Octree-Gazebo-v0"
 # env_id = "Grasp-OctreeWithColor-Gazebo-v0"
 # GraspPlanetary
+# env_id = "GraspPlanetary-Gazebo-v0"
 env_id = "GraspPlanetary-OctreeWithColor-Gazebo-v0"
-# env_id = "GraspPlanetary-OctreeWithColor-Gazebo-v0"
 
 from gym_ignition.utils import logger as gym_ign_logger
 from gym import logger as gym_logger
 from os import environ
-
-# Set debug level
-debug_level = environ.get("DRL_GRASPING_DEBUG_LEVEL", default="ERROR").upper()
-gym_ign_logger.set_level(
-    level=getattr(gym_logger, debug_level),
-    scenario_level=getattr(gym_logger, debug_level),
-)
 
 
 def make_env_from_id(env_id: str, **kwargs) -> gym.Env:
@@ -40,7 +33,8 @@ def make_env_from_id(env_id: str, **kwargs) -> gym.Env:
 def main(args=None):
 
     # Set verbosity
-    logger.set_level(gym.logger.WARN)
+    debug_level = environ.get("DRL_GRASPING_DEBUG_LEVEL", default="ERROR").upper()
+    logger.set_level(getattr(gym_logger, debug_level))
 
     # Create a partial function passing the environment id
     make_env = functools.partial(make_env_from_id, env_id=env_id)
@@ -56,26 +50,7 @@ def main(args=None):
     # )
 
     # Wrap environment with randomizer
-    env = ManipulationPlanetaryGazeboEnvRandomizer(
-        env=make_env,
-        physics_rollouts_num=0,
-        robot_random_joint_positions=False,
-        robot_random_joint_positions_std=0.1,
-        camera_pose_rollouts_num=0,
-        camera_random_pose_distance=1.0,
-        camera_random_pose_height_range=(0.1, 0.7),
-        camera_noise_mean=None,
-        camera_noise_stddev=None,
-        ground_model_rollouts_num=0,
-        object_random_pose=True,
-        object_random_use_mesh_models=False,
-        object_models_rollouts_num=0,
-        object_random_model_count=1,
-        invisible_world_bottom_collision_plane=True,
-        visualise_workspace=False,
-        visualise_spawn_volume=False,
-        verbose=True,
-    )
+    env = ManipulationPlanetaryGazeboEnvRandomizer(env=make_env)
 
     # Initialize random seed
     env.seed(42)

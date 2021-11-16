@@ -18,7 +18,7 @@ def get_object_model_class(object_type: str) -> ModelWrapper:
         return RandomObject
 
 
-def is_object_type_randomization(object_type: str) -> ModelWrapper:
+def is_object_type_randomizable(object_type: str) -> ModelWrapper:
 
     if object_type in ("random_primitive", "random_mesh"):
         return True

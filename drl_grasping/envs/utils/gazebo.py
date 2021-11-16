@@ -1,8 +1,8 @@
+from drl_grasping.envs.utils.conversions import quat_to_xyzw, quat_to_wxyz
 from gym_ignition.scenario.model_wrapper import ModelWrapper
 from scenario.bindings.gazebo import World, Link
 from typing import Tuple, Union
 import numpy as np
-from drl_grasping.envs.utils.conversions import quat_to_xyzw, quat_to_wxyz
 
 
 def get_model_pose(

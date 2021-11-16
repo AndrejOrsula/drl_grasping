@@ -1,6 +1,8 @@
 from drl_grasping.envs.control import MoveIt2
-from drl_grasping.envs.utils.math import quat_mul
+from drl_grasping.envs.models.robots import get_robot_model_class
+from drl_grasping.envs.utils import Tf2Broadcaster
 from drl_grasping.envs.utils.conversions import orientation_6d_to_quat, quat_to_xyzw
+from drl_grasping.envs.utils.math import quat_mul
 from gym_ignition.base import task
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
@@ -14,158 +16,145 @@ import numpy as np
 class Manipulation(task.Task, abc.ABC):
     _ids = count(0)
 
-    # Parameters for ManipulationGazeboEnvRandomizer
-    _robot_position: Tuple[float, float, float] = (0, 0, 0)
-    _robot_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-    _robot_arm_collision: bool = True
-    _robot_hand_collision: bool = True
-    _robot_initial_joint_positions_panda: Tuple[float, ...] = (
+    # TODO: Move all simulation-related parameters to yaml config and parse them inside randomizer (or maybe just randomizer parameters?)
+
+    # Robot #
+    initial_robot_position: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    initial_robot_quat_xyzw: Tuple[float, float, float, float] = (
         0.0,
         0.0,
         0.0,
-        -1.57,
-        0.0,
-        1.57,
-        0.79,
-        0.0,
-        0.0,
-    )
-    _robot_initial_joint_positions_ur5_rg2: Tuple[float, ...] = (
-        0.0,
-        0.0,
-        1.57,
-        0.0,
-        -1.57,
-        -1.57,
-        0.0,
-        0.0,
-    )
-    _robot_initial_joint_positions_kinova_j2s7s300: Tuple[float, ...] = (
-        3.6787,
-        4.0701,
-        -1.7164,
-        2.1397,
-        1.0536,
-        5.1487,
-        0.9393,
-        0.0,
-        0.0,
-        0.0,
-    )
-    _robot_initial_joint_positions_lunalab_summit_xl_gen: Tuple[float, ...] = (
-        3.6787,
-        4.0701,
-        -1.7164,
-        2.1397,
-        1.0536,
-        5.1487,
-        0.9393,
-        0.0,
-        0.0,
-        0.0,
+        1.0,
     )
 
-    _workspace_centre: Tuple[float, float, float] = (0.5, 0, 0.25)
-    _workspace_volume: Tuple[float, float, float] = (1.0, 1.0, 1.0)
-
-    _camera_enable: bool = False
-    _camera_type: str = "rgbd_camera"
-    _camera_render_engine: str = "ogre2"
-    _camera_position: Tuple[float, float, float] = (0.5, 0, 1)
-    _camera_quat_xyzw: Tuple[float, float, float, float] = (-0.707, 0, 0.707, 0)
-    _camera_width: int = 128
-    _camera_height: int = 128
-    _camera_update_rate: int = 10
-    _camera_horizontal_fov: float = 1.0
-    _camera_vertical_fov: float = 1.0
-    _camera_clip_color: Tuple[float, float] = (0.01, 1000.0)
-    _camera_clip_depth: Tuple[float, float] = (0.01, 10.0)
-    _camera_ros2_bridge_color: bool = False
-    _camera_ros2_bridge_depth: bool = False
-    _camera_ros2_bridge_points: bool = False
-
-    _ground_enable: bool = False
-    _ground_position: Tuple[float, float, float] = (0, 0, 0)
-    _ground_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-    _ground_size: Tuple[float, float] = (2.0, 2.0)
-
-    _object_enable: bool = False
-    # 'box' [x, y, z], 'sphere' [radius], 'cylinder' [radius, height]
-    _object_type: str = "box"
-    _object_dimensions: List[float] = [0.05, 0.05, 0.05]
-    _object_mass: float = 0.1
-    _object_collision: bool = True
-    _object_visual: bool = True
-    _object_static: bool = False
-    _object_color: Tuple[float, float, float, float] = (0.8, 0.8, 0.8, 1.0)
-    _object_spawn_centre: Tuple[float, float, float] = (
-        _workspace_centre[0],
-        _workspace_centre[1],
-        _workspace_centre[2],
+    # Workspace #
+    workspace_centre: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    object_spawn_centre: Tuple[float, float, float] = (
+        workspace_centre[0],
+        workspace_centre[1],
+        workspace_centre[2],
     )
-    _object_spawn_volume_proportion: float = 0.75
-    _object_spawn_volume: Tuple[float, float, float] = (
-        _object_spawn_volume_proportion * _workspace_volume[0],
-        _object_spawn_volume_proportion * _workspace_volume[1],
-        _object_spawn_volume_proportion * _workspace_volume[2],
+    workspace_volume: Tuple[float, float, float] = (1.0, 1.0, 1.0)
+
+    # Camera #
+    camera_enable: bool = False
+    camera_type: str = "rgbd_camera"
+    # Camera pose (wrt robot pose)
+    camera_position: Tuple[float, float, float] = (0, 0, 1)
+    camera_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
+    # Camera intrinsic parameters
+    camera_width: int = 128
+    camera_height: int = 128
+    camera_update_rate: int = 10
+    camera_horizontal_fov: float = 1.04719755
+    camera_vertical_fov: float = 1.04719755
+    camera_clip_color: Tuple[float, float] = (0.01, 1000.0)
+    camera_clip_depth: Tuple[float, float] = (0.05, 10.0)
+    # Defines what data is needed
+    camera_publish_color: bool = False
+    camera_publish_depth: bool = False
+    camera_publish_points: bool = False
+
+    # Terrain #
+    terrain_enable: bool = False
+    terrain_position: Tuple[float, float, float] = (0, 0, 0)
+    terrain_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
+    terrain_size: Tuple[float, float] = (2.0, 2.0)
+
+    # Objects #
+    object_enable: bool = False
+    object_dimensions: List[float] = [0.05, 0.05, 0.05]
+    object_mass: float = 0.1
+    object_collision: bool = True
+    object_visual: bool = True
+    object_static: bool = False
+    object_color: Tuple[float, float, float, float] = (0.8, 0.8, 0.8, 1.0)
+    object_spawn_centre: Tuple[float, float, float] = (
+        workspace_centre[0],
+        workspace_centre[1],
+        workspace_centre[2],
     )
-    _object_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-
-    _insert_scene_broadcaster_plugin: bool = True
-    _insert_user_commands_plugin: bool = True
-
-    _relative_position_scaling_factor: float = 0.1
-    _z_relative_orientation_scaling_factor: float = np.pi / 4.0
+    object_spawn_volume_proportion: float = 0.75
+    object_spawn_volume: Tuple[float, float, float] = (
+        object_spawn_volume_proportion * workspace_volume[0],
+        object_spawn_volume_proportion * workspace_volume[1],
+        object_spawn_volume_proportion * workspace_volume[2],
+    )
+    object_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
 
     def __init__(
         self,
         agent_rate: float,
         robot_model: str,
         restrict_position_goal_to_workspace: bool,
-        verbose: bool,
+        relative_position_scaling_factor: float = 0.1,
+        z_relative_orientation_scaling_factor: float = np.pi / 4.0,
+        verbose: bool = False,
         **kwargs,
     ):
-        # Add to ids
-        self.id = next(self._ids)
-
         # Initialize the Task base class
         task.Task.__init__(self, agent_rate=agent_rate)
 
-        self._robot_model = robot_model
-        if "panda" == robot_model:
-            self._robot_initial_joint_positions = (
-                self._robot_initial_joint_positions_panda
-            )
-        elif "ur5_rg2" == robot_model:
-            self._robot_initial_joint_positions = (
-                self._robot_initial_joint_positions_ur5_rg2
-            )
-        elif "kinova_j2s7s300" == robot_model:
-            self._robot_initial_joint_positions = (
-                self._robot_initial_joint_positions_kinova_j2s7s300
-            )
-        elif "lunalab_summit_xl_gen" == robot_model:
-            self._robot_initial_joint_positions = (
-                self._robot_initial_joint_positions_lunalab_summit_xl_gen
-            )
+        # Get next ID for this task instance
+        self.id = next(self._ids)
 
-        # Control (MoveIt2)
+        # Store passed arguments for later use
+        self.__restrict_position_goal_to_workspace = restrict_position_goal_to_workspace
+        self.__relative_position_scaling_factor = relative_position_scaling_factor
+        self.__z_relative_orientation_scaling_factor = (
+            z_relative_orientation_scaling_factor
+        )
+        self._verbose = verbose
+
+        # Get class of the robot model based on passed argument
+        self.robot_model_class = get_robot_model_class(robot_model)
+
+        # Determine robot name and prefix based on current ID of the task
+        self.robot_prefix = self.robot_model_class.DEFAULT_PREFIX
+        if 0 == self.id:
+            self.robot_name = self.robot_model_class.ROBOT_MODEL_NAME
+        else:
+            self.robot_name = f"{self.robot_model_class.ROBOT_MODEL_NAME}{self.id}"
+            if self.robot_prefix.endswith("_"):
+                self.robot_prefix = f"{self.robot_prefix[:-1]}{self.id}_"
+            elif self.robot_prefix.empty():
+                self.robot_prefix = f"robot{self.id}_"
+
+        # Names of specific robot links, useful all around the code
+        self.robot_base_link_name = self.robot_model_class.get_robot_base_link_name(
+            self.robot_prefix
+        )
+        self.robot_arm_base_link_name = self.robot_model_class.get_arm_base_link_name(
+            self.robot_prefix
+        )
+        self.robot_ee_link_name = self.robot_model_class.get_ee_link_name(
+            self.robot_prefix
+        )
+        self.robot_gripper_link_names = self.robot_model_class.get_gripper_link_names(
+            self.robot_prefix
+        )
+
+        # Specify initial positions (default configuration is used here)
+        self.initial_arm_joint_positions = (
+            self.robot_model_class.DEFAULT_ARM_JOINT_POSITIONS
+        )
+        self.initial_gripper_joint_positions = (
+            self.robot_model_class.DEFAULT_GRIPPER_JOINT_POSITIONS
+        )
+
+        # Setup broadcaster of transforms via tf2
+        self.tf2_broadcaster = Tf2Broadcaster(
+            node_name=f"drl_grasping_tf_broadcaster_{self.id}"
+        )
+
+        # Setup control of the manipulator with MoveIt 2
         self.moveit2 = MoveIt2(
-            robot_model=robot_model, node_name=f"ign_moveit2_py_{self.id}"
+            robot_model=robot_model, node_name=f"drl_grasping_moveit2_py_{self.id}"
         )
 
         # Names of important models
-        self.robot_name = None
-        self.robot_base_link_name = None
-        self.robot_ee_link_name = None
-        self.robot_gripper_link_names = []
-        self.camera_name = None
-        self.ground_name = None
+        self.terrain_name = "terrain"
         self.object_names = []
-
-        # Additional parameters
-        self._restrict_position_goal_to_workspace = restrict_position_goal_to_workspace
-        self._verbose = verbose
 
     def create_spaces(self) -> Tuple[ActionSpace, ObservationSpace]:
 
@@ -178,32 +167,33 @@ class Manipulation(task.Task, abc.ABC):
 
     def create_action_space(self) -> ActionSpace:
 
-        pass
+        raise NotImplementedError()
 
     def create_observation_space(self) -> ObservationSpace:
 
-        pass
+        raise NotImplementedError()
 
-    def set_action(self, action: Action) -> None:
+    def set_action(self, action: Action):
 
-        pass
+        raise NotImplementedError()
 
     def get_observation(self) -> Observation:
 
-        pass
+        raise NotImplementedError()
 
     def get_reward(self) -> Reward:
 
-        pass
+        raise NotImplementedError()
 
     def is_done(self) -> bool:
 
-        pass
+        raise NotImplementedError()
 
-    def reset_task(self) -> None:
+    def reset_task(self):
 
-        pass
+        raise NotImplementedError()
 
+    # Helper functions #
     def set_position_goal(
         self,
         absolute: Union[Tuple[float, float, float], None] = None,
@@ -217,7 +207,7 @@ class Manipulation(task.Task, abc.ABC):
             target_pos = absolute
         elif relative is not None:
             # Scale relative action to metric units
-            relative_pos = self._relative_position_scaling_factor * relative
+            relative_pos = self.__relative_position_scaling_factor * relative
             # Get current position
             current_pos = self.get_ee_position()
 
@@ -230,16 +220,17 @@ class Manipulation(task.Task, abc.ABC):
 
         if target_pos is not None:
             # Restrict target position to a limited workspace
-            if self._restrict_position_goal_to_workspace:
-                centre = self._workspace_centre
-                volume = self._workspace_volume
+            if self.__restrict_position_goal_to_workspace:
+                centre = self.workspace_centre
+                volume = self.workspace_volume
                 for i in range(3):
                     target_pos[i] = min(
                         centre[i] + volume[i] / 2,
                         max(centre[i] - volume[i] / 2, target_pos[i]),
                     )
             # Set position goal
-            self.moveit2.set_position_goal(target_pos)
+            # TODO: This needs to be fixed (get_ee_pose must return pose w.r.t arm base)
+            self.moveit2.set_position_goal(target_pos, frame="drl_grasping_world")
         else:
             print("error: Neither absolute or relative position is set")
 
@@ -295,7 +286,7 @@ class Manipulation(task.Task, abc.ABC):
                 )
                 relative_quat_xyzw = orientation_6d_to_quat(vectors[0], vectors[1])
             elif "z" == representation:
-                relative *= self._z_relative_orientation_scaling_factor
+                relative *= self.__z_relative_orientation_scaling_factor
                 relative_quat_xyzw = Rotation.from_euler(
                     "xyz", [0, 0, relative]
                 ).as_quat()
@@ -312,8 +303,11 @@ class Manipulation(task.Task, abc.ABC):
             print("error: Neither absolute or relative orientation is set")
 
     def get_ee_position(self) -> Tuple[float, float, float]:
+        """
+        Return the current position of the end effector
+        """
 
-        robot = self.world.get_model(self.robot_name).to_gazebo()
+        robot = self.world.get_model(self.robot_name)
         return robot.get_link(self.robot_ee_link_name).position()
 
     def get_ee_orientation(self) -> Tuple[float, float, float, float]:
@@ -321,5 +315,6 @@ class Manipulation(task.Task, abc.ABC):
         Return the current xyzw quaternion of the end effector
         """
 
-        robot = self.world.get_model(self.robot_name).to_gazebo()
-        return quat_to_xyzw(robot.get_link(self.robot_ee_link_name).orientation())
+        robot = self.world.get_model(self.robot_name)
+        quat_wxyz = robot.get_link(self.robot_ee_link_name).orientation()
+        return quat_to_xyzw(quat_wxyz)

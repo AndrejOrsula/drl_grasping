@@ -14,69 +14,32 @@ import sys
 
 class Grasp(Manipulation, abc.ABC):
 
-    # Overwrite parameters for ManipulationGazeboEnvRandomizer
-    _robot_arm_collision: bool = False
-    _robot_hand_collision: bool = True
-    _robot_initial_joint_positions_panda: Tuple[float, ...] = (
-        0.0,
-        0.0,
-        0.0,
-        -2.0,
-        0.0,
-        2.0,
-        0.79,
-        0.04,
-        0.04,
-    )
-    _robot_initial_joint_positions_ur5_rg2: Tuple[float, ...] = (
-        0.0,
-        0.0,
-        1.57,
-        0.0,
-        -1.57,
-        -1.57,
-        0.52,
-        0.52,
-    )
-    _robot_initial_joint_positions_kinova_j2s7s300: Tuple[float, ...] = (
-        3.6787,
-        4.0701,
-        -1.7164,
-        2.1397,
-        1.0536,
-        5.1487,
-        0.9393,
-        0.0,
-        0.0,
-        0.0,
-    )
+    workspace_volume: Tuple[float, float, float] = (0.24, 0.24, 0.2)
+    workspace_centre: Tuple[float, float, float] = (0.5, 0.0, workspace_volume[2] / 2)
 
-    _workspace_volume: Tuple[float, float, float] = (0.24, 0.24, 0.2)
-    _workspace_centre: Tuple[float, float, float] = (0.5, 0.0, _workspace_volume[2] / 2)
+    terrain_enable: bool = True
+    terrain_position: Tuple[float, float, float] = (0.25, 0, 0)
+    terrain_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
+    terrain_size: Tuple[float, float] = (1.25, 1.25)
 
-    _ground_enable: bool = True
-    _ground_position: Tuple[float, float, float] = (0.25, 0, 0)
-    _ground_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-    _ground_size: Tuple[float, float] = (1.25, 1.25)
-
-    _object_enable: bool = True
+    object_enable: bool = True
     # 'box' [x, y, z], 'sphere' [radius], 'cylinder' [radius, height]
-    _object_type: str = "box"
-    _object_dimensions: List[float] = [0.05, 0.05, 0.05]
-    _object_mass: float = 0.1
-    _object_collision: bool = True
-    _object_visual: bool = True
-    _object_static: bool = False
-    _object_color: Tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
-    _object_spawn_centre: Tuple[float, float, float] = (
-        _workspace_centre[0],
-        _workspace_centre[1],
+    object_type: str = "box"
+    object_dimensions: List[float] = [0.05, 0.05, 0.05]
+    object_mass: float = 0.1
+    object_collision: bool = True
+    object_visual: bool = True
+    object_static: bool = False
+    object_color: Tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
+    object_spawn_centre: Tuple[float, float, float] = (
+        workspace_centre[0],
+        workspace_centre[1],
         0.15,
     )
-    _object_spawn_volume_proportion: float = 0.75
-    _object_spawn_volume: Tuple[float, float, float] = (
-        _object_spawn_volume_proportion * _workspace_volume[0],
-        _object_spawn_volume_proportion * _workspace_volume[1],
+    object_spawn_volume_proportion: float = 0.75
+    object_spawn_volume: Tuple[float, float, float] = (
+        object_spawn_volume_proportion * workspace_volume[0],
+        object_spawn_volume_proportion * workspace_volume[1],
         0.05,
     )
 
@@ -159,7 +122,7 @@ class Grasp(Manipulation, abc.ABC):
         self._gripper_dead_zone: float = gripper_dead_zone
         self._full_3d_orientation: bool = full_3d_orientation
 
-        self._original_workspace_volume = self._workspace_volume
+        self._original_workspace_volume = self.workspace_volume
 
         # Indicates whether gripper is opened or closed
         self._gripper_state = 1.0
@@ -421,7 +384,7 @@ class Grasp(Manipulation, abc.ABC):
         Returns true if robot links are in collision with the ground.
         """
 
-        ground = self.world.get_model(self.ground_name)
+        ground = self.world.get_model(self.terrain_name)
         for contact in ground.contacts():
             if (
                 self.robot_name in contact.body_b
@@ -440,14 +403,14 @@ class Grasp(Manipulation, abc.ABC):
         """
 
         ws_min_bound = (
-            self._workspace_centre[0] - self._workspace_volume[0] / 2 - extra_padding,
-            self._workspace_centre[1] - self._workspace_volume[1] / 2 - extra_padding,
-            self._workspace_centre[2] - self._workspace_volume[2] / 2 - extra_padding,
+            self.workspace_centre[0] - self.workspace_volume[0] / 2 - extra_padding,
+            self.workspace_centre[1] - self.workspace_volume[1] / 2 - extra_padding,
+            self.workspace_centre[2] - self.workspace_volume[2] / 2 - extra_padding,
         )
         ws_max_bound = (
-            self._workspace_centre[0] + self._workspace_volume[0] / 2 + extra_padding,
-            self._workspace_centre[1] + self._workspace_volume[1] / 2 + extra_padding,
-            self._workspace_centre[2] + self._workspace_volume[2] / 2 + extra_padding,
+            self.workspace_centre[0] + self.workspace_volume[0] / 2 + extra_padding,
+            self.workspace_centre[1] + self.workspace_volume[1] / 2 + extra_padding,
+            self.workspace_centre[2] + self.workspace_volume[2] / 2 + extra_padding,
         )
 
         return all(
@@ -470,10 +433,10 @@ class Grasp(Manipulation, abc.ABC):
             self._original_workspace_volume[2],
         )
         if affect_reachable_ws:
-            self._workspace_volume = new_volume
-        self._object_spawn_volume = (
-            self._object_spawn_volume_proportion * new_volume[0],
-            self._object_spawn_volume_proportion * new_volume[1],
+            self.workspace_volume = new_volume
+        self.object_spawn_volume = (
+            self.object_spawn_volume_proportion * new_volume[0],
+            self.object_spawn_volume_proportion * new_volume[1],
             new_volume[2],
         )
 
