@@ -19,6 +19,7 @@ class RandomGround(model_wrapper.ModelWrapper):
         friction: float = 5.0,
         texture_dir: str = None,
         np_random=None,
+        **kwargs,
     ):
 
         if np_random is None:

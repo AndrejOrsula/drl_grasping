@@ -17,6 +17,7 @@ class Plane(model_wrapper.ModelWrapper):
         collision: bool = True,
         friction: float = 1.0,
         visual: bool = True,
+        **kwargs,
     ):
 
         # Get a unique model name

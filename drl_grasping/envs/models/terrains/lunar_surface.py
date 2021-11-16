@@ -14,6 +14,7 @@ class LunarSurface(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
         orientation: List[float] = (1, 0, 0, 0),
         model_file: str = None,
         use_fuel: bool = False,
+        **kwargs,
     ):
 
         # Allow passing of custom model file as an argument

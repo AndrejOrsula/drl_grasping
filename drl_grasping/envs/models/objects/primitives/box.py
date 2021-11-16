@@ -20,6 +20,7 @@ class Box(model_wrapper.ModelWrapper):
         visual: bool = True,
         gui_only: bool = False,
         color: List[float] = (0.8, 0.8, 0.8, 1.0),
+        **kwargs,
     ):
 
         # Get a unique model name

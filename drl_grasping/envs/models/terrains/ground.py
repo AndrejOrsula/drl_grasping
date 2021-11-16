@@ -15,6 +15,7 @@ class Ground(model_wrapper.ModelWrapper):
         size: List[float] = (1.0, 1.0),
         collision_thickness=0.05,
         friction: float = 5.0,
+        **kwargs,
     ):
 
         # Get a unique model name

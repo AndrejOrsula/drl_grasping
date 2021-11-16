@@ -19,6 +19,7 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
         hand_collision: bool = True,
         separate_gripper_controller: bool = True,
         initial_joint_positions: List[float] = (0, 0, 0, -1.57, 0, 1.57, 0.79, 0, 0),
+        **kwargs,
     ):
 
         # Get a unique model name

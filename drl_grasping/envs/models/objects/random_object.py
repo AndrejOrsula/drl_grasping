@@ -22,6 +22,7 @@ class RandomObject(model_wrapper.ModelWrapper):
         unique_cache: bool = False,
         reset_collection: bool = False,
         np_random=None,
+        **kwargs,
     ):
 
         # Get a unique model name

@@ -20,6 +20,7 @@ class RandomPrimitive(model_wrapper.ModelWrapper):
         visual: bool = True,
         gui_only: bool = False,
         np_random=None,
+        **kwargs,
     ):
 
         if np_random is None:

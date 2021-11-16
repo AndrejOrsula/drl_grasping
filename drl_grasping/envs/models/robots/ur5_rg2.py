@@ -28,6 +28,7 @@ class UR5RG2(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
             0.0,
             0.0,
         ),
+        **kwargs,
     ):
 
         # Get a unique model name

@@ -154,15 +154,19 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         else:
             return cls.ROBOT_MODEL_NAME
 
-    # Prefix
+    # Meta information #
+    @property
+    def is_mobile(self) -> bool:
 
+        return True
+
+    # Prefix #
     @property
     def prefix(self) -> str:
 
         return self.__prefix
 
-    # Joints
-
+    # Joints #
     @property
     def joint_names(self) -> List[str]:
 
@@ -247,8 +251,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
 
         return self.__initial_gripper_joint_positions
 
-    # Passive joints
-
+    # Passive joints #
     @property
     def passive_joint_names(self) -> List[str]:
 
@@ -283,8 +286,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
 
         return self.arm_joint_limits + self.gripper_joint_limits
 
-    # Links
-
+    # Links #
     @classmethod
     def get_robot_base_link_name(cls, prefix) -> str:
 
