@@ -9,7 +9,7 @@ from .grasp import Grasp, GraspOctree
 from .grasp_planetary import GraspPlanetary, GraspPlanetaryOctree
 
 # Set debug level
-debug_level = environ.get("DRL_GRASPING_DEBUG_LEVEL", default="ERROR")
+debug_level = environ.get("DRL_GRASPING_DEBUG_LEVEL", default="ERROR").upper()
 gym_ign_logger.set_level(
     level=getattr(gym_logger, debug_level),
     scenario_level=getattr(gym_logger, debug_level),
