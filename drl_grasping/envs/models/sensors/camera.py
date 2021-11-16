@@ -2,6 +2,7 @@ from gym_ignition.scenario import model_wrapper
 from gym_ignition.utils import misc
 from gym_ignition.utils.scenario import get_unique_model_name
 from scenario import core as scenario
+from threading import Thread
 from typing import List, Union
 import os
 
@@ -27,6 +28,7 @@ class Camera(model_wrapper.ModelWrapper):
         ros2_bridge_depth: bool = False,
         ros2_bridge_points: bool = False,
         visibility_mask: int = 2,
+        visual: bool = False,
     ):
 
         # Get a unique model name
@@ -40,7 +42,7 @@ class Camera(model_wrapper.ModelWrapper):
         initial_pose = scenario.Pose(position, orientation)
 
         # Create SDF string for the model
-        sdf = f'''<sdf version="1.7">
+        sdf = f'''<sdf version="1.9">
             <model name="{model_name}">
                 <static>true</static>
                 <link name="{model_name}_link">
@@ -77,6 +79,37 @@ class Camera(model_wrapper.ModelWrapper):
                         <visibility_mask>{visibility_mask}</visibility_mask>
                         </camera>
                     </sensor>
+                    {
+                        f"""
+                        <visual name="{model_name}_visual_lens">
+                            <pose>-0.01 0 0 0 1.5707963 0</pose>
+                            <geometry>
+                                <cylinder>
+                                    <radius>0.02</radius>
+                                    <length>0.02</length>
+                                </cylinder>
+                            </geometry>
+                            <material>
+                                <ambient>0.0 0.8 0.0</ambient>
+                                <diffuse>0.0 0.8 0.0</diffuse>
+                                <specular>0.0 0.8 0.0</specular>
+                            </material>
+                        </visual>
+                        <visual name="{model_name}_visual_body">
+                            <pose>-0.05 0 0 0 0 0</pose>
+                            <geometry>
+                                <box>
+                                    <size>0.06 0.05 0.05</size>
+                                </box>
+                            </geometry>
+                            <material>
+                                <ambient>0.0 0.8 0.0</ambient>
+                                <diffuse>0.0 0.8 0.0</diffuse>
+                                <specular>0.0 0.8 0.0</specular>
+                            </material>
+                        </visual>
+                        """ if visual else ""
+                        }
                 </link>
             </model>
         </sdf>'''
@@ -96,49 +129,53 @@ class Camera(model_wrapper.ModelWrapper):
         model_wrapper.ModelWrapper.__init__(self, model=model)
 
         if ros2_bridge_color or ros2_bridge_depth or ros2_bridge_points:
-            from threading import Thread
-
-            # Note: This unfortunately hinders use of SIGINT
-
-            threads = []
+            self.__threads = []
             if ros2_bridge_color:
-                thread = Thread(
-                    target=self.construct_ros2_bridge,
-                    args=(
-                        self.color_topic(),
-                        "sensor_msgs/msg/Image",
-                        "ignition.msgs.Image",
-                    ),
-                    daemon=True,
+                self.__threads.append(
+                    Thread(
+                        target=self.construct_ros2_bridge,
+                        args=(
+                            self.color_topic(),
+                            "sensor_msgs/msg/Image",
+                            "ignition.msgs.Image",
+                        ),
+                        daemon=True,
+                    )
                 )
-                threads.append(thread)
 
             if ros2_bridge_depth:
-                thread = Thread(
-                    target=self.construct_ros2_bridge,
-                    args=(
-                        self.depth_topic(),
-                        "sensor_msgs/msg/Image",
-                        "ignition.msgs.Image",
-                    ),
-                    daemon=True,
+                self.__threads.append(
+                    Thread(
+                        target=self.construct_ros2_bridge,
+                        args=(
+                            self.depth_topic(),
+                            "sensor_msgs/msg/Image",
+                            "ignition.msgs.Image",
+                        ),
+                        daemon=True,
+                    )
                 )
-                threads.append(thread)
 
             if ros2_bridge_points:
-                thread = Thread(
-                    target=self.construct_ros2_bridge,
-                    args=(
-                        self.points_topic(),
-                        "sensor_msgs/msg/PointCloud2",
-                        "ignition.msgs.PointCloudPacked",
-                    ),
-                    daemon=True,
+                self.__threads.append(
+                    Thread(
+                        target=self.construct_ros2_bridge,
+                        args=(
+                            self.points_topic(),
+                            "sensor_msgs/msg/PointCloud2",
+                            "ignition.msgs.PointCloudPacked",
+                        ),
+                        daemon=True,
+                    )
                 )
-                threads.append(thread)
 
-            for thread in threads:
+            for thread in self.__threads:
                 thread.start()
+
+    def __del__(self):
+        if hasattr(self, "__threads"):
+            for thread in self.__threads:
+                thread.join()
 
     @classmethod
     def construct_ros2_bridge(self, topic: str, ros_msg: str, ign_msg: str):
@@ -176,3 +213,6 @@ class Camera(model_wrapper.ModelWrapper):
             return True
         else:
             return False
+
+    def link_name(self) -> str:
+        return f"{self._model_name}_link"
