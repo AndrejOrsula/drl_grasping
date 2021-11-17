@@ -15,8 +15,9 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
     __PREFIX_MOBILE_BASE: str = "summit_xl_"
     __PREFIX_MANIPULATOR: str = "j2s7s300_"
 
+    __DESCRIPTION_PACKAGE = ROBOT_MODEL_NAME + "_description"
     __DEFAULT_XACRO_FILE = path.join(
-        get_package_share_directory(ROBOT_MODEL_NAME + "_description"),
+        get_package_share_directory(__DESCRIPTION_PACKAGE),
         "urdf",
         ROBOT_MODEL_NAME + ".urdf.xacro",
     )
@@ -39,7 +40,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         # "separate_gripper_controller": True,
     }
     __XACRO_MODEL_PATH_REMAP: Tuple[str, str] = (
-        ROBOT_MODEL_NAME + "_description",
+        __DESCRIPTION_PACKAGE,
         ROBOT_MODEL_NAME,
     )
 
@@ -239,7 +240,10 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
     @property
     def gripper_joints_close_towards_positive(self) -> bool:
 
-        False
+        return (
+            self.OPEN_GRIPPER_JOINT_POSITIONS[0]
+            < self.CLOSED_GRIPPER_JOINT_POSITIONS[0]
+        )
 
     @property
     def initial_arm_joint_positions(self) -> List[float]:
@@ -281,14 +285,9 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
             self.prefix + self.__PREFIX_MANIPULATOR + "joint_finger_tip_3",
         ]
 
-    @property
-    def joint_limits(self) -> List[Tuple[float, float]]:
-
-        return self.arm_joint_limits + self.gripper_joint_limits
-
     # Links #
     @classmethod
-    def get_robot_base_link_name(cls, prefix) -> str:
+    def get_robot_base_link_name(cls, prefix: str = "") -> str:
 
         return prefix + cls.__PREFIX_MOBILE_BASE + "base_footprint"
 
@@ -298,7 +297,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         return self.get_robot_base_link_name(self.prefix)
 
     @classmethod
-    def get_arm_base_link_name(cls, prefix) -> str:
+    def get_arm_base_link_name(cls, prefix: str = "") -> str:
 
         # Same as `self.arm_link_names[0]``
         return prefix + cls.__PREFIX_MANIPULATOR + "link_base"
@@ -309,7 +308,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         return self.get_arm_base_link_name(self.prefix)
 
     @classmethod
-    def get_ee_link_name(cls, prefix) -> str:
+    def get_ee_link_name(cls, prefix: str = "") -> str:
 
         return prefix + cls.__PREFIX_MANIPULATOR + "end_effector"
 
@@ -319,7 +318,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         return self.get_ee_link_name(self.prefix)
 
     @classmethod
-    def get_wheel_link_names(cls, prefix) -> List[str]:
+    def get_wheel_link_names(cls, prefix: str = "") -> List[str]:
 
         return [
             prefix + cls.__PREFIX_MOBILE_BASE + "back_left_wheel",
@@ -334,7 +333,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         return self.get_wheel_link_names(self.prefix)
 
     @classmethod
-    def get_arm_link_names(cls, prefix) -> List[str]:
+    def get_arm_link_names(cls, prefix: str = "") -> List[str]:
 
         return [
             prefix + cls.__PREFIX_MANIPULATOR + "link_base",
@@ -353,7 +352,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         return self.get_arm_link_names(self.prefix)
 
     @classmethod
-    def get_gripper_link_names(cls, prefix) -> List[str]:
+    def get_gripper_link_names(cls, prefix: str = "") -> List[str]:
 
         return [
             prefix + cls.__PREFIX_MANIPULATOR + "link_finger_1",

@@ -1,38 +1,114 @@
+from ament_index_python.packages import get_package_share_directory
+from drl_grasping.envs.models.utils import xacro2sdf
 from gym_ignition.scenario import model_wrapper, model_with_file
 from gym_ignition.utils.scenario import get_unique_model_name
+from os import path
 from scenario import core as scenario
 from scenario import gazebo as scenario_gazebo
-from typing import List, Tuple
-from os import path
+from typing import List, Tuple, Optional, Dict
+
+# TODO: Use description package for panda with xacro support
 
 
 class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
+
+    ROBOT_MODEL_NAME: str = "panda"
+    DEFAULT_PREFIX: str = ""
+    __PREFIX_MANIPULATOR: str = "panda_"
+
+    # __DESCRIPTION_PACKAGE = ROBOT_MODEL_NAME + "_description"
+    # __DEFAULT_XACRO_FILE = path.join(
+    #     get_package_share_directory(__DESCRIPTION_PACKAGE),
+    #     "urdf",
+    #     ROBOT_MODEL_NAME + ".urdf.xacro",
+    # )
+    # __DEFAULT_XACRO_MAPPINGS: Dict = {
+    #     "name": ROBOT_MODEL_NAME,
+    #     "prefix": DEFAULT_PREFIX,
+    # }
+    # __XACRO_MODEL_PATH_REMAP: Tuple[str, str] = (
+    #     __DESCRIPTION_PACKAGE,
+    #     ROBOT_MODEL_NAME,
+    # )
+
+    DEFAULT_ARM_JOINT_POSITIONS: List[float] = (
+        0.0,
+        0.0,
+        0.0,
+        -1.5707963,
+        0.0,
+        1.5707963,
+        0.78539816,
+    )
+    OPEN_GRIPPER_JOINT_POSITIONS: List[float] = (
+        0.04,
+        0.04,
+    )
+    CLOSED_GRIPPER_JOINT_POSITIONS: List[float] = (
+        0.0,
+        0.0,
+    )
+    DEFAULT_GRIPPER_JOINT_POSITIONS: List[float] = OPEN_GRIPPER_JOINT_POSITIONS
+
     def __init__(
         self,
         world: scenario.World,
-        name: str = "panda",
+        name: str = ROBOT_MODEL_NAME,
+        prefix: str = DEFAULT_PREFIX,
         position: List[float] = (0, 0, 0),
         orientation: List[float] = (1, 0, 0, 0),
         model_file: str = None,
         use_fuel: bool = True,
-        arm_collision: bool = True,
+        use_xacro: bool = False,
+        # xacro_file: str = __DEFAULT_XACRO_FILE,
+        # xacro_mappings: Dict = __DEFAULT_XACRO_MAPPINGS,
+        initial_arm_joint_positions: List[float] = DEFAULT_ARM_JOINT_POSITIONS,
+        initial_gripper_joint_positions: List[float] = OPEN_GRIPPER_JOINT_POSITIONS,
+        # TODO: Expose the rest of the parameters for panda in xacro once it is available
+        arm_collision: bool = False,
         hand_collision: bool = True,
         separate_gripper_controller: bool = True,
-        initial_joint_positions: List[float] = (0, 0, 0, -1.57, 0, 1.57, 0.79, 0, 0),
         **kwargs,
     ):
+
+        # Store params that are needed internally
+        self.__prefix = prefix
+        self.__initial_arm_joint_positions = initial_arm_joint_positions
+        self.__initial_gripper_joint_positions = initial_gripper_joint_positions
+        self.__separate_gripper_controller = separate_gripper_controller
+
+        # Allow passing of custom model file as an argument
+        if model_file is None:
+            if use_xacro:
+                raise NotADirectoryError
+                # Generate SDF from xacro
+                mappings = self.__DEFAULT_XACRO_MAPPINGS
+                mappings.update(kwargs)
+                mappings.update(xacro_mappings)
+                mappings.update({"prefix": prefix})
+                model_file = xacro2sdf(
+                    input_file_path=xacro_file,
+                    mappings=mappings,
+                    model_path_remap=self.__XACRO_MODEL_PATH_REMAP,
+                )
+            else:
+                # Otherwise, use the default SDF file (local or fuel)
+                model_file = self.get_model_file(fuel=use_fuel)
 
         # Get a unique model name
         model_name = get_unique_model_name(world, name)
 
-        # Initial pose
+        # Setup initial pose
         initial_pose = scenario.Pose(position, orientation)
 
-        # Get the default model description (URDF or SDF) allowing to pass a custom model
-        if model_file is None:
-            model_file = self.get_model_file(fuel=use_fuel)
+        # Determine whether to insert from string or file
+        if use_xacro:
+            insert_fn = scenario_gazebo.World.insert_model_from_string
+        else:
+            insert_fn = scenario_gazebo.World.insert_model_from_file
 
-        if not arm_collision or not hand_collision:
+        # For non-xacro model files, disable hand collisions manually
+        if not use_xacro and (not arm_collision or not hand_collision):
             model_file = self.disable_collision(
                 model_file=model_file,
                 arm_collision=arm_collision,
@@ -40,56 +116,105 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
             )
 
         # Insert the model
-        ok_model = world.to_gazebo().insert_model(model_file, initial_pose, model_name)
+        ok_model = insert_fn(world.to_gazebo(), model_file, initial_pose, model_name)
         if not ok_model:
             raise RuntimeError("Failed to insert " + model_name)
 
         # Get the model
         model = world.get_model(model_name)
 
-        self.__separate_gripper_controller = separate_gripper_controller
-
         # Set initial joint configuration
-        self.__set_initial_joint_positions(initial_joint_positions)
-        if not model.to_gazebo().reset_joint_positions(
-            self.get_initial_joint_positions(), self.get_joint_names()
-        ):
-            raise RuntimeError("Failed to set initial robot joint positions")
+        self.set_initial_joint_positions(model)
 
-        # Add JointStatePublisher to Panda
+        # Add JointStatePublisher
         self.__add_joint_state_publisher(model)
 
-        # Add JointTrajectoryController to Panda
+        # Add JointTrajectoryController
         self.__add_joint_trajectory_controller(model)
 
         # Initialize base class
         super().__init__(model=model)
 
+    def set_initial_joint_positions(self, model):
+
+        model = model.to_gazebo()
+        if not model.reset_joint_positions(
+            self.initial_arm_joint_positions, self.arm_joint_names
+        ):
+            raise RuntimeError("Failed to set initial positions of arm's joints")
+        if not model.reset_joint_positions(
+            self.initial_gripper_joint_positions, self.gripper_joint_names
+        ):
+            raise RuntimeError("Failed to set initial positions of gripper's joints")
+
     @classmethod
-    def get_model_file(self, fuel=True) -> str:
+    def get_model_file(cls, fuel=False) -> str:
+
         if fuel:
             return scenario_gazebo.get_model_file_from_fuel(
-                "https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/panda"
+                "https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/"
+                + cls.ROBOT_MODEL_NAME
             )
         else:
-            return "panda"
+            return cls.ROBOT_MODEL_NAME
 
-    @classmethod
-    def get_joint_names(self) -> List[str]:
+    # Meta information #
+    @property
+    def is_mobile(self) -> bool:
+
+        return False
+
+    # Prefix #
+    @property
+    def prefix(self) -> str:
+
+        return self.__prefix
+
+    # Joints #
+    @property
+    def joint_names(self) -> List[str]:
+
+        return self.move_base_joint_names + self.manipulator_joint_names
+
+    @property
+    def move_base_joint_names(self) -> List[str]:
+
+        return []
+
+    @property
+    def manipulator_joint_names(self) -> List[str]:
+
+        return self.arm_joint_names + self.gripper_joint_names
+
+    @property
+    def arm_joint_names(self) -> List[str]:
+
         return [
-            "panda_joint1",
-            "panda_joint2",
-            "panda_joint3",
-            "panda_joint4",
-            "panda_joint5",
-            "panda_joint6",
-            "panda_joint7",
-            "panda_finger_joint1",
-            "panda_finger_joint2",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint1",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint2",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint3",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint4",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint5",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint6",
+            self.prefix + self.__PREFIX_MANIPULATOR + "joint7",
         ]
 
-    @classmethod
-    def get_joint_limits(self) -> List[Tuple[float, float]]:
+    @property
+    def gripper_joint_names(self) -> List[str]:
+
+        return [
+            self.prefix + self.__PREFIX_MANIPULATOR + "finger_joint1",
+            self.prefix + self.__PREFIX_MANIPULATOR + "finger_joint2",
+        ]
+
+    @property
+    def move_base_joint_limits(self) -> Optional[List[Tuple[float, float]]]:
+
+        return None
+
+    @property
+    def arm_joint_limits(self) -> Optional[List[Tuple[float, float]]]:
+
         return [
             (-2.897246558310587, 2.897246558310587),
             (-1.762782544514273, 1.762782544514273),
@@ -98,33 +223,138 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
             (-2.897246558310587, 2.897246558310587),
             (-0.0174532925199433, 3.752457891787809),
             (-2.897246558310587, 2.897246558310587),
+        ]
+
+    @property
+    def gripper_joint_limits(self) -> Optional[List[Tuple[float, float]]]:
+
+        return [
             (0.0, 0.04),
             (0.0, 0.04),
         ]
 
+    @property
+    def gripper_joints_close_towards_positive(self) -> bool:
+
+        return (
+            self.OPEN_GRIPPER_JOINT_POSITIONS[0]
+            < self.CLOSED_GRIPPER_JOINT_POSITIONS[0]
+        )
+
+    @property
+    def initial_arm_joint_positions(self) -> List[float]:
+
+        return self.__initial_arm_joint_positions
+
+    @property
+    def initial_gripper_joint_positions(self) -> List[float]:
+
+        return self.__initial_gripper_joint_positions
+
+    # Passive joints #
+    @property
+    def passive_joint_names(self) -> List[str]:
+
+        return self.manipulator_passive_joint_names + self.move_base_passive_joint_names
+
+    @property
+    def move_base_passive_joint_names(self) -> List[str]:
+
+        return []
+
+    @property
+    def manipulator_passive_joint_names(self) -> List[str]:
+
+        return self.arm_passive_joint_names + self.gripper_passive_joint_names
+
+    @property
+    def arm_passive_joint_names(self) -> List[str]:
+
+        return []
+
+    @property
+    def gripper_passive_joint_names(self) -> List[str]:
+
+        return []
+
+    # Links #
     @classmethod
-    def get_base_link_name(self) -> str:
-        return "panda_link0"
+    def get_robot_base_link_name(cls, prefix: str = "") -> str:
+
+        return cls.get_arm_base_link_name(prefix)
+
+    @property
+    def robot_base_link_name(self) -> str:
+
+        return self.get_robot_base_link_name(self.prefix)
 
     @classmethod
-    def get_ee_link_name(self) -> str:
-        return "panda_link8"
+    def get_arm_base_link_name(cls, prefix: str = "") -> str:
+
+        # Same as `self.arm_link_names[0]``
+        return prefix + cls.__PREFIX_MANIPULATOR + "link0"
+
+    @property
+    def arm_base_link_name(self) -> str:
+
+        return self.get_arm_base_link_name(self.prefix)
 
     @classmethod
-    def get_gripper_link_names(self) -> List[str]:
-        return ["panda_leftfinger", "panda_rightfinger"]
+    def get_ee_link_name(cls, prefix: str = "") -> str:
+
+        return prefix + cls.__PREFIX_MANIPULATOR + "link8"
+
+    @property
+    def ee_link_name(self) -> str:
+
+        return self.get_ee_link_name(self.prefix)
 
     @classmethod
-    def get_finger_count(self) -> int:
-        return 2
+    def get_wheel_link_names(cls, prefix: str = "") -> List[str]:
 
-    def get_initial_joint_positions(self) -> List[float]:
-        return self.__initial_joint_positions
+        return []
 
-    def __set_initial_joint_positions(self, initial_joint_positions):
-        self.__initial_joint_positions = initial_joint_positions
+    @property
+    def wheel_link_names(self) -> List[str]:
 
+        return self.get_wheel_link_names(self.prefix)
+
+    @classmethod
+    def get_arm_link_names(cls, prefix: str = "") -> List[str]:
+
+        return [
+            prefix + cls.__PREFIX_MANIPULATOR + "link_0",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_1",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_2",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_3",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_4",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_5",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_6",
+            prefix + cls.__PREFIX_MANIPULATOR + "link_7",
+            prefix + cls.__PREFIX_MANIPULATOR + "hand",
+        ]
+
+    @property
+    def arm_link_names(self) -> List[str]:
+
+        return self.get_arm_link_names(self.prefix)
+
+    @classmethod
+    def get_gripper_link_names(cls, prefix: str = "") -> List[str]:
+
+        return [
+            prefix + cls.__PREFIX_MANIPULATOR + "leftfinger",
+            prefix + cls.__PREFIX_MANIPULATOR + "rightfinger",
+        ]
+
+    @property
+    def gripper_link_names(self) -> List[str]:
+
+        return self.get_gripper_link_names(self.prefix)
+
+    # TODO: Replace all custom functions below with panda xacros
     def __add_joint_state_publisher(self, model) -> bool:
+
         """Add JointTrajectoryController"""
         model.to_gazebo().insert_model_plugin(
             "libignition-gazebo-joint-state-publisher-system.so",
@@ -132,21 +362,18 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
             self.__get_joint_state_publisher_config(),
         )
 
-    @classmethod
     def __get_joint_state_publisher_config(self) -> str:
+
         return """
             <sdf version="1.7">
             %s
             </sdf>
             """ % " ".join(
-            (
-                "<joint_name>" + joint + "</joint_name>"
-                for joint in self.get_joint_names()
-            )
+            ("<joint_name>" + joint + "</joint_name>" for joint in self.joint_names)
         )
 
     def __add_joint_trajectory_controller(self, model) -> bool:
-        """Add JointTrajectoryController"""
+
         if self.__separate_gripper_controller:
             model.to_gazebo().insert_model_plugin(
                 "libignition-gazebo-joint-trajectory-controller-system.so",
@@ -166,7 +393,7 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
             )
 
     def __get_joint_trajectory_controller_config(self) -> str:
-        # TODO: refactor into something more sensible
+
         return """
             <sdf version="1.7">
             <topic>joint_trajectory</topic>
@@ -262,28 +489,28 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
             <position_cmd_max>20</position_cmd_max>
             </sdf>
             """ % (
-            self.get_joint_names()[0],
-            str(self.get_initial_joint_positions()[0]),
-            self.get_joint_names()[1],
-            str(self.get_initial_joint_positions()[1]),
-            self.get_joint_names()[2],
-            str(self.get_initial_joint_positions()[2]),
-            self.get_joint_names()[3],
-            str(self.get_initial_joint_positions()[3]),
-            self.get_joint_names()[4],
-            str(self.get_initial_joint_positions()[4]),
-            self.get_joint_names()[5],
-            str(self.get_initial_joint_positions()[5]),
-            self.get_joint_names()[6],
-            str(self.get_initial_joint_positions()[6]),
-            self.get_joint_names()[7],
-            str(self.get_initial_joint_positions()[7]),
-            self.get_joint_names()[8],
-            str(self.get_initial_joint_positions()[8]),
+            self.arm_joint_names[0],
+            str(self.initial_arm_joint_positions[0]),
+            self.arm_joint_names[1],
+            str(self.initial_arm_joint_positions[1]),
+            self.arm_joint_names[2],
+            str(self.initial_arm_joint_positions[2]),
+            self.arm_joint_names[3],
+            str(self.initial_arm_joint_positions[3]),
+            self.arm_joint_names[4],
+            str(self.initial_arm_joint_positions[4]),
+            self.arm_joint_names[5],
+            str(self.initial_arm_joint_positions[5]),
+            self.arm_joint_names[6],
+            str(self.initial_arm_joint_positions[6]),
+            self.gripper_joint_names[0],
+            str(self.initial_gripper_joint_positions[0]),
+            self.gripper_joint_names[1],
+            str(self.initial_gripper_joint_positions[1]),
         )
 
     def __get_joint_trajectory_controller_config_joints_only(self) -> str:
-        # TODO: refactor into something more sensible
+
         return """
             <sdf version="1.7">
             <topic>joint_trajectory</topic>
@@ -359,24 +586,24 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
             <position_cmd_max>12</position_cmd_max>
             </sdf>
             """ % (
-            self.get_joint_names()[0],
-            str(self.get_initial_joint_positions()[0]),
-            self.get_joint_names()[1],
-            str(self.get_initial_joint_positions()[1]),
-            self.get_joint_names()[2],
-            str(self.get_initial_joint_positions()[2]),
-            self.get_joint_names()[3],
-            str(self.get_initial_joint_positions()[3]),
-            self.get_joint_names()[4],
-            str(self.get_initial_joint_positions()[4]),
-            self.get_joint_names()[5],
-            str(self.get_initial_joint_positions()[5]),
-            self.get_joint_names()[6],
-            str(self.get_initial_joint_positions()[6]),
+            self.arm_joint_names[0],
+            str(self.initial_arm_joint_positions[0]),
+            self.arm_joint_names[1],
+            str(self.initial_arm_joint_positions[1]),
+            self.arm_joint_names[2],
+            str(self.initial_arm_joint_positions[2]),
+            self.arm_joint_names[3],
+            str(self.initial_arm_joint_positions[3]),
+            self.arm_joint_names[4],
+            str(self.initial_arm_joint_positions[4]),
+            self.arm_joint_names[5],
+            str(self.initial_arm_joint_positions[5]),
+            self.arm_joint_names[6],
+            str(self.initial_arm_joint_positions[6]),
         )
 
     def __get_joint_trajectory_controller_config_gripper_only(self) -> str:
-        # TODO: refactor into something more sensible
+
         return """
             <sdf version="1.7">
             <topic>gripper_trajectory</topic>
@@ -402,10 +629,10 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
             <position_cmd_max>20</position_cmd_max>
             </sdf>
             """ % (
-            self.get_joint_names()[7],
-            str(self.get_initial_joint_positions()[7]),
-            self.get_joint_names()[8],
-            str(self.get_initial_joint_positions()[8]),
+            self.gripper_joint_names[0],
+            str(self.initial_gripper_joint_positions[0]),
+            self.gripper_joint_names[1],
+            str(self.initial_gripper_joint_positions[1]),
         )
 
     @classmethod
