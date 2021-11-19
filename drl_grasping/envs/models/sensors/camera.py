@@ -67,7 +67,7 @@ class Camera(model_wrapper.ModelWrapper):
                                     <near>{clip_depth[0]}</near>
                                     <far>{clip_depth[1]}</far>
                                 </clip>
-                            </depth_camera>""" if self.is_rgbd() else ""
+                            </depth_camera>""" if "rgbd" in model_name else ""
                             }
                             {
                             f"""<noise>
@@ -114,11 +114,10 @@ class Camera(model_wrapper.ModelWrapper):
             </model>
         </sdf>'''
 
-        # Convert it into a file
-        sdf_file = misc.string_to_file(sdf)
-
         # Insert the model
-        ok_model = world.to_gazebo().insert_model(sdf_file, initial_pose, model_name)
+        ok_model = world.to_gazebo().insert_model_from_string(
+            sdf, initial_pose, model_name
+        )
         if not ok_model:
             raise RuntimeError("Failed to insert " + model_name)
 
@@ -135,7 +134,7 @@ class Camera(model_wrapper.ModelWrapper):
                     Thread(
                         target=self.construct_ros2_bridge,
                         args=(
-                            self.color_topic(),
+                            self.color_topic,
                             "sensor_msgs/msg/Image",
                             "ignition.msgs.Image",
                         ),
@@ -148,7 +147,7 @@ class Camera(model_wrapper.ModelWrapper):
                     Thread(
                         target=self.construct_ros2_bridge,
                         args=(
-                            self.depth_topic(),
+                            self.depth_topic,
                             "sensor_msgs/msg/Image",
                             "ignition.msgs.Image",
                         ),
@@ -161,7 +160,7 @@ class Camera(model_wrapper.ModelWrapper):
                     Thread(
                         target=self.construct_ros2_bridge,
                         args=(
-                            self.points_topic(),
+                            self.points_topic,
                             "sensor_msgs/msg/PointCloud2",
                             "ignition.msgs.PointCloudPacked",
                         ),
@@ -187,32 +186,43 @@ class Camera(model_wrapper.ModelWrapper):
         os.system(command)
 
     @classmethod
-    def frame_id_name(self, model_name: str) -> str:
+    def get_frame_id(cls, model_name: str) -> str:
         return f"{model_name}/{model_name}_link/camera"
 
+    @property
     def frame_id(self) -> str:
-        return self.frame_id_name(self._model_name)
+        return self.get_frame_id(self._model_name)
 
+    @classmethod
+    def get_color_topic(cls, model_name: str) -> str:
+        return f"/{model_name}/image" if "rgbd" in model_name else f"/{model_name}"
+
+    @property
     def color_topic(self) -> str:
+        return self.get_color_topic(self._model_name)
+
+    @classmethod
+    def get_depth_topic(cls, model_name: str) -> str:
         return (
-            f"/{self._model_name}/image" if self.is_rgbd() else f"/{self._model_name}"
+            f"/{model_name}/depth_image" if "rgbd" in model_name else f"/{model_name}"
         )
 
+    @property
     def depth_topic(self) -> str:
-        return (
-            f"/{self._model_name}/depth_image"
-            if self.is_rgbd()
-            else f"/{self._model_name}"
-        )
+        return self.get_depth_topic(self._model_name)
 
+    @classmethod
+    def get_points_topic(cls, model_name: str) -> str:
+        return f"/{model_name}/points"
+
+    @property
     def points_topic(self) -> str:
-        return f"/{self._model_name}/points"
+        return self.get_points_topic(self._model_name)
 
-    def is_rgbd(self) -> bool:
-        if "rgbd" in self._model_name:
-            return True
-        else:
-            return False
+    @classmethod
+    def get_link_name(cls, model_name: str) -> str:
+        return f"{model_name}_link"
 
+    @property
     def link_name(self) -> str:
-        return f"{self._model_name}_link"
+        return self.get_link_name(self._model_name)
