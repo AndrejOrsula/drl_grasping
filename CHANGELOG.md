@@ -12,13 +12,16 @@
 
 ### Changed
 
-- Instead of all fingers, more than half (`n//2 + 1`) are now needed to be in contact for a grasp to be successful
 - Major refactoring of `drl_grasping` module
   - Refactored into two primary submodules that can be imported separately
     - `drl_octree` that contains octree CNN-based policy
     - `envs` that contain the environment itself
   - `utils` submodule still contains boilerplate for RL training and evaluation
+- Randomizer is now used to wrap task environment during gym environment registration.
+  - This means, that two environment variants of each task now exist, i.e. `*-v0` and `*-Gazebo-v0`. The default task can therefore be used with different run-times without requiring changes to the hyperparameters in order to make it functional.
+- Environments are now registered directly in `envs` module instead of `envs.tasks`
 - A single configurable launch script [sim.launch.py](./launch/sim.launch.py) now replaces all previous variations. Use its launch arguments to select robot model and enable/disable RViz2 GUI.
+- Instead of all fingers, more than half (`n//2 + 1`) are now needed to be in contact for a grasp to be successful
 - Changed PEP 8 python formatting for black to improve consistency.
 - Changed bash formatter to beautysh (minor changes).
 - Custom SDF world `default_interactive` is no longer used in favour of enabling/disabling interactive mode through `DRL_GRASPING_BROADCAST_INTERACTIVE_GUI` environment variable.

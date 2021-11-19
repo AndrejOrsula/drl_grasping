@@ -9,7 +9,7 @@ from os import environ
 from scenario import gazebo as scenario
 from scipy.spatial import distance
 from scipy.spatial.transform import Rotation
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 import abc
 import numpy as np
 import operator
@@ -32,25 +32,80 @@ class ManipulationGazeboEnvRandomizer(
         self,
         env: MakeEnvCallable,
         physics_rollouts_num: int = 0,
+        # Robot
+        robot_spawn_position: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        robot_spawn_quat_xyzw: Tuple[float, float, float, float] = (
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+        ),
         robot_random_joint_positions: bool = False,
         robot_random_joint_positions_std: float = 0.1,
-        camera_pose_rollouts_num: int = 0,
-        camera_random_pose_distance: float = 1.0,
-        camera_random_pose_height_range: Tuple[float, float] = (0.1, 0.7),
+        # Camera #
+        camera_enable: bool = True,
+        camera_type: str = "rgbd_camera",
+        camera_width: int = 128,
+        camera_height: int = 128,
+        camera_update_rate: int = 10,
+        camera_horizontal_fov: float = np.pi / 3.0,
+        camera_vertical_fov: float = np.pi / 3.0,
+        camera_clip_color: Tuple[float, float] = (0.01, 1000.0),
+        camera_clip_depth: Tuple[float, float] = (0.05, 10.0),
         camera_noise_mean: float = None,
         camera_noise_stddev: float = None,
-        terrain_type: str = "random_flat",
+        camera_publish_color: bool = False,
+        camera_publish_depth: bool = False,
+        camera_publish_points: bool = False,
+        # Note: Camera pose is with respect to the pose of robot base link
+        camera_spawn_position: Tuple[float, float, float] = (0, 0, 1),
+        camera_spawn_quat_xyzw: Tuple[float, float, float, float] = (
+            0,
+            0.70710678118,
+            0,
+            0.70710678118,
+        ),
+        camera_random_pose_rollouts_num: int = 0,
+        camera_random_pose_distance: float = 1.0,
+        camera_random_pose_height_range: Tuple[float, float] = (0.1, 0.7),
+        # Terrain
+        terrain_enable: bool = True,
+        terrain_type: str = "flat",
+        terrain_spawn_position: Tuple[float, float, float] = (0, 0, 0),
+        terrain_spawn_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1),
+        terrain_size: Tuple[float, float] = (1.0, 1.0),
         terrain_model_rollouts_num: int = 1,
-        object_type: str = "random_mesh",
+        # Objects
+        object_enable: bool = True,
+        object_type: str = "box",
+        object_static: bool = False,
+        object_collision: bool = True,
+        object_visual: bool = True,
+        object_color: Tuple[float, float, float, float] = (0.8, 0.8, 0.8, 1.0),
+        object_dimensions: List[float] = [0.05, 0.05, 0.05],
+        object_mass: float = 0.1,
+        object_model_count: int = 1,
+        object_spawn_position: List[float] = [0.0, 0.0, 0.0],
         object_random_pose: bool = True,
-        object_random_use_mesh_models: bool = True,
+        object_random_spawn_volume: List[float] = [0.5, 0.5, 0.5],
         object_models_rollouts_num: int = 1,
-        object_random_model_count: int = 1,
-        invisible_world_bottom_collision_plane: bool = True,
+        # Collision plane below terrain
+        underworld_collision_plane: bool = True,
+        underworld_collision_plane_depth: float = -1.0,
+        # Visual debugging
         visualise_workspace: bool = False,
         visualise_spawn_volume: bool = False,
         **kwargs,
     ):
+
+        # Update kwargs before passing them to the task constructor (some tasks might need them)
+        kwargs.update(
+            {
+                "camera_type": camera_type,
+                "camera_width": camera_width,
+                "camera_height": camera_height,
+            }
+        )
 
         # Initialize base classes
         randomizers.abc.TaskRandomizer.__init__(self)
@@ -61,31 +116,79 @@ class ManipulationGazeboEnvRandomizer(
             self, env=env, physics_randomizer=self, **kwargs
         )
 
-        # Randomizers, their frequency and counters for different randomizers
-        self.robot_random_joint_positions = robot_random_joint_positions
-        self.camera_pose_rollouts_num = camera_pose_rollouts_num
-        self.camera_pose_rollout_counter = camera_pose_rollouts_num
-        self.terrain_type = terrain_type
-        self.terrain_model_rollouts_num = terrain_model_rollouts_num
-        self.terrain_model_rollout_counter = terrain_model_rollouts_num
-        self.object_type = object_type
-        self._object_random_pose = object_random_pose
-        self._object_random_use_mesh_models = object_random_use_mesh_models
-        self._object_models_rollouts_num = object_models_rollouts_num
-        self._object_models_rollout_counter = object_models_rollouts_num
+        # Store parameters for later use #
+        # Robot
+        self._robot_spawn_position = robot_spawn_position
+        self._robot_spawn_quat_xyzw = robot_spawn_quat_xyzw
+        self._robot_random_joint_positions = robot_random_joint_positions
+        self._robot_random_joint_positions_std = robot_random_joint_positions_std
 
-        # Additional parameters
-        self.robot_random_joint_positions_std = robot_random_joint_positions_std
-        self.camera_random_pose_distance = camera_random_pose_distance
-        self.camera_random_pose_height_range = camera_random_pose_height_range
-        self.camera_noise_mean = camera_noise_mean
-        self.camera_noise_stddev = camera_noise_stddev
-        self._object_random_model_count = object_random_model_count
-        self._invisible_world_bottom_collision_plane = (
-            invisible_world_bottom_collision_plane
-        )
+        # Camera
+        self._camera_enable = camera_enable
+        self._camera_type = camera_type
+        self._camera_width = camera_width
+        self._camera_height = camera_height
+        self._camera_update_rate = camera_update_rate
+        self._camera_horizontal_fov = camera_horizontal_fov
+        self._camera_vertical_fov = camera_vertical_fov
+        self._camera_clip_color = camera_clip_color
+        self._camera_clip_depth = camera_clip_depth
+        self._camera_noise_mean = camera_noise_mean
+        self._camera_noise_stddev = camera_noise_stddev
+        self._camera_publish_color = camera_publish_color
+        self._camera_publish_depth = camera_publish_depth
+        self._camera_publish_points = camera_publish_points
+        self._camera_spawn_position = camera_spawn_position
+        self._camera_spawn_quat_xyzw = camera_spawn_quat_xyzw
+        self._camera_random_pose_rollouts_num = camera_random_pose_rollouts_num
+        self._camera_random_pose_distance = camera_random_pose_distance
+        self._camera_random_pose_height_range = camera_random_pose_height_range
+
+        # Terrain
+        self._terrain_enable = terrain_enable
+        self._terrain_spawn_position = terrain_spawn_position
+        self._terrain_spawn_quat_xyzw = terrain_spawn_quat_xyzw
+        self._terrain_size = terrain_size
+        self._terrain_model_rollouts_num = terrain_model_rollouts_num
+
+        # Objects
+        self._object_enable = object_enable
+        self._object_static = object_static
+        self._object_collision = object_collision
+        self._object_visual = object_visual
+        self._object_color = object_color
+        self._object_dimensions = object_dimensions
+        self._object_mass = object_mass
+        self._object_model_count = object_model_count
+        self._object_spawn_position = object_spawn_position
+        self._object_random_pose = object_random_pose
+        self._object_random_spawn_volume = object_random_spawn_volume
+        self._object_models_rollouts_num = object_models_rollouts_num
+
+        # Collision plane beneath the terrain (prevent objects from falling forever)
+        self._underworld_collision_plane = underworld_collision_plane
+        self._underworld_collision_plane_depth = underworld_collision_plane_depth
+
+        # Visual debugging
         self._visualise_workspace = visualise_workspace
         self._visualise_spawn_volume = visualise_spawn_volume
+
+        # Derived variables #
+        # Model classes and whether these are randomizable
+        self.__terrain_model_class = models.get_terrain_model_class(terrain_type)
+        self.__is_terrain_type_randomizable = models.is_terrain_type_randomizable(
+            terrain_type
+        )
+        self.__object_model_class = models.get_object_model_class(object_type)
+        self.__is_object_type_randomizable = models.is_object_type_randomizable(
+            object_type
+        )
+
+        # Variable initialisation #
+        # Rollout counters
+        self.__camera_pose_rollout_counter = camera_random_pose_rollouts_num
+        self.__terrain_model_rollout_counter = terrain_model_rollouts_num
+        self.__object_models_rollout_counter = object_models_rollouts_num
 
         # Flag that determines whether environment has already been initialised
         self.__env_initialised = False
@@ -178,7 +281,7 @@ class ManipulationGazeboEnvRandomizer(
             )
 
         # Sensors
-        if task.camera_enable:
+        if self._camera_enable:
             camera_render_engine = environ.get(
                 "DRL_GRASPING_SENSORS_RENDER_ENGINE", default="ogre2"
             )
@@ -213,7 +316,7 @@ class ManipulationGazeboEnvRandomizer(
         self.add_robot(task=task, gazebo=gazebo)
 
         # Insert camera
-        if task.camera_enable:
+        if self._camera_enable:
             if task._verbose:
                 print("Inserting camera into the environment...")
             self.add_camera(
@@ -221,25 +324,25 @@ class ManipulationGazeboEnvRandomizer(
             )
 
         # Insert default terrain if enabled and terrain randomization is disabled
-        if task.terrain_enable and not self.terrain_model_randomizer_enabled():
+        if self._terrain_enable and not self.__terrain_model_randomizer_enabled():
             if task._verbose:
                 print("Inserting default terrain into the environment...")
             self.add_default_terrain(task=task, gazebo=gazebo)
 
         # Insert default object if enabled and object randomization is disabled
-        if task.object_enable and not self.object_models_randomizer_enabled():
+        if self._object_enable and not self.__object_models_randomizer_enabled():
             if task._verbose:
                 print("Inserting default object into the environment...")
             self.add_default_object(task=task, gazebo=gazebo)
 
         # Insert invisible plane below the terrain to prevent objects from falling into the abyss and causing physics errors
         # TODO: Consider replacing invisiable plane with removal of all objects that are too low along z axis
-        if self._invisible_world_bottom_collision_plane:
+        if self._underworld_collision_plane:
             if task._verbose:
                 print(
                     "Inserting invisible plane below the terrain into the environment..."
                 )
-            self.add_invisible_world_bottom_collision_plane(task=task, gazebo=gazebo)
+            self.add_underworld_collision_plane(task=task, gazebo=gazebo)
 
     def add_robot(self, task: SupportedTasks, gazebo: scenario.GazeboSimulator):
         """
@@ -251,8 +354,8 @@ class ManipulationGazeboEnvRandomizer(
             world=task.world,
             name=task.robot_name,
             prefix=task.robot_prefix,
-            position=task.initial_robot_position,
-            orientation=quat_to_wxyz(task.initial_robot_quat_xyzw),
+            position=self._robot_spawn_position,
+            orientation=quat_to_wxyz(self._robot_spawn_quat_xyzw),
             initial_arm_joint_positions=task.initial_arm_joint_positions,
             initial_gripper_joint_positions=task.initial_gripper_joint_positions,
             # TODO: Pass xacro mappings to the function
@@ -292,11 +395,13 @@ class ManipulationGazeboEnvRandomizer(
             xyzw=True,
         )
         camera_position_wrt_robot_in_world_ref = (
-            Rotation.from_quat(robot_base_link_quat_xyzw).apply(task.camera_position)
+            Rotation.from_quat(robot_base_link_quat_xyzw).apply(
+                self._camera_spawn_position
+            )
             + robot_base_link_position
         )
         camera_orientation_wrt_robot_in_world_ref = quat_mul(
-            task.camera_quat_xyzw, robot_base_link_quat_xyzw, xyzw=True
+            self._camera_spawn_quat_xyzw, robot_base_link_quat_xyzw, xyzw=True
         )
 
         # Create camera
@@ -304,23 +409,20 @@ class ManipulationGazeboEnvRandomizer(
             world=task.world,
             position=camera_position_wrt_robot_in_world_ref,
             orientation=quat_to_wxyz(camera_orientation_wrt_robot_in_world_ref),
-            camera_type=task.camera_type,
-            width=task.camera_width,
-            height=task.camera_height,
-            update_rate=task.camera_update_rate,
-            horizontal_fov=task.camera_horizontal_fov,
-            vertical_fov=task.camera_vertical_fov,
-            clip_color=task.camera_clip_color,
-            clip_depth=task.camera_clip_depth,
-            noise_mean=self.camera_noise_mean,
-            noise_stddev=self.camera_noise_stddev,
-            ros2_bridge_color=task.camera_publish_color,
-            ros2_bridge_depth=task.camera_publish_depth,
-            ros2_bridge_points=task.camera_publish_points,
+            camera_type=self._camera_type,
+            width=self._camera_width,
+            height=self._camera_height,
+            update_rate=self._camera_update_rate,
+            horizontal_fov=self._camera_horizontal_fov,
+            vertical_fov=self._camera_vertical_fov,
+            clip_color=self._camera_clip_color,
+            clip_depth=self._camera_clip_depth,
+            noise_mean=self._camera_noise_mean,
+            noise_stddev=self._camera_noise_stddev,
+            ros2_bridge_color=self._camera_publish_color,
+            ros2_bridge_depth=self._camera_publish_depth,
+            ros2_bridge_points=self._camera_publish_points,
         )
-
-        # Expose name of the camera for task
-        task.camera_name = self.camera.name()
 
         # Attach to robot
         if attach_to_robot:
@@ -331,17 +433,17 @@ class ManipulationGazeboEnvRandomizer(
                 "<sdf version='1.9'>"
                 f"<parent_link>{self.robot.robot_base_link_name}</parent_link>"
                 f"<child_model>{self.camera.name()}</child_model>"
-                f"<child_link>{self.camera.link_name()}</child_link>"
+                f"<child_link>{self.camera.link_name}</child_link>"
                 f"<topic>/{detach_camera_topic}</topic>"
                 "</sdf>",
             )
 
         # Broadcast tf
         task.tf2_broadcaster.broadcast_tf(
-            translation=task.camera_position,
-            rotation=task.camera_quat_xyzw,
+            translation=self._camera_spawn_position,
+            rotation=self._camera_spawn_quat_xyzw,
             xyzw=True,
-            child_frame_id=self.camera.frame_id(),
+            child_frame_id=self.camera.frame_id,
             parent_frame_id=self.robot.robot_base_link_name,
         )
 
@@ -356,16 +458,13 @@ class ManipulationGazeboEnvRandomizer(
         Configure and insert default terrain into the simulation
         """
 
-        # Get model class based on the selected terrain type
-        terrain_model_class = models.get_terrain_model_class(self.terrain_type)
-
         # Create terrain
-        self.terrain = terrain_model_class(
+        self.terrain = self.__terrain_model_class(
             world=task.world,
             name=task.terrain_name,
-            position=task.terrain_position,
-            orientation=quat_to_wxyz(task.terrain_quat_xyzw),
-            size=task.terrain_size,
+            position=self._terrain_spawn_position,
+            orientation=quat_to_wxyz(self._terrain_spawn_quat_xyzw),
+            size=self._terrain_size,
             np_random=task.np_random,
             texture_dir=environ.get("DRL_GRASPING_PBR_TEXTURES_DIR", default=""),
         )
@@ -389,22 +488,19 @@ class ManipulationGazeboEnvRandomizer(
         Configure and insert default object into the simulation
         """
 
-        # Get model class based on the selected object type
-        object_model_class = models.get_object_model_class(self.object_type)
-
         # Create object
-        object_model = object_model_class(
+        object_model = self.__object_model_class(
             world=task.world,
-            position=task._object_spawn_centre,
-            orientation=quat_to_wxyz(task.object_quat_xyzw),
-            size=task.object_dimensions,
-            radius=task.object_dimensions[0],
-            length=task.object_dimensions[1],
-            mass=task.object_mass,
-            collision=task.object_collision,
-            visual=task.object_visual,
-            static=task.object_static,
-            color=task.object_color,
+            position=self._object_spawn_position,
+            orientation=(1.0, 0.0, 0.0, 0.0),
+            size=self._object_dimensions,
+            radius=self._object_dimensions[0],
+            length=self._object_dimensions[1],
+            mass=self._object_mass,
+            collision=self._object_collision,
+            visual=self._object_visual,
+            static=self._object_static,
+            color=self._object_color,
         )
 
         # Expose name of the object for task (append in case of more)
@@ -418,7 +514,7 @@ class ManipulationGazeboEnvRandomizer(
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
-    def add_invisible_world_bottom_collision_plane(
+    def add_underworld_collision_plane(
         self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
     ):
         """
@@ -427,7 +523,7 @@ class ManipulationGazeboEnvRandomizer(
 
         models.Plane(
             world=task.world,
-            position=(0.0, 0.0, -10.0),
+            position=(0.0, 0.0, self._underworld_collision_plane_depth),
             orientation=(1.0, 0.0, 0.0, 0.0),
             direction=(0.0, 0.0, 1.0),
             visual=False,
@@ -447,35 +543,26 @@ class ManipulationGazeboEnvRandomizer(
 
         # Randomize robot joint positions if needed, else reset to
         self.reset_robot_joint_positions(
-            task=task, randomize=self.robot_joint_position_randomizer_enabled()
+            task=task, randomize=self._robot_random_joint_positions
         )
 
         # Randomize terrain plane if needed
-        if (
-            task.terrain_enable
-            and self.terrain_model_expired()
-            and models.is_terrain_type_randomizable(self.terrain_type)
-        ):
+        if self._terrain_enable and self._terrain_model_expired():
             self.randomize_terrain(task=task)
 
         # Randomize camera if needed
-        if task.camera_enable and self.camera_pose_expired():
+        if self._camera_enable and self._camera_pose_expired():
             self.randomize_camera_pose(task=task)
 
         # Randomize objects if needed
         # Note: No need to randomize pose of new models because they are already spawned randomly
         self.__object_positions.clear()
-        if task.object_enable:
-            if self.object_models_expired() and models.is_object_type_randomizable(
-                self.object_type
-            ):
-                if self._object_random_use_mesh_models:
-                    self.randomize_object_models(task=task)
-                else:
-                    self.randomize_object_primitives(task=task)
-            elif self.object_poses_randomizer_enabled():
+        if self._object_enable:
+            if self._object_models_expired():
+                self.randomize_object_models(task=task)
+            elif self._object_random_pose:
                 self.object_random_pose(task=task)
-            elif not self.object_models_randomizer_enabled():
+            else:
                 self.reset_default_object_pose(task=task)
 
         # Execute a paused run to process these randomization operations
@@ -494,7 +581,7 @@ class ManipulationGazeboEnvRandomizer(
         if randomize:
             for joint_position in arm_joint_positions:
                 joint_position += task.np_random.normal(
-                    loc=0.0, scale=self.robot_random_joint_positions_std
+                    loc=0.0, scale=self._robot_random_joint_positions_std
                 )
         # Arm joints - apply positions and 0 velocities to
         if not gazebo_robot.reset_joint_positions(
@@ -549,22 +636,21 @@ class ManipulationGazeboEnvRandomizer(
         # Get random camera pose, centred at object position (or centre of object spawn box)
         position, quat_xyzw = self.get_random_camera_pose(
             task,
-            centre=task.object_spawn_centre,
-            distance=self.camera_random_pose_distance,
-            height=self.camera_random_pose_height_range,
+            centre=self.object_spawn_position,
+            distance=self._camera_random_pose_distance,
+            height=self._camera_random_pose_height_range,
         )
 
         # Move pose of the camera
-        camera = task.world.to_gazebo().get_model(task.camera_name)
-        camera.to_gazebo().reset_base_pose(position, quat_to_wxyz(quat_xyzw))
+        camera_gazebo = self.camera.to_gazebo()
+        camera_gazebo.reset_base_pose(position, quat_to_wxyz(quat_xyzw))
 
         # Broadcast tf
-        camera_base_frame_id = models.Camera.frame_id_name(task.camera_name)
         task.tf2_broadcaster.broadcast_tf(
             translation=position,
             rotation=quat_xyzw,
             xyzw=True,
-            child_frame_id=camera_base_frame_id,
+            child_frame_id=self.camera.frame_id,
         )
 
     def get_random_camera_pose(
@@ -620,15 +706,13 @@ class ManipulationGazeboEnvRandomizer(
             (0.70710678118, 0, 0, -0.70710678118),
         ][task.np_random.randint(4)]
 
-        # Get model class based on the selected terrain type
-        terrain_model_class = models.get_terrain_model_class(self.terrain_type)
-
         # Create terrain
-        self.terrain = terrain_model_class(
+        self.terrain = self.__terrain_model_class(
             world=task.world,
-            position=task.terrain_position,
+            name=task.terrain_name,
+            position=self._terrain_spawn_position,
             orientation=orientation,
-            size=task.terrain_size,
+            size=self._terrain_size,
             np_random=task.np_random,
             texture_dir=environ.get("DRL_GRASPING_PBR_TEXTURES_DIR", default=""),
         )
@@ -645,9 +729,7 @@ class ManipulationGazeboEnvRandomizer(
         assert len(task.object_names) == 1
 
         obj = task.world.to_gazebo().get_model(task.object_names[0]).to_gazebo()
-        obj.reset_base_pose(
-            task._object_spawn_centre, quat_to_wxyz(task.object_quat_xyzw)
-        )
+        obj.reset_base_pose(self._object_spawn_position, (1.0, 0.0, 0.0, 0.0))
         obj.reset_base_world_velocity([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
 
     def randomize_object_models(self, task: SupportedTasks):
@@ -660,15 +742,15 @@ class ManipulationGazeboEnvRandomizer(
             self.task.object_names.clear()
 
         # Insert new models with random pose
-        while len(self.task.object_names) < self._object_random_model_count:
+        while len(self.task.object_names) < self._object_model_count:
             position, quat_random = self.get_random_object_pose(
-                centre=task._object_spawn_centre,
-                volume=task.object_spawn_volume,
+                centre=self._object_spawn_position,
+                volume=self._object_random_spawn_volume,
                 np_random=task.np_random,
             )
             try:
                 model_name = ""
-                model = models.RandomObject(
+                model = self.__object_model_class(
                     world=task.world,
                     position=position,
                     orientation=quat_random,
@@ -688,44 +770,12 @@ class ManipulationGazeboEnvRandomizer(
                     + str(ex)
                 )
 
-    def randomize_object_primitives(self, task: SupportedTasks):
-
-        # Remove all existing models
-        if len(self.task.object_names) > 0:
-            for object_name in self.task.object_names:
-                if not task.world.to_gazebo().remove_model(object_name):
-                    raise RuntimeError(f"Failed to remove {object_name}")
-            self.task.object_names.clear()
-
-        # Insert new primitives with random pose
-        while len(self.task.object_names) < self._object_random_model_count:
-            position, quat_random = self.get_random_object_pose(
-                centre=task._object_spawn_centre,
-                volume=task.object_spawn_volume,
-                np_random=task.np_random,
-            )
-            try:
-                model = models.RandomPrimitive(
-                    world=task.world,
-                    position=position,
-                    orientation=quat_random,
-                    np_random=task.np_random,
-                )
-                model_name = model.name()
-                self.task.object_names.append(model_name)
-                self.__object_positions[model_name] = position
-                # Enable contact detection
-                link = model.to_gazebo().get_link(link_name=model.link_names()[0])
-                link.enable_contact_detection(True)
-            except:
-                pass
-
     def object_random_pose(self, task: SupportedTasks):
 
         for object_name in self.task.object_names:
             position, quat_random = self.get_random_object_pose(
-                centre=task._object_spawn_centre,
-                volume=task.object_spawn_volume,
+                centre=self._object_spawn_position,
+                volume=self._object_random_spawn_volume,
                 np_random=task.np_random,
             )
             obj = task.world.to_gazebo().get_model(object_name).to_gazebo()
@@ -778,7 +828,7 @@ class ManipulationGazeboEnvRandomizer(
 
         # Override number of objects in the scene if task requires it (e.g. if curriculum has this functionality)
         if hasattr(task, "object_count_override"):
-            self._object_random_model_count = task.object_count_override
+            self._object_model_count = task.object_count_override
 
     # Post-randomization #
     def post_randomization(
@@ -838,7 +888,7 @@ class ManipulationGazeboEnvRandomizer(
             for contact in obj.contacts():
                 depth = np.mean([point.depth for point in contact.points])
                 if (
-                    task.terrain_name in contact.body_b
+                    self.terrain.name() in contact.body_b
                     and depth < terrain_allowed_penetration_depth
                 ):
                     continue
@@ -847,8 +897,8 @@ class ManipulationGazeboEnvRandomizer(
                     or depth > allowed_penetration_depth
                 ):
                     position, quat_random = self.get_random_object_pose(
-                        centre=task._object_spawn_centre,
-                        volume=task.object_spawn_volume,
+                        centre=self._object_spawn_position,
+                        volume=self._object_random_spawn_volume,
                         np_random=task.np_random,
                         name=object_name,
                     )
@@ -862,7 +912,71 @@ class ManipulationGazeboEnvRandomizer(
     # Randomizer rollouts checking
     # ============================
 
-    def object_models_randomizer_enabled(self) -> bool:
+    def __camera_pose_randomizer_enabled(self) -> bool:
+        """
+        Checks if camera pose randomizer is enabled.
+
+        Return:
+            True if enabled, false otherwise
+        """
+
+        if self._camera_random_pose_rollouts_num == 0:
+            return False
+        else:
+            return True
+
+    def _camera_pose_expired(self) -> bool:
+        """
+        Checks if camera pose needs to be randomized.
+
+        Return:
+            True if expired, false otherwise
+        """
+
+        if not self.__camera_pose_randomizer_enabled():
+            return False
+
+        self.__camera_pose_rollout_counter += 1
+
+        if self.__camera_pose_rollout_counter >= self._camera_random_pose_rollouts_num:
+            self.__camera_pose_rollout_counter = 0
+            return True
+
+        return False
+
+    def __terrain_model_randomizer_enabled(self) -> bool:
+        """
+        Checks if terrain randomizer is enabled.
+
+        Return:
+            True if enabled, false otherwise
+        """
+
+        if self._terrain_model_rollouts_num == 0:
+            return False
+        else:
+            return self.__is_terrain_type_randomizable
+
+    def _terrain_model_expired(self) -> bool:
+        """
+        Checks if terrain model needs to be randomized.
+
+        Return:
+            True if expired, false otherwise
+        """
+
+        if not self.__terrain_model_randomizer_enabled():
+            return False
+
+        self.__terrain_model_rollout_counter += 1
+
+        if self.__terrain_model_rollout_counter >= self._terrain_model_rollouts_num:
+            self.__terrain_model_rollout_counter = 0
+            return True
+
+        return False
+
+    def __object_models_randomizer_enabled(self) -> bool:
         """
         Checks if object model randomizer is enabled.
 
@@ -873,9 +987,9 @@ class ManipulationGazeboEnvRandomizer(
         if self._object_models_rollouts_num == 0:
             return False
         else:
-            return True
+            return self.__is_object_type_randomizable
 
-    def object_models_expired(self) -> bool:
+    def _object_models_expired(self) -> bool:
         """
         Checks if object models need to be randomized.
 
@@ -883,97 +997,13 @@ class ManipulationGazeboEnvRandomizer(
             True if expired, false otherwise
         """
 
-        if not self.object_models_randomizer_enabled():
+        if not self.__object_models_randomizer_enabled():
             return False
 
-        self._object_models_rollout_counter += 1
+        self.__object_models_rollout_counter += 1
 
-        if self._object_models_rollout_counter >= self._object_models_rollouts_num:
-            self._object_models_rollout_counter = 0
-            return True
-
-        return False
-
-    def object_poses_randomizer_enabled(self) -> bool:
-        """
-        Checks if object poses randomizer is enabled.
-
-        Return:
-            True if enabled, false otherwise
-        """
-
-        return self._object_random_pose
-
-    def robot_joint_position_randomizer_enabled(self) -> bool:
-        """
-        Checks if robot joint position randomizer is enabled.
-
-        Return:
-            True if enabled, false otherwise
-        """
-
-        return self.robot_random_joint_positions
-
-    def terrain_model_randomizer_enabled(self) -> bool:
-        """
-        Checks if terrain randomizer is enabled.
-
-        Return:
-            True if enabled, false otherwise
-        """
-
-        if self.terrain_model_rollouts_num == 0:
-            return False
-        else:
-            return True
-
-    def terrain_model_expired(self) -> bool:
-        """
-        Checks if terrain model needs to be randomized.
-
-        Return:
-            True if expired, false otherwise
-        """
-
-        if not self.terrain_model_randomizer_enabled():
-            return False
-
-        self.terrain_model_rollout_counter += 1
-
-        if self.terrain_model_rollout_counter >= self.terrain_model_rollouts_num:
-            self.terrain_model_rollout_counter = 0
-            return True
-
-        return False
-
-    def camera_pose_randomizer_enabled(self) -> bool:
-        """
-        Checks if camera pose randomizer is enabled.
-
-        Return:
-            True if enabled, false otherwise
-        """
-
-        if self.camera_pose_rollouts_num == 0:
-            return False
-        else:
-            return True
-
-    def camera_pose_expired(self) -> bool:
-        """
-        Checks if camera pose needs to be randomized.
-
-        Return:
-            True if expired, false otherwise
-        """
-
-        if not self.camera_pose_randomizer_enabled():
-            return False
-
-        self.camera_pose_rollout_counter += 1
-
-        if self.camera_pose_rollout_counter >= self.camera_pose_rollouts_num:
-            self.camera_pose_rollout_counter = 0
+        if self.__object_models_rollout_counter >= self._object_models_rollouts_num:
+            self.__object_models_rollout_counter = 0
             return True
 
         return False
@@ -993,7 +1023,7 @@ class ManipulationGazeboEnvRandomizer(
         models.Box(
             world=task.world,
             name="workspace_volume",
-            position=task.object_spawn_centre,
+            position=self._object_spawn_position,
             orientation=(0, 0, 0, 1),
             size=task.workspace_volume,
             collision=False,
@@ -1017,10 +1047,10 @@ class ManipulationGazeboEnvRandomizer(
         # Insert translucent boxes visible only in simulation with no physical interactions
         models.Box(
             world=task.world,
-            name="object_spawn_volume",
-            position=task._object_spawn_centre,
+            name="object_random_spawn_volume",
+            position=self._object_spawn_position,
             orientation=(0, 0, 0, 1),
-            size=task.object_spawn_volume,
+            size=self._object_random_spawn_volume,
             collision=False,
             visual=True,
             gui_only=True,
@@ -1029,10 +1059,10 @@ class ManipulationGazeboEnvRandomizer(
         )
         models.Box(
             world=task.world,
-            name="object_spawn_volume_with_height",
-            position=task._object_spawn_centre,
+            name="object_random_spawn_volume_with_height",
+            position=self._object_spawn_position,
             orientation=(0, 0, 0, 1),
-            size=task.object_spawn_volume,
+            size=self._object_random_spawn_volume,
             collision=False,
             visual=True,
             gui_only=True,

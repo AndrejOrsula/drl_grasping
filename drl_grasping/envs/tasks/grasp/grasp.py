@@ -1,10 +1,10 @@
-from drl_grasping.envs.tasks.manipulation import Manipulation
 from drl_grasping.envs.tasks.grasp.curriculum import GraspCurriculum
+from drl_grasping.envs.tasks.manipulation import Manipulation
 from drl_grasping.envs.utils.conversions import quat_to_xyzw
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
-from typing import Tuple, List, Union, Dict
 from scipy.spatial.transform import Rotation
+from typing import Tuple, List, Union, Dict
 import abc
 import gym
 import itertools
@@ -13,41 +13,8 @@ import sys
 
 
 class Grasp(Manipulation, abc.ABC):
-
-    workspace_volume: Tuple[float, float, float] = (0.24, 0.24, 0.2)
-    workspace_centre: Tuple[float, float, float] = (0.5, 0.0, workspace_volume[2] / 2)
-
-    terrain_enable: bool = True
-    terrain_position: Tuple[float, float, float] = (0.25, 0, 0)
-    terrain_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-    terrain_size: Tuple[float, float] = (1.25, 1.25)
-
-    object_enable: bool = True
-    # 'box' [x, y, z], 'sphere' [radius], 'cylinder' [radius, height]
-    object_type: str = "box"
-    object_dimensions: List[float] = [0.05, 0.05, 0.05]
-    object_mass: float = 0.1
-    object_collision: bool = True
-    object_visual: bool = True
-    object_static: bool = False
-    object_color: Tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
-    object_spawn_centre: Tuple[float, float, float] = (
-        workspace_centre[0],
-        workspace_centre[1],
-        0.15,
-    )
-    object_spawn_volume_proportion: float = 0.75
-    object_spawn_volume: Tuple[float, float, float] = (
-        object_spawn_volume_proportion * workspace_volume[0],
-        object_spawn_volume_proportion * workspace_volume[1],
-        0.05,
-    )
-
     def __init__(
         self,
-        agent_rate: float,
-        robot_model: str,
-        restrict_position_goal_to_workspace: bool,
         gripper_dead_zone: float,
         full_3d_orientation: bool,
         sparse_reward: bool,
@@ -74,7 +41,6 @@ class Grasp(Manipulation, abc.ABC):
         curriculum_skip_grasp_stage: bool,
         curriculum_restart_exploration_at_start: bool,
         max_episode_length: int,
-        verbose: bool,
         preload_replay_buffer: bool = False,
         **kwargs,
     ):
@@ -82,10 +48,6 @@ class Grasp(Manipulation, abc.ABC):
         # Initialize the Task base class
         Manipulation.__init__(
             self,
-            agent_rate=agent_rate,
-            robot_model=robot_model,
-            restrict_position_goal_to_workspace=restrict_position_goal_to_workspace,
-            verbose=verbose,
             **kwargs,
         )
 
@@ -115,7 +77,7 @@ class Grasp(Manipulation, abc.ABC):
             skip_grasp_stage=curriculum_skip_grasp_stage,
             restart_exploration_at_start=curriculum_restart_exploration_at_start,
             max_episode_length=max_episode_length,
-            verbose=verbose,
+            verbose=self._verbose,
         )
 
         # Additional parameters

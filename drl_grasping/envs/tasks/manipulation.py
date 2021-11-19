@@ -8,7 +8,7 @@ from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
 from itertools import count
 from scipy.spatial.transform import Rotation
-from typing import List, Tuple, Union
+from typing import Tuple, Union
 import abc
 import numpy as np
 
@@ -16,77 +16,13 @@ import numpy as np
 class Manipulation(task.Task, abc.ABC):
     _ids = count(0)
 
-    # TODO: Move all simulation-related parameters to yaml config and parse them inside randomizer (or maybe just randomizer parameters?)
-
-    # Robot #
-    initial_robot_position: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    initial_robot_quat_xyzw: Tuple[float, float, float, float] = (
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-    )
-
-    # Workspace #
-    workspace_centre: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    object_spawn_centre: Tuple[float, float, float] = (
-        workspace_centre[0],
-        workspace_centre[1],
-        workspace_centre[2],
-    )
-    workspace_volume: Tuple[float, float, float] = (1.0, 1.0, 1.0)
-
-    # Camera #
-    camera_enable: bool = False
-    camera_type: str = "rgbd_camera"
-    # Camera pose (wrt robot pose)
-    camera_position: Tuple[float, float, float] = (0, 0, 1)
-    camera_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-    # Camera intrinsic parameters
-    camera_width: int = 128
-    camera_height: int = 128
-    camera_update_rate: int = 10
-    camera_horizontal_fov: float = 1.04719755
-    camera_vertical_fov: float = 1.04719755
-    camera_clip_color: Tuple[float, float] = (0.01, 1000.0)
-    camera_clip_depth: Tuple[float, float] = (0.05, 10.0)
-    # Defines what data is needed
-    camera_publish_color: bool = False
-    camera_publish_depth: bool = False
-    camera_publish_points: bool = False
-
-    # Terrain #
-    terrain_enable: bool = False
-    terrain_position: Tuple[float, float, float] = (0, 0, 0)
-    terrain_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-    terrain_size: Tuple[float, float] = (2.0, 2.0)
-
-    # Objects #
-    object_enable: bool = False
-    object_dimensions: List[float] = [0.05, 0.05, 0.05]
-    object_mass: float = 0.1
-    object_collision: bool = True
-    object_visual: bool = True
-    object_static: bool = False
-    object_color: Tuple[float, float, float, float] = (0.8, 0.8, 0.8, 1.0)
-    object_spawn_centre: Tuple[float, float, float] = (
-        workspace_centre[0],
-        workspace_centre[1],
-        workspace_centre[2],
-    )
-    object_spawn_volume_proportion: float = 0.75
-    object_spawn_volume: Tuple[float, float, float] = (
-        object_spawn_volume_proportion * workspace_volume[0],
-        object_spawn_volume_proportion * workspace_volume[1],
-        object_spawn_volume_proportion * workspace_volume[2],
-    )
-    object_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1)
-
     def __init__(
         self,
         agent_rate: float,
         robot_model: str,
-        restrict_position_goal_to_workspace: bool,
+        workspace_centre: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        workspace_volume: Tuple[float, float, float] = (2.0, 2.0, 2.0),
+        restrict_position_goal_to_workspace: bool = False,
         relative_position_scaling_factor: float = 0.1,
         z_relative_orientation_scaling_factor: float = np.pi / 4.0,
         verbose: bool = False,
@@ -99,6 +35,8 @@ class Manipulation(task.Task, abc.ABC):
         self.id = next(self._ids)
 
         # Store passed arguments for later use
+        self.workspace_centre = workspace_centre
+        self.workspace_volume = workspace_volume
         self.__restrict_position_goal_to_workspace = restrict_position_goal_to_workspace
         self.__relative_position_scaling_factor = relative_position_scaling_factor
         self.__z_relative_orientation_scaling_factor = (
@@ -158,9 +96,7 @@ class Manipulation(task.Task, abc.ABC):
 
     def create_spaces(self) -> Tuple[ActionSpace, ObservationSpace]:
 
-        # Action space
         action_space = self.create_action_space()
-        # Observation space
         observation_space = self.create_observation_space()
 
         return action_space, observation_space

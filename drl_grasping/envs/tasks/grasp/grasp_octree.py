@@ -1,6 +1,6 @@
 from collections import deque
-from drl_grasping.envs.tasks.grasp import Grasp
 from drl_grasping.envs.perception import CameraSubscriber, OctreeCreator
+from drl_grasping.envs.tasks.grasp import Grasp
 from drl_grasping.envs.utils.conversions import orientation_quat_to_6d
 from gym_ignition.utils.typing import Observation
 from gym_ignition.utils.typing import ObservationSpace
@@ -11,130 +11,21 @@ import numpy as np
 
 
 class GraspOctree(Grasp, abc.ABC):
-
-    # Overwrite parameters for ManipulationGazeboEnvRandomizer
-    camera_enable: bool = True
-    camera_type: str = "auto"
-    camera_width: int = 256
-    camera_height: int = 256
-    camera_update_rate: int = 10
-    camera_horizontal_fov: float = 0.9
-    camera_vertical_fov: float = 0.9
-    camera_position: Tuple[float, float, float] = (0.95, -0.55, 0.25)
-    camera_quat_xyzw: Tuple[float, float, float, float] = (
-        -0.0402991,
-        -0.0166924,
-        0.9230002,
-        0.3823192,
-    )
-    camera_publish_points: bool = True
-
-    workspace_volume: Tuple[float, float, float] = (0.24, 0.24, 0.2)
-    workspace_centre: Tuple[float, float, float] = (0.5, 0.0, workspace_volume[2] / 2)
-
-    # Size of octree (boundary size)
-    _octree_size: float = 0.24
-    # A small offset to include ground in the observations
-    _octree_ground_offset: float = 0.01
-    _octree_min_bound: Tuple[float, float, float] = (
-        workspace_centre[0] - _octree_size / 2,
-        workspace_centre[1] - _octree_size / 2,
-        0.0 - _octree_ground_offset,
-    )
-    _octree_max_bound: Tuple[float, float, float] = (
-        workspace_centre[0] + _octree_size / 2,
-        workspace_centre[1] + _octree_size / 2,
-        (_octree_size) - _octree_ground_offset,
-    )
-
-    _object_spawn_centre: Tuple[float, float, float] = (
-        workspace_centre[0],
-        workspace_centre[1],
-        0.15,
-    )
-    object_spawn_volume_proportion: float = 0.75
-    object_spawn_volume: Tuple[float, float, float] = (
-        object_spawn_volume_proportion * workspace_volume[0],
-        object_spawn_volume_proportion * workspace_volume[1],
-        0.075,
-    )
-
     def __init__(
         self,
-        agent_rate: float,
-        robot_model: str,
-        restrict_position_goal_to_workspace: bool,
-        gripper_dead_zone: float,
-        full_3d_orientation: bool,
-        sparse_reward: bool,
-        normalize_reward: bool,
-        required_reach_distance: float,
-        required_lift_height: float,
-        reach_dense_reward_multiplier: float,
-        lift_dense_reward_multiplier: float,
-        act_quick_reward: float,
-        outside_workspace_reward: float,
-        ground_collision_reward: float,
-        n_ground_collisions_till_termination: int,
-        curriculum_enable_workspace_scale: bool,
-        curriculum_min_workspace_scale: float,
-        curriculum_enable_object_count_increase: bool,
-        curriculum_max_object_count: int,
-        curriculum_enable_stages: bool,
-        curriculum_stage_reward_multiplier: float,
-        curriculum_stage_increase_rewards: bool,
-        curriculum_success_rate_threshold: float,
-        curriculum_success_rate_rolling_average_n: int,
-        curriculum_restart_every_n_steps: int,
-        curriculum_skip_reach_stage: bool,
-        curriculum_skip_grasp_stage: bool,
-        curriculum_restart_exploration_at_start: bool,
-        max_episode_length: int,
+        octree_dimension: float,
         octree_depth: int,
         octree_full_depth: int,
         octree_include_color: bool,
         octree_n_stacked: int,
         octree_max_size: int,
         proprieceptive_observations: bool,
-        verbose: bool,
-        preload_replay_buffer: bool = False,
         **kwargs,
     ):
 
         # Initialize the Task base class
         Grasp.__init__(
             self,
-            agent_rate=agent_rate,
-            robot_model=robot_model,
-            restrict_position_goal_to_workspace=restrict_position_goal_to_workspace,
-            gripper_dead_zone=gripper_dead_zone,
-            full_3d_orientation=full_3d_orientation,
-            sparse_reward=sparse_reward,
-            normalize_reward=normalize_reward,
-            required_reach_distance=required_reach_distance,
-            required_lift_height=required_lift_height,
-            reach_dense_reward_multiplier=reach_dense_reward_multiplier,
-            lift_dense_reward_multiplier=lift_dense_reward_multiplier,
-            act_quick_reward=act_quick_reward,
-            outside_workspace_reward=outside_workspace_reward,
-            ground_collision_reward=ground_collision_reward,
-            n_ground_collisions_till_termination=n_ground_collisions_till_termination,
-            curriculum_enable_workspace_scale=curriculum_enable_workspace_scale,
-            curriculum_min_workspace_scale=curriculum_min_workspace_scale,
-            curriculum_enable_object_count_increase=curriculum_enable_object_count_increase,
-            curriculum_max_object_count=curriculum_max_object_count,
-            curriculum_enable_stages=curriculum_enable_stages,
-            curriculum_stage_reward_multiplier=curriculum_stage_reward_multiplier,
-            curriculum_stage_increase_rewards=curriculum_stage_increase_rewards,
-            curriculum_success_rate_threshold=curriculum_success_rate_threshold,
-            curriculum_success_rate_rolling_average_n=curriculum_success_rate_rolling_average_n,
-            curriculum_restart_every_n_steps=curriculum_restart_every_n_steps,
-            curriculum_skip_reach_stage=curriculum_skip_reach_stage,
-            curriculum_skip_grasp_stage=curriculum_skip_grasp_stage,
-            curriculum_restart_exploration_at_start=curriculum_restart_exploration_at_start,
-            max_episode_length=max_episode_length,
-            verbose=verbose,
-            preload_replay_buffer=preload_replay_buffer,
             **kwargs,
         )
 
@@ -150,24 +41,26 @@ class GraspOctree(Grasp, abc.ABC):
             node_name=f"drl_grasping_point_cloud_sub_{self.id}",
         )
 
-        robot_frame_id = ""
-        if "panda" == robot_model:
-            robot_frame_id = "panda_link0"
-        elif "ur5_rg2" == robot_model:
-            robot_frame_id = "base_link"
-        elif "kinova_j2s7s300" == robot_model:
-            robot_frame_id = "j2s7s300_link_base"
-
+        octree_min_bound: Tuple[float, float, float] = (
+            self.workspace_centre[0] - octree_dimension / 2,
+            self.workspace_centre[1] - octree_dimension / 2,
+            self.workspace_centre[2] - octree_dimension / 2,
+        )
+        octree_max_bound: Tuple[float, float, float] = (
+            self.workspace_centre[0] + octree_dimension / 2,
+            self.workspace_centre[1] + octree_dimension / 2,
+            self.workspace_centre[2] + octree_dimension / 2,
+        )
         self.octree_creator = OctreeCreator(
-            min_bound=self._octree_min_bound,
-            max_bound=self._octree_max_bound,
+            min_bound=octree_min_bound,
+            max_bound=octree_max_bound,
             depth=octree_depth,
             full_depth=octree_full_depth,
             include_color=octree_include_color,
             use_sim_time=True,
             debug_draw=False,
             debug_write_octree=False,
-            robot_frame_id=robot_frame_id,
+            robot_frame_id=self.robot_arm_base_link_name,
             node_name=f"drl_grasping_octree_creator_{self.id}",
         )
 

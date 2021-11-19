@@ -1,5 +1,6 @@
 from drl_grasping.envs.tasks.reach import Reach
 from drl_grasping.envs.perception import CameraSubscriber
+from drl_grasping.envs.models.sensors import Camera
 from gym_ignition.utils.typing import Observation
 from gym_ignition.utils.typing import ObservationSpace
 from typing import Tuple
@@ -9,54 +10,29 @@ import numpy as np
 
 
 class ReachColorImage(Reach, abc.ABC):
-
-    # Overwrite parameters for ManipulationGazeboEnvRandomizer
-    _camera_enable: bool = True
-    _camera_type: str = "camera"
-    _camera_width: int = 128
-    _camera_height: int = 128
-    _camera_update_rate: int = 10
-    _camera_horizontal_fov: float = 1.0
-    _camera_vertical_fov: float = 1.0
-    _camera_position: Tuple[float, float, float] = (1.1, -0.75, 0.45)
-    _camera_quat_xyzw: Tuple[float, float, float, float] = (
-        -0.0402991,
-        -0.0166924,
-        0.9230002,
-        0.3823192,
-    )
-    _camera_publish_color: bool = True
-
     def __init__(
         self,
-        agent_rate: float,
-        robot_model: str,
-        restrict_position_goal_to_workspace: bool,
-        sparse_reward: bool,
-        act_quick_reward: float,
-        required_accuracy: float,
-        verbose: bool,
+        camera_type: str,
+        camera_width: int,
+        camera_height: int,
         **kwargs,
     ):
 
         # Initialize the Task base class
         Reach.__init__(
             self,
-            agent_rate=agent_rate,
-            robot_model=robot_model,
-            restrict_position_goal_to_workspace=restrict_position_goal_to_workspace,
-            sparse_reward=sparse_reward,
-            act_quick_reward=act_quick_reward,
-            required_accuracy=required_accuracy,
-            verbose=verbose,
             **kwargs,
         )
 
+        # Store parameters for later use
+        self._camera_width = camera_width
+        self._camera_height = camera_height
+
         # Perception (RGB camera)
         self.camera_sub = CameraSubscriber(
-            topic=f"/{self.camera_type}",
+            topic=Camera.get_color_topic(camera_type),
             is_point_cloud=False,
-            node_name=f"drl_grasping_rgb_camera_sub_{self.id}",
+            node_name=f"camera_sub_{self.id}",
         )
 
     def create_observation_space(self) -> ObservationSpace:
@@ -65,7 +41,7 @@ class ReachColorImage(Reach, abc.ABC):
         return gym.spaces.Box(
             low=0,
             high=255,
-            shape=(self.camera_height, self.camera_width, 3),
+            shape=(self._camera_height, self._camera_width, 3),
             dtype=np.uint8,
         )
 
@@ -76,7 +52,7 @@ class ReachColorImage(Reach, abc.ABC):
 
         # Reshape and create the observation
         color_image = np.array(image.data, dtype=np.uint8).reshape(
-            self.camera_height, self.camera_width, 3
+            self._camera_height, self._camera_width, 3
         )
 
         observation = Observation(color_image)

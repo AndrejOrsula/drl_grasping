@@ -4,6 +4,7 @@ from drl_grasping.envs.perception import CameraSubscriber, OctreeCreator
 from gym_ignition.utils.typing import Observation
 from gym_ignition.utils.typing import ObservationSpace
 from typing import Tuple
+from drl_grasping.envs.models.sensors import Camera
 import abc
 import gym
 import numpy as np
@@ -11,109 +12,62 @@ import numpy as np
 
 class ReachOctree(Reach, abc.ABC):
 
-    # Overwrite parameters for ManipulationGazeboEnvRandomizer
-    _camera_enable: bool = True
-    _camera_type: str = "auto"
-    _camera_width: int = 256
-    _camera_height: int = 256
-    _camera_update_rate: int = 10
-    _camera_horizontal_fov: float = 0.9
-    _camera_vertical_fov: float = 0.9
-    _camera_position: Tuple[float, float, float] = (1.1, -0.75, 0.45)
-    _camera_quat_xyzw: Tuple[float, float, float, float] = (
-        -0.0402991,
-        -0.0166924,
-        0.9230002,
-        0.3823192,
-    )
-    _camera_publish_points: bool = True
-
-    workspace_centre: Tuple[float, float, float] = (0.45, 0, 0.25)
-    workspace_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5)
-
     _octree_min_bound: Tuple[float, float, float] = (0.15, -0.3, 0.0)
     _octree_max_bound: Tuple[float, float, float] = (0.75, 0.3, 0.6)
 
-    _object_spawn_centre: Tuple[float, float, float] = (
-        workspace_centre[0],
-        workspace_centre[1],
-        workspace_centre[2],
-    )
-    object_spawn_volume_proportion: float = 0.75
-    object_spawn_volume: Tuple[float, float, float] = (
-        object_spawn_volume_proportion * workspace_volume[0],
-        object_spawn_volume_proportion * workspace_volume[1],
-        object_spawn_volume_proportion * workspace_volume[2],
-    )
-
     def __init__(
         self,
-        agent_rate: float,
-        robot_model: str,
-        restrict_position_goal_to_workspace: bool,
-        sparse_reward: bool,
-        act_quick_reward: float,
-        required_accuracy: float,
+        octree_dimension: float,
+        camera_type: str,
         octree_depth: int,
         octree_full_depth: int,
         octree_include_color: bool,
         octree_n_stacked: int,
         octree_max_size: int,
-        verbose: bool,
         **kwargs,
     ):
 
         # Initialize the Task base class
         Reach.__init__(
             self,
-            agent_rate=agent_rate,
-            robot_model=robot_model,
-            restrict_position_goal_to_workspace=restrict_position_goal_to_workspace,
-            sparse_reward=sparse_reward,
-            act_quick_reward=act_quick_reward,
-            required_accuracy=required_accuracy,
-            verbose=verbose,
             **kwargs,
         )
 
-        if octree_include_color:
-            self.camera_type = "rgbd_camera"
-        else:
-            self.camera_type = "depth_camera"
+        # Store parameters for later use
+        self._octree_n_stacked = octree_n_stacked
+        self._octree_max_size = octree_max_size
 
         # Perception (RGB-D camera - point cloud)
         self.camera_sub = CameraSubscriber(
-            topic=f"/{self.camera_type}/points",
+            topic=Camera.get_points_topic(camera_type),
             is_point_cloud=True,
-            node_name=f"drl_grasping_point_cloud_sub_{self.id}",
+            node_name=f"camera_sub_{self.id}",
         )
 
-        robot_frame_id = ""
-        if "panda" == robot_model:
-            robot_frame_id = "panda_link0"
-        elif "ur5_rg2" == robot_model:
-            robot_frame_id = "base_link"
-        elif "kinova_j2s7s300" == robot_model:
-            robot_frame_id = "j2s7s300_link_base"
-
+        octree_min_bound: Tuple[float, float, float] = (
+            self.workspace_centre[0] - octree_dimension / 2,
+            self.workspace_centre[1] - octree_dimension / 2,
+            self.workspace_centre[2] - octree_dimension / 2,
+        )
+        octree_max_bound: Tuple[float, float, float] = (
+            self.workspace_centre[0] + octree_dimension / 2,
+            self.workspace_centre[1] + octree_dimension / 2,
+            self.workspace_centre[2] + octree_dimension / 2,
+        )
         self.octree_creator = OctreeCreator(
-            min_bound=self._octree_min_bound,
-            max_bound=self._octree_max_bound,
+            min_bound=octree_min_bound,
+            max_bound=octree_max_bound,
             depth=octree_depth,
             full_depth=octree_full_depth,
             include_color=octree_include_color,
             use_sim_time=True,
             debug_draw=False,
             debug_write_octree=False,
-            robot_frame_id=robot_frame_id,
+            robot_frame_id=self.robot_arm_base_link_name,
             node_name=f"drl_grasping_octree_creator_{self.id}",
         )
 
-        # Additional parameters
-        self._octree_n_stacked = octree_n_stacked
-        self._octree_max_size = octree_max_size
-
-        # List of all octrees
+        # Variable initialisation
         self.__stacked_octrees = deque([], maxlen=self._octree_n_stacked)
 
     def create_observation_space(self) -> ObservationSpace:
