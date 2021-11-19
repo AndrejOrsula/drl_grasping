@@ -44,11 +44,10 @@ class Cylinder(model_wrapper.ModelWrapper):
             color=color,
         )
 
-        # Convert it into a file
-        sdf_file = misc.string_to_file(sdf)
-
         # Insert the model
-        ok_model = world.to_gazebo().insert_model(sdf_file, initial_pose, model_name)
+        ok_model = world.to_gazebo().insert_model_from_string(
+            sdf, initial_pose, model_name
+        )
         if not ok_model:
             raise RuntimeError("Failed to insert " + model_name)
 
