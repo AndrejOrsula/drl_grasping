@@ -2,13 +2,20 @@ from collections import OrderedDict
 from optuna.integration.skopt import SkoptSampler
 from optuna.pruners import BasePruner, MedianPruner, SuccessiveHalvingPruner, NopPruner
 from optuna.samplers import BaseSampler, RandomSampler, TPESampler
+from optuna.visualization import plot_optimization_history, plot_param_importances
 from pprint import pprint
+from stable_baselines3 import HerReplayBuffer
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
+from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.noise import (
     NormalActionNoise,
     OrnsteinUhlenbeckActionNoise,
+)
+from stable_baselines3.common.preprocessing import (
+    is_image_space,
+    is_image_space_channels_first,
 )
 from stable_baselines3.common.utils import constant_fn
 from stable_baselines3.common.vec_env import (
@@ -18,6 +25,7 @@ from stable_baselines3.common.vec_env import (
     VecFrameStack,
     VecNormalize,
     VecTransposeImage,
+    is_vecenv_wrapped,
 )
 from torch import nn as nn
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -26,15 +34,11 @@ import gym
 import numpy as np
 import optuna
 import os
+import pickle as pkl
 import time
 import warnings
-from stable_baselines3.common.preprocessing import (
-    is_image_space,
-    is_image_space_channels_first,
-)
 import yaml
 
-# Register custom envs
 from drl_grasping.utils.callbacks import (
     SaveVecNormalizeCallback,
     TrialEvalCallback,
@@ -79,6 +83,7 @@ class ExperimentManager(object):
         n_jobs: int = 1,
         sampler: str = "tpe",
         pruner: str = "median",
+        optimization_log_path: Optional[str] = None,
         n_startup_trials: int = 0,
         n_evaluations: int = 1,
         truncate_last_trajectory: bool = False,
@@ -89,6 +94,8 @@ class ExperimentManager(object):
         preload_replay_buffer: str = "",
         verbose: int = 1,
         vec_env_type: str = "dummy",
+        n_eval_envs: int = 1,
+        no_optim_plots: bool = False,
     ):
         super(ExperimentManager, self).__init__()
         self.algo = algo
@@ -102,6 +109,7 @@ class ExperimentManager(object):
         self.env_wrapper = None
         self.frame_stack = None
         self.seed = seed
+        self.optimization_log_path = optimization_log_path
 
         self.vec_env_class = {"dummy": DummyVecEnv, "subproc": SubprocVecEnv}[
             vec_env_type
@@ -111,10 +119,12 @@ class ExperimentManager(object):
         # self.vec_env_kwargs = {} if vec_env_type == "dummy" else {"start_method": "fork"}
 
         # Callbacks
+        self.specified_callbacks = []
         self.callbacks = []
         self.save_freq = save_freq
         self.eval_freq = eval_freq
         self.n_eval_episodes = n_eval_episodes
+        self.n_eval_envs = n_eval_envs
 
         self.n_envs = 1  # it will be updated when reading hyperparams
         self.n_actions = None  # For DDPG/TD3 action noise objects
@@ -129,12 +139,13 @@ class ExperimentManager(object):
         self.preload_replay_buffer = preload_replay_buffer
 
         self._is_atari = self.is_atari(env_id)
-        self._is_ignition_gazebo_env = self.is_ignition_gazebo_env(env_id)
+        self._is_gazebo_env = self.is_gazebo_env(env_id)
 
         # Hyperparameter optimization config
         self.optimize_hyperparameters = optimize_hyperparameters
         self.storage = storage
         self.study_name = study_name
+        self.no_optim_plots = no_optim_plots
         # maximum number of trials for finding the best hyperparams
         self.n_trials = n_trials
         # number of parallel jobs when doing hyperparameter search
@@ -312,6 +323,9 @@ class ExperimentManager(object):
         )
 
         if self.verbose > 0:
+            print(
+                "Default hyperparameters for environment (ones being tuned will be overridden):"
+            )
             pprint(saved_hyperparams)
 
         return hyperparams, saved_hyperparams
@@ -355,23 +369,6 @@ class ExperimentManager(object):
             del hyperparams["normalize"]
         return hyperparams
 
-    def _preprocess_her_model_class(
-        self, hyperparams: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        # HER is only a wrapper around an algo
-        if self.algo == "her":
-            model_class = hyperparams["model_class"]
-            assert model_class in {
-                "sac",
-                "ddpg",
-                "dqn",
-                "td3",
-                "tqc",
-            }, f"{model_class} is not compatible with HER"
-            # Retrieve the model class
-            hyperparams["model_class"] = ALGOS[hyperparams["model_class"]]
-        return hyperparams
-
     def _preprocess_hyperparams(
         self, hyperparams: Dict[str, Any]
     ) -> Tuple[Dict[str, Any], Optional[Callable], List[BaseCallback]]:
@@ -380,8 +377,7 @@ class ExperimentManager(object):
         if self.verbose > 0:
             print(f"Using {self.n_envs} environments")
 
-        # Convert model class string to an object if needed (when using HER)
-        hyperparams = self._preprocess_her_model_class(hyperparams)
+        # Convert schedule strings to objects
         hyperparams = self._preprocess_schedules(hyperparams)
 
         # Pre-process train_freq
@@ -398,11 +394,18 @@ class ExperimentManager(object):
         # Pre-process normalize config
         hyperparams = self._preprocess_normalization(hyperparams)
 
-        # Pre-process policy keyword arguments
-        if "policy_kwargs" in hyperparams.keys():
-            # Convert to python object if needed
-            if isinstance(hyperparams["policy_kwargs"], str):
-                hyperparams["policy_kwargs"] = eval(hyperparams["policy_kwargs"])
+        # Pre-process policy/buffer keyword arguments
+        # Convert to python object if needed
+        # TODO: Use the new replay_buffer_class argument of offpolicy algorithms instead of monkey patch
+        for kwargs_key in {
+            "policy_kwargs",
+            "replay_buffer_class",
+            "replay_buffer_kwargs",
+        }:
+            if kwargs_key in hyperparams.keys() and isinstance(
+                hyperparams[kwargs_key], str
+            ):
+                hyperparams[kwargs_key] = eval(hyperparams[kwargs_key])
 
         # Delete keys so the dict can be pass to the model constructor
         if "n_envs" in hyperparams.keys():
@@ -421,6 +424,7 @@ class ExperimentManager(object):
 
         callbacks = get_callback_list(hyperparams)
         if "callback" in hyperparams.keys():
+            self.specified_callbacks = hyperparams["callback"]
             del hyperparams["callback"]
 
         return hyperparams, env_wrapper, callbacks
@@ -428,14 +432,9 @@ class ExperimentManager(object):
     def _preprocess_action_noise(
         self, hyperparams: Dict[str, Any], env: VecEnv
     ) -> Dict[str, Any]:
-        # Special case for HER
-        algo = hyperparams["model_class"] if self.algo == "her" else self.algo
-
-        # Parse noise string for DDPG and SAC
-        if (
-            algo in ["ddpg", "sac", "td3", "tqc", "ddpg"]
-            and hyperparams.get("noise_type") is not None
-        ):
+        # Parse noise string
+        # Note: only off-policy algorithms are supported
+        if hyperparams.get("noise_type") is not None:
             noise_type = hyperparams["noise_type"].strip()
             noise_std = hyperparams["noise_std"]
 
@@ -493,6 +492,8 @@ class ExperimentManager(object):
             )
             eval_callback = EvalCallback(
                 eval_env=self._env,
+                # TODO: Use separate environment(s) for evaluation
+                # self.create_envs(self.n_eval_envs, eval_env=True),
                 callback_on_new_best=save_vec_normalize,
                 best_model_save_path=self.save_path,
                 n_eval_episodes=self.n_eval_episodes,
@@ -505,15 +506,24 @@ class ExperimentManager(object):
 
     @staticmethod
     def is_atari(env_id: str) -> bool:
-        return "AtariEnv" in gym.envs.registry.env_specs[env_id].entry_point
+        entry_point = gym.envs.registry.env_specs[env_id].entry_point
+        return "AtariEnv" in str(entry_point)
+
+    @staticmethod
+    def is_bullet(env_id: str) -> bool:
+        entry_point = gym.envs.registry.env_specs[env_id].entry_point
+        return "pybullet_envs" in str(entry_point)
 
     @staticmethod
     def is_robotics_env(env_id: str) -> bool:
-        return "gym.envs.robotics" in gym.envs.registry.env_specs[env_id].entry_point
+        entry_point = gym.envs.registry.env_specs[env_id].entry_point
+        return "gym.envs.robotics" in str(entry_point) or "panda_gym.envs" in str(
+            entry_point
+        )
 
     @staticmethod
-    def is_ignition_gazebo_env(env_id: str) -> bool:
-        return "gym_ignition" in gym.envs.registry.env_specs[env_id].entry_point
+    def is_gazebo_env(env_id: str) -> bool:
+        return "Gazebo" in gym.envs.registry.env_specs[env_id].entry_point
 
     def _maybe_normalize(self, env: VecEnv, eval_env: bool) -> VecEnv:
         """
@@ -551,6 +561,7 @@ class ExperimentManager(object):
                     print(f"Normalization activated: {local_normalize_kwargs}")
                 else:
                     print("Normalizing input and reward")
+            # Note: The following line was added but not sure if it is still required
             env.num_envs = self.n_envs
             env = VecNormalize(env, **local_normalize_kwargs)
         return env
@@ -579,24 +590,19 @@ class ExperimentManager(object):
         ):
             monitor_kwargs = dict(info_keywords=("is_success",))
 
-        # Note: made custom to support Gazebo Runtime wrapping
-        def make_env():
-            def _init():
-                env = self.env_wrapper(env=self.env_id, **self.env_kwargs)
-                env.seed(self.seed)
-                env.action_space.seed(self.seed)
-
-                monitor_path = log_dir if log_dir is not None else None
-                if monitor_path is not None:
-                    os.makedirs(log_dir, exist_ok=True)
-                env = Monitor(env, filename=monitor_path, **monitor_kwargs)
-                return env
-
-            return _init
-
-        if self.vec_env_class is None:
-            self.vec_env_class = DummyVecEnv
-        env = self.vec_env_class([make_env()], **self.vec_env_kwargs)
+        # On most env, SubprocVecEnv does not help and is quite memory hungry
+        # therefore we use DummyVecEnv by default
+        env = make_vec_env(
+            env_id=self.env_id,
+            n_envs=n_envs,
+            seed=self.seed,
+            env_kwargs=self.env_kwargs,
+            monitor_dir=log_dir,
+            wrapper_class=self.env_wrapper,
+            vec_env_cls=self.vec_env_class,
+            vec_env_kwargs=self.vec_env_kwargs,
+            monitor_kwargs=monitor_kwargs,
+        )
 
         # Wrap the env into a VecNormalize wrapper if needed
         # and load saved statistics when present
@@ -609,14 +615,26 @@ class ExperimentManager(object):
             if self.verbose > 0:
                 print(f"Stacking {n_stack} frames")
 
-        # Wrap if needed to re-order channels
-        # (switch from channel last to channel first convention)
-        if is_image_space(env.observation_space) and not is_image_space_channels_first(
-            env.observation_space
-        ):
-            if self.verbose > 0:
-                print("Wrapping into a VecTransposeImage")
-            env = VecTransposeImage(env)
+        if not is_vecenv_wrapped(env, VecTransposeImage):
+            wrap_with_vectranspose = False
+            if isinstance(env.observation_space, gym.spaces.Dict):
+                # If even one of the keys is a image-space in need of transpose, apply transpose
+                # If the image spaces are not consistent (for instance one is channel first,
+                # the other channel last), VecTransposeImage will throw an error
+                for space in env.observation_space.spaces.values():
+                    wrap_with_vectranspose = wrap_with_vectranspose or (
+                        is_image_space(space)
+                        and not is_image_space_channels_first(space)
+                    )
+            else:
+                wrap_with_vectranspose = is_image_space(
+                    env.observation_space
+                ) and not is_image_space_channels_first(env.observation_space)
+
+            if wrap_with_vectranspose:
+                if self.verbose >= 1:
+                    print("Wrapping the env in a VecTransposeImage.")
+                env = VecTransposeImage(env)
 
         return env
 
@@ -648,13 +666,10 @@ class ExperimentManager(object):
 
         if not self.preload_replay_buffer and os.path.exists(replay_buffer_path):
             print("Loading replay buffer")
-            if self.algo == "her":
-                # if we use HER we have to add an additional argument
-                model.load_replay_buffer(
-                    replay_buffer_path, self.truncate_last_trajectory
-                )
-            else:
-                model.load_replay_buffer(replay_buffer_path)
+            # `truncate_last_traj` will be taken into account only if we use HER replay buffer
+            model.load_replay_buffer(
+                replay_buffer_path, truncate_last_traj=self.truncate_last_trajectory
+            )
         return model
 
     def _create_sampler(self, sampler_method: str) -> BaseSampler:
@@ -698,11 +713,13 @@ class ExperimentManager(object):
         kwargs = self._hyperparams.copy()
 
         trial.model_class = None
-        if self.algo == "her":
-            trial.model_class = self._hyperparams.get("model_class", None)
 
         # Hack to use DDPG/TD3 noise sampler
         trial.n_actions = self._env.action_space.shape[0]
+
+        # Hack when using HerReplayBuffer
+        if kwargs.get("replay_buffer_class") == HerReplayBuffer:
+            trial.her_kwargs = kwargs.get("replay_buffer_kwargs", {})
 
         # Sample candidate hyperparameters
         kwargs.update(HYPERPARAMS_SAMPLER[self.algo](trial))
@@ -754,17 +771,27 @@ class ExperimentManager(object):
         # Account for parallel envs
         eval_freq_ = max(eval_freq // model.get_env().num_envs, 1)
         # Use non-deterministic eval for Atari
+        callbacks = get_callback_list({"callback": self.specified_callbacks})
+        path = None
+        if self.optimization_log_path is not None:
+            path = os.path.join(
+                self.optimization_log_path, f"trial_{str(trial.number)}"
+            )
         eval_callback = TrialEvalCallback(
+            # TODO: Use a separate environment for evaluation during trial
             model.env,
             model.trial,
+            best_model_save_path=path,
+            log_path=path,
             n_eval_episodes=self.n_eval_episodes,
             eval_freq=eval_freq_,
             deterministic=self.deterministic_eval,
             verbose=self.verbose,
         )
+        callbacks.append(eval_callback)
 
         try:
-            model.learn(self.n_timesteps, callback=eval_callback)
+            model.learn(self.n_timesteps, callback=callbacks)
             # Reset env
             self._env.reset()
         except AssertionError as e:
@@ -805,6 +832,13 @@ class ExperimentManager(object):
                 "when you want to do distributed hyperparameter optimization."
             )
 
+        if self.tensorboard_log is not None:
+            warnings.warn(
+                "Tensorboard log is deactivated when running hyperparameter optimization"
+            )
+            self.tensorboard_log = None
+
+        # TODO: eval each hyperparams several times to account for noisy evaluation
         sampler = self._create_sampler(self.sampler)
         pruner = self._create_pruner(self.pruner)
 
@@ -844,7 +878,7 @@ class ExperimentManager(object):
 
         report_name = (
             f"report_{self.env_id}_{self.n_trials}-trials-{self.n_timesteps}"
-            f"-{self.sampler}-{self.pruner}_{int(time.time())}.csv"
+            f"-{self.sampler}-{self.pruner}_{int(time.time())}"
         )
 
         log_path = os.path.join(self.log_folder, self.algo, report_name)
@@ -854,7 +888,25 @@ class ExperimentManager(object):
 
         # Write report
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
-        study.trials_dataframe().to_csv(log_path)
+        study.trials_dataframe().to_csv(f"{log_path}.csv")
+
+        # Save python object to inspect/re-use it later
+        with open(f"{log_path}.pkl", "wb+") as f:
+            pkl.dump(study, f)
+
+        # Skip plots
+        if self.no_optim_plots:
+            return
+
+        # Plot optimization result
+        try:
+            fig1 = plot_optimization_history(study)
+            fig2 = plot_param_importances(study)
+
+            fig1.show()
+            fig2.show()
+        except (ValueError, ImportError, RuntimeError):
+            pass
 
     def collect_demonstration(self, model):
         # Any random action will do (this won't actually be used since `preload_replay_buffer` env kwarg is enabled)

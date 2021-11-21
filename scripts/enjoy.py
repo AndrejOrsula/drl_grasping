@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S python3 -O
 
 import argparse
 import os
@@ -9,7 +9,7 @@ import yaml
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, VecEnvWrapper
 
-from drl_grasping import envs as drl_grasping_envs
+from drl_grasping.utils import import_envs
 from drl_grasping.utils import (
     ALGOS,
     create_test_env,

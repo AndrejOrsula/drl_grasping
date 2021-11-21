@@ -4,23 +4,25 @@
 SEED="123"
 
 ## ID of the environment
-## Note: `preload_replay_buffer` must be enabled in the environment manually
-## Reach
 # ENV_ID="Reach-Gazebo-v0"
 # ENV_ID="Reach-ColorImage-Gazebo-v0"
+# ENV_ID="Reach-DepthImage-Gazebo-v0"
 # ENV_ID="Reach-Octree-Gazebo-v0"
 # ENV_ID="Reach-OctreeWithColor-Gazebo-v0"
-## Grasp
+
 # ENV_ID="Grasp-Octree-Gazebo-v0"
-ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
+# ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
+
+# ENV_ID="GraspPlanetary-Octree-Gazebo-v0"
+ENV_ID="GraspPlanetary-OctreeWithColor-Gazebo-v0"
 
 ## Robot model
-ROBOT_MODEL="panda"
+# ROBOT_MODEL="panda"
 # ROBOT_MODEL="ur5_rg2"
 # ROBOT_MODEL="kinova_j2s7s300"
-# ROBOT_MODEL="lunalab_summit_xl_gen"
+ROBOT_MODEL="lunalab_summit_xl_gen"
 
-## Algorithm to use (might not matter too much as long as it is off-policy)
+## Algorithm to use
 # ALGO="sac"
 # ALGO="td3"
 ALGO="tqc"

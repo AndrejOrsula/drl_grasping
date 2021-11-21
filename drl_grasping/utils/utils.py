@@ -16,24 +16,32 @@ from drl_grasping.drl_octree.algorithms import sac
 # Note: Import monkey patch of TQC before stable_baselines3 TQC
 from drl_grasping.drl_octree.algorithms import tqc
 
-from stable_baselines3 import A2C, DDPG, DQN, HER, PPO, SAC, TD3
+from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
 from sb3_contrib import QRDQN, TQC
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.sb2_compat.rmsprop_tf_like import (
+    RMSpropTFLike,
+)  # noqa: F401
 from stable_baselines3.common.vec_env import (
     DummyVecEnv,
     SubprocVecEnv,
     VecEnv,
     VecFrameStack,
+    VecNormalize,
 )
 
+# For custom activation fn
+import stable_baselines3 as sb3  # noqa: F401
+import torch as th  # noqa: F401
+from torch import nn as nn  # noqa: F401 pylint: disable=unused-import
 
 ALGOS = {
     "a2c": A2C,
     "ddpg": DDPG,
     "dqn": DQN,
     "ppo": PPO,
-    "her": HER,
     "sac": SAC,
     "td3": TD3,
     # SB3 Contrib,
@@ -110,15 +118,13 @@ def get_wrapper_class(
             wrapper_classes.append(wrapper_class)
             wrapper_kwargs.append(kwargs)
 
-        def wrap_env(env: gym.Env, **env_kwargs) -> gym.Env:
+        def wrap_env(env: gym.Env) -> gym.Env:
             """
             :param env:
             :return:
             """
-            for wrapper_class, wrapper_class_kwargs in zip(
-                wrapper_classes, wrapper_kwargs
-            ):
-                env = wrapper_class(env, **wrapper_class_kwargs, **env_kwargs)
+            for wrapper_class, kwargs in zip(wrapper_classes, wrapper_kwargs):
+                env = wrapper_class(env, **kwargs)
             return env
 
         return wrap_env
@@ -206,6 +212,9 @@ def create_test_env(
     :param env_kwargs: Optional keyword argument to pass to the env constructor
     :return:
     """
+    # Avoid circular import
+    from drl_grasping.utils.exp_manager import ExperimentManager
+
     # Create the environment and wrap it if necessary
     env_wrapper = get_wrapper_class(hyperparams)
 
@@ -216,37 +225,37 @@ def create_test_env(
 
     vec_env_kwargs = {}
     vec_env_cls = DummyVecEnv
-    if n_envs > 1 or "Bullet" in env_id:
+    if n_envs > 1 or (ExperimentManager.is_bullet(env_id) and should_render):
         # HACK: force SubprocVecEnv for Bullet env
         # as Pybullet envs does not follow gym.render() interface
         vec_env_cls = SubprocVecEnv
         # start_method = 'spawn' for thread safe
 
-    # Note: custom to support Gazebo Runtime wrapping
-    def make_env():
-        def _init():
-            env = env_wrapper(env=env_id, **env_kwargs)
-            env.seed(seed)
-            env.action_space.seed(seed)
-
-            monitor_path = log_dir if log_dir is not None else None
-            if monitor_path is not None:
-                os.makedirs(log_dir, exist_ok=True)
-            env = Monitor(env, filename=monitor_path)
-            return env
-
-        return _init
-
-    if vec_env_cls is None:
-        vec_env_cls = DummyVecEnv
-    env = vec_env_cls([make_env()], **vec_env_kwargs)
+    env = make_vec_env(
+        env_id,
+        n_envs=n_envs,
+        monitor_dir=log_dir,
+        seed=seed,
+        wrapper_class=env_wrapper,
+        env_kwargs=env_kwargs,
+        vec_env_cls=vec_env_cls,
+        vec_env_kwargs=vec_env_kwargs,
+    )
 
     # Load saved stats for normalizing input and rewards
     # And optionally stack frames
     if stats_path is not None:
         if hyperparams["normalize"]:
-            env.training = False
-            env.norm_reward = False
+            print("Loading running average")
+            print(f"with params: {hyperparams['normalize_kwargs']}")
+            path_ = os.path.join(stats_path, "vecnormalize.pkl")
+            if os.path.exists(path_):
+                env = VecNormalize.load(path_, env)
+                # Deactivate training and reward normalization
+                env.training = False
+                env.norm_reward = False
+            else:
+                raise ValueError(f"VecNormalize stats {path_} not found")
 
         n_stack = hyperparams.get("frame_stack", 0)
         if n_stack > 0:
@@ -278,8 +287,8 @@ def linear_schedule(initial_value: Union[float, str]) -> Callable[[float], float
 
 def get_trained_models(log_folder: str) -> Dict[str, Tuple[str, str]]:
     """
-    :param log_folder: (str) Root log folder
-    :return: (Dict[str, Tuple[str, str]]) Dict representing the trained agent
+    :param log_folder: Root log folder
+    :return: Dict representing the trained agents
     """
     trained_models = {}
     for algo in os.listdir(log_folder):
@@ -302,8 +311,8 @@ def get_latest_run_id(log_path: str, env_id: str) -> int:
     :return: latest run number
     """
     max_run_id = 0
-    for path in glob.glob(log_path + f"/{env_id}_[0-9]*"):
-        file_name = path.split("/")[-1]
+    for path in glob.glob(os.path.join(log_path, env_id + "_[0-9]*")):
+        file_name = os.path.basename(path)
         ext = file_name.split("_")[-1]
         if (
             env_id == "_".join(file_name.split("_")[:-1])
@@ -315,7 +324,9 @@ def get_latest_run_id(log_path: str, env_id: str) -> int:
 
 
 def get_saved_hyperparams(
-    stats_path: str, norm_reward: bool = False, test_mode: bool = False
+    stats_path: str,
+    norm_reward: bool = False,
+    test_mode: bool = False,
 ) -> Tuple[Dict[str, Any], str]:
     """
     :param stats_path:
@@ -331,8 +342,9 @@ def get_saved_hyperparams(
         if os.path.isfile(config_file):
             # Load saved hyperparameters
             with open(os.path.join(stats_path, "config.yml"), "r") as f:
-                # pytype: disable=module-attr
-                hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)
+                hyperparams = yaml.load(
+                    f, Loader=yaml.UnsafeLoader
+                )  # pytype: disable=module-attr
             hyperparams["normalize"] = hyperparams.get("normalize", False)
         else:
             obs_rms_path = os.path.join(stats_path, "obs_rms.pkl")
