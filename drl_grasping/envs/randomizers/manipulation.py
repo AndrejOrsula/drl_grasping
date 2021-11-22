@@ -332,8 +332,8 @@ class ManipulationGazeboEnvRandomizer(
         # Insert default object if enabled and object randomization is disabled
         if self._object_enable and not self.__object_models_randomizer_enabled():
             if task._verbose:
-                print("Inserting default object into the environment...")
-            self.add_default_object(task=task, gazebo=gazebo)
+                print("Inserting default objects into the environment...")
+            self.add_defaults_object(task=task, gazebo=gazebo)
 
         # Insert invisible plane below the terrain to prevent objects from falling into the abyss and causing physics errors
         # TODO: Consider replacing invisiable plane with removal of all objects that are too low along z axis
@@ -481,34 +481,48 @@ class ManipulationGazeboEnvRandomizer(
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
-    def add_default_object(
+    def add_defaults_object(
         self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
     ):
         """
         Configure and insert default object into the simulation
         """
 
-        # Create object
-        object_model = self.__object_model_class(
-            world=task.world,
-            position=self._object_spawn_position,
-            orientation=(1.0, 0.0, 0.0, 0.0),
-            size=self._object_dimensions,
-            radius=self._object_dimensions[0],
-            length=self._object_dimensions[1],
-            mass=self._object_mass,
-            collision=self._object_collision,
-            visual=self._object_visual,
-            static=self._object_static,
-            color=self._object_color,
-        )
+        # Insert new models with random pose
+        while len(self.task.object_names) < self._object_model_count:
+            if self._object_model_count > 1:
+                position, quat_wxyz = self.get_random_object_pose(
+                    centre=self._object_spawn_position,
+                    volume=self._object_random_spawn_volume,
+                    np_random=task.np_random,
+                )
+            else:
+                position = self._object_spawn_position
+                quat_wxyz = (1.0, 0.0, 0.0, 0.0)
 
-        # Expose name of the object for task (append in case of more)
-        task.object_names.append(object_model.name())
+            # Create object
+            object_model = self.__object_model_class(
+                world=task.world,
+                position=position,
+                orientation=quat_wxyz,
+                size=self._object_dimensions,
+                radius=self._object_dimensions[0],
+                length=self._object_dimensions[1],
+                mass=self._object_mass,
+                collision=self._object_collision,
+                visual=self._object_visual,
+                static=self._object_static,
+                color=self._object_color,
+            )
 
-        # Enable contact detection
-        link = object_model.to_gazebo().get_link(link_name=object_model.link_names()[0])
-        link.enable_contact_detection(True)
+            # Expose name of the object for task (append in case of more)
+            task.object_names.append(object_model.name())
+
+            # Enable contact detection
+            link = object_model.to_gazebo().get_link(
+                link_name=object_model.link_names()[0]
+            )
+            link.enable_contact_detection(True)
 
         # Execute a paused run to process model insertion
         if not gazebo.run(paused=True):
