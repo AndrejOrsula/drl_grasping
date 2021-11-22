@@ -10,6 +10,7 @@
 - Support for `DRL_GRASPING_BROADCAST_INTERACTIVE_GUI` environment variable.
 - Support for `DRL_GRASPING_SENSORS_RENDER_ENGINE` environment variable
 - Models for `Sun` and `RandomSun`, replacing the default light contained in SDF worlds.
+- Camera can now be mounted relative to robot frame (configurable) via DetachableJoint.
 
 ### Changed
 
