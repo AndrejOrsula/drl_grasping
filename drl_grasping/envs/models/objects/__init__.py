@@ -2,6 +2,7 @@ from gym_ignition.scenario.model_wrapper import ModelWrapper
 from .primitives import Box, Cylinder, Sphere, Plane
 from .random_object import RandomObject
 from .random_primitive import RandomPrimitive
+from .rock import Rock
 
 
 def get_object_model_class(object_type: str) -> ModelWrapper:
@@ -16,6 +17,8 @@ def get_object_model_class(object_type: str) -> ModelWrapper:
         return RandomPrimitive
     elif "random_mesh" == object_type:
         return RandomObject
+    elif "rock" == object_type:
+        return Rock
 
 
 def is_object_type_randomizable(object_type: str) -> ModelWrapper:
