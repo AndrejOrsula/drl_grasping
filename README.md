@@ -3,6 +3,7 @@
 The focus of this project is to apply Deep Reinforcement Learning to acquire a robust policy that allows robots to grasp diverse objects from compact 3D observations in form of octrees.
 
 Below are some animations of employing learned policies on novel scenes for Panda and UR5 robots.
+
 <p align="center" float="middle">
   <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim_panda.webp" alt="Evaluation of a trained policy on novel scenes for Panda robot"/>
 </p>
@@ -11,6 +12,7 @@ Below are some animations of employing learned policies on novel scenes for Pand
 </p>
 
 Example of Sim2Real transfer on UR5 can be seen below (trained inside simulation, no re-training in real world).
+
 <p align="center" float="middle">
   <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim2real.webp" alt="Sim2Real evaluation of a trained policy on a real UR5 robot"/>
 </p>
@@ -139,6 +141,7 @@ source <drl_grasping dir>/install/local_setup.bash
 ```
 
 This enables:
+
 - Use of `drl_grasping` Python module
 - Execution of scripts and examples via `ros2 run drl_grasping <executable>`
 - Launching of setup scripts via `ros2 launch drl_grasping <launch_script>`
@@ -259,6 +262,7 @@ All models are automatically configured in several ways before their insertion i
 - Models can be filtered and automatically blacklisted based on several aspects, e.g too much geometry or disconnected components
 
 This repository includes few scripts that can be used to simplify interaction with the dataset and splitting into training/testing subsets. By default they include 80 training and 20 testing models.
+
 - [`dataset_download_train`](scripts/utils/dataset/dataset_download_train.bash) / [`dataset_download_test`](scripts/utils/dataset/dataset_download_test.bash) - Download models from Fuel
 - [`dataset_unset_train`](scripts/utils/dataset/dataset_unset_train.bash) / [`dataset_unset_test`](scripts/utils/dataset/dataset_unset_test.bash) - Unset current train/test dataset
 - [`dataset_set_train`](scripts/utils/dataset/dataset_set_train.bash) / [`dataset_set_test`](scripts/utils/dataset/dataset_set_test.bash) - Set dataset to use train/test subset
@@ -284,7 +288,6 @@ There are several databases with free PBR textures that you can use. Alternative
 ### Supported Robots
 
 Only [Franka Emika Panda](https://github.com/AndrejOrsula/panda_ign), [UR5 with RG2 gripper](https://github.com/AndrejOrsula/ur5_rg2_ign) and [Kinova Gen2 (j2s7s300)](https://github.com/AndrejOrsula/kinova_j2s7s300_ign) are supported. This project currently lacks a more generic solution that would allow to easily utilize arbitrary models, e.g. full-on [MoveIt 2](https://github.com/ros-planning/moveit2) with [ros2_control](https://github.com/ros-controls/ros2_control) implementation. Adding new models is not complicated though, just time-consuming.
-
 
 ## Reinforcement Learning
 
@@ -322,6 +325,6 @@ Hyperparameters for training of RL agents can be found in [hyperparams](hyperpar
 └── drl_grasping.repos  # List of other dependencies created for `drl_grasping`
 ```
 
----
+______________________________________________________________________
 
 In case you have any problems or questions, feel free to open an [Issue](https://github.com/AndrejOrsula/drl_grasping/issues/new) or a [Discussion](https://github.com/AndrejOrsula/drl_grasping/discussions/new).

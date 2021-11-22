@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## [Unreleased] - yyyy-mm-dd
+## \[Unreleased\] - yyyy-mm-dd
 
 ### Added
 
@@ -32,7 +32,7 @@
 
 - Fix grasp checking for grippers with more than 2 fingers.
 
-## [[1.1.0] - 2021-10-13](https://github.com/AndrejOrsula/drl_grasping/releases/tag/1.1.0)
+## [\[1.1.0\] - 2021-10-13](https://github.com/AndrejOrsula/drl_grasping/releases/tag/1.1.0)
 
 ### Added
 
@@ -52,8 +52,7 @@
 
 - Compatibility with Stable-Baselines3 v1.2.0
 
-
-## [[1.0.0] - 2021-06-08](https://github.com/AndrejOrsula/drl_grasping/releases/tag/1.0.0)
+## [\[1.0.0\] - 2021-06-08](https://github.com/AndrejOrsula/drl_grasping/releases/tag/1.0.0)
 
 ### Added
 
