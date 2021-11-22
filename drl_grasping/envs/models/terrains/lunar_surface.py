@@ -41,7 +41,7 @@ class LunarSurface(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
         super().__init__(model=model)
 
     @classmethod
-    def get_model_file(self, fuel=False) -> str:
+    def get_model_file(self, fuel: bool = False) -> str:
         if fuel:
             # TODO: Add "lunar_surface" to Fuel
             raise NotImplementedError

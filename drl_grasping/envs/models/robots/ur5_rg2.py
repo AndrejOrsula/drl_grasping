@@ -147,7 +147,7 @@ class UR5RG2(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
             raise RuntimeError("Failed to set initial positions of gripper's joints")
 
     @classmethod
-    def get_model_file(cls, fuel=False) -> str:
+    def get_model_file(cls, fuel: bool = False) -> str:
 
         if fuel:
             return scenario_gazebo.get_model_file_from_fuel(

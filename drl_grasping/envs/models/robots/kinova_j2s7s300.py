@@ -150,7 +150,7 @@ class KinovaJ2s7s300(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
             raise RuntimeError("Failed to set initial positions of gripper's joints")
 
     @classmethod
-    def get_model_file(cls, fuel=False) -> str:
+    def get_model_file(cls, fuel: bool = False) -> str:
 
         sdf_model_name = "kinova_" + cls.ROBOT_MODEL_NAME
 

@@ -143,7 +143,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
             raise RuntimeError("Failed to set initial positions of gripper's joints")
 
     @classmethod
-    def get_model_file(cls, fuel=False) -> str:
+    def get_model_file(cls, fuel: bool = False) -> str:
 
         if fuel:
             # TODO: Add "lunalab_summit_xl_gen" to Fuel
