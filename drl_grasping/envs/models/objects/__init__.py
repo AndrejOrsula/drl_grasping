@@ -21,8 +21,8 @@ def get_object_model_class(object_type: str) -> ModelWrapper:
         return Rock
 
 
-def is_object_type_randomizable(object_type: str) -> ModelWrapper:
+def is_object_type_randomizable(object_type: str) -> bool:
 
-    if object_type in ("random_primitive", "random_mesh"):
+    if "random_primitive" == object_type or "random_mesh" == object_type:
         return True
     return False

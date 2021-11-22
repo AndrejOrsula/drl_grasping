@@ -14,7 +14,7 @@ def get_terrain_model_class(terrain_type: str) -> ModelWrapper:
         return LunarSurface
 
 
-def is_terrain_type_randomizable(terrain_type: str) -> ModelWrapper:
+def is_terrain_type_randomizable(terrain_type: str) -> bool:
 
     if "random_flat" == terrain_type:
         return True
