@@ -75,6 +75,15 @@ class ManipulationGazeboEnvRandomizer(
         terrain_spawn_quat_xyzw: Tuple[float, float, float, float] = (0, 0, 0, 1),
         terrain_size: Tuple[float, float] = (1.0, 1.0),
         terrain_model_rollouts_num: int = 1,
+        # Light
+        light_enable: bool = True,
+        light_type: str = "sun",
+        light_direction: Tuple[float, float, float] = (0.5, -0.25, -0.75),
+        light_color: Tuple[float, float, float, float] = (1.0, 1.0, 1.0, 1.0),
+        light_distance: float = 1000.0,
+        light_visual: bool = True,
+        light_radius: float = 25.0,
+        light_model_rollouts_num: int = 1,
         # Objects
         object_enable: bool = True,
         object_type: str = "box",
@@ -151,6 +160,15 @@ class ManipulationGazeboEnvRandomizer(
         self._terrain_size = terrain_size
         self._terrain_model_rollouts_num = terrain_model_rollouts_num
 
+        # Light
+        self._light_enable = light_enable
+        self._light_direction = light_direction
+        self._light_color = light_color
+        self._light_distance = light_distance
+        self._light_visual = light_visual
+        self._light_radius = light_radius
+        self._light_model_rollouts_num = light_model_rollouts_num
+
         # Objects
         self._object_enable = object_enable
         self._object_static = object_static
@@ -179,6 +197,10 @@ class ManipulationGazeboEnvRandomizer(
         self.__is_terrain_type_randomizable = models.is_terrain_type_randomizable(
             terrain_type
         )
+        self.__light_model_class = models.get_light_model_class(light_type)
+        self.__is_light_type_randomizable = models.is_light_type_randomizable(
+            light_type
+        )
         self.__object_model_class = models.get_object_model_class(object_type)
         self.__is_object_type_randomizable = models.is_object_type_randomizable(
             object_type
@@ -188,6 +210,7 @@ class ManipulationGazeboEnvRandomizer(
         # Rollout counters
         self.__camera_pose_rollout_counter = camera_random_pose_rollouts_num
         self.__terrain_model_rollout_counter = terrain_model_rollouts_num
+        self.__light_model_rollout_counter = light_model_rollouts_num
         self.__object_models_rollout_counter = object_models_rollouts_num
 
         # Flag that determines whether environment has already been initialised
@@ -328,6 +351,12 @@ class ManipulationGazeboEnvRandomizer(
             if task._verbose:
                 print("Inserting default terrain into the environment...")
             self.add_default_terrain(task=task, gazebo=gazebo)
+
+        # Insert default light if enabled and light randomization is disabled
+        if self._light_enable and not self.__light_model_randomizer_enabled():
+            if task._verbose:
+                print("Inserting default light into the environment...")
+            self.add_default_light(task=task, gazebo=gazebo)
 
         # Insert default object if enabled and object randomization is disabled
         if self._object_enable and not self.__object_models_randomizer_enabled():
@@ -481,6 +510,27 @@ class ManipulationGazeboEnvRandomizer(
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
+    def add_default_light(self, task: SupportedTasks, gazebo: scenario.GazeboSimulator):
+        """
+        Configure and insert default light into the simulation
+        """
+
+        # Create light
+        self.light = self.__light_model_class(
+            world=task.world,
+            name="sun",
+            direction=self._light_direction,
+            color=self._light_color,
+            distance=self._light_distance,
+            visual=self._light_visual,
+            radius=self._light_radius,
+            np_random=task.np_random,
+        )
+
+        # Execute a paused run to process model insertion
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
+
     def add_defaults_object(
         self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
     ):
@@ -563,6 +613,10 @@ class ManipulationGazeboEnvRandomizer(
         # Randomize terrain plane if needed
         if self._terrain_enable and self._terrain_model_expired():
             self.randomize_terrain(task=task)
+
+        # Randomize light plane if needed
+        if self._light_enable and self._light_model_expired():
+            self.randomize_light(task=task)
 
         # Randomize camera if needed
         if self._camera_enable and self._camera_pose_expired():
@@ -737,6 +791,25 @@ class ManipulationGazeboEnvRandomizer(
         # Enable contact detection
         link = self.terrain.to_gazebo().get_link(link_name=self.terrain.link_names()[0])
         link.enable_contact_detection(True)
+
+    def randomize_light(self, task: SupportedTasks):
+
+        # Remove existing light
+        if hasattr(self, "light"):
+            if not task.world.to_gazebo().remove_model(self.light.name()):
+                raise RuntimeError(f"Failed to remove {self.light.name()}")
+
+        # Create light
+        self.light = self.__light_model_class(
+            world=task.world,
+            name="sun",
+            direction=self._light_direction,
+            color=self._light_color,
+            distance=self._light_distance,
+            visual=self._light_visual,
+            radius=self._light_radius,
+            np_random=task.np_random,
+        )
 
     def reset_default_object_pose(self, task: SupportedTasks):
 
@@ -986,6 +1059,38 @@ class ManipulationGazeboEnvRandomizer(
 
         if self.__terrain_model_rollout_counter >= self._terrain_model_rollouts_num:
             self.__terrain_model_rollout_counter = 0
+            return True
+
+        return False
+
+    def __light_model_randomizer_enabled(self) -> bool:
+        """
+        Checks if light model randomizer is enabled.
+
+        Return:
+            True if enabled, false otherwise
+        """
+
+        if self._light_model_rollouts_num == 0:
+            return False
+        else:
+            return self.__is_light_type_randomizable
+
+    def _light_model_expired(self) -> bool:
+        """
+        Checks if light models need to be randomized.
+
+        Return:
+            True if expired, false otherwise
+        """
+
+        if not self.__light_model_randomizer_enabled():
+            return False
+
+        self.__light_model_rollout_counter += 1
+
+        if self.__light_model_rollout_counter >= self._light_model_rollouts_num:
+            self.__light_model_rollout_counter = 0
             return True
 
         return False
