@@ -155,11 +155,12 @@ class OctreeCreator(Node):
 
         # Get transformation from camera to robot and use it to transform point
         # cloud into robot's base coordinate frame
-        transform = self.lookup_transform_sync(
-            target_frame=reference_frame_id, source_frame=camera_frame_id
-        )
-        transform_mat = conversions.transform_to_matrix(transform=transform)
-        open3d_point_cloud = open3d_point_cloud.transform(transform_mat)
+        if camera_frame_id != reference_frame_id:
+            transform = self.lookup_transform_sync(
+                target_frame=reference_frame_id, source_frame=camera_frame_id
+            )
+            transform_mat = conversions.transform_to_matrix(transform=transform)
+            open3d_point_cloud = open3d_point_cloud.transform(transform_mat)
 
         # Crop point cloud to include only the workspace
         open3d_point_cloud = open3d_point_cloud.crop(

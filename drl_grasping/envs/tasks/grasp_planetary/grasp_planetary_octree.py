@@ -43,13 +43,10 @@ class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
             use_sim_time=self._use_sim_time,
         )
 
-        # Substitute certain special robot frames for exact name
-        if "base_link" == octree_reference_frame_id:
-            octree_reference_frame_id = self.robot_base_link_name
-        elif "arm_base_link" == octree_reference_frame_id:
-            octree_reference_frame_id = self.arm_base_link_name
-        elif "end_effector" == octree_reference_frame_id:
-            octree_reference_frame_id = self.ee_link_name
+        # Get exact name substitution of the frame for octree
+        octree_reference_frame_id = self.substitute_special_frames(
+            octree_reference_frame_id
+        )
 
         octree_min_bound: Tuple[float, float, float] = (
             self.workspace_centre[0] - octree_dimension / 2,

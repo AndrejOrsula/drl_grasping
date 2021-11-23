@@ -27,7 +27,7 @@ class Camera(model_wrapper.ModelWrapper):
         ros2_bridge_color: bool = False,
         ros2_bridge_depth: bool = False,
         ros2_bridge_points: bool = False,
-        visibility_mask: int = 2,
+        visibility_mask: int = 0,
         visual: bool = False,
     ):
 

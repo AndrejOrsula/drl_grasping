@@ -50,6 +50,7 @@ REACH_AGENT_RATE: float = 2.5
 REACH_KWARGS: Dict = {
     "agent_rate": REACH_AGENT_RATE,
     "robot_model": DRL_GRASPING_ROBOT_MODEL,
+    "workspace_frame_id": "world",
     "workspace_centre": (0.45, 0, 0.25),
     "workspace_volume": (0.5, 0.5, 0.5),
     "restrict_position_goal_to_workspace": True,
@@ -62,7 +63,7 @@ REACH_KWARGS: Dict = {
     "verbose": DRL_GRASPING_VERBOSE,
 }
 REACH_KWARGS_OCTREE: Dict = {
-    "octree_reference_frame_id": "base_link",
+    "octree_reference_frame_id": "world",
     "octree_dimension": 0.5,
     "octree_depth": 4,
     "octree_full_depth": 2,
@@ -101,14 +102,10 @@ REACH_KWARGS_RANDOMIZER_CAMERA: Dict = {
     "camera_vertical_fov": pi / 3.0,
     "camera_noise_mean": 0.0,
     "camera_noise_stddev": 0.001,
+    "camera_relative_to": "world",
     "camera_spawn_position": (1.1, -0.75, 0.45),
-    "camera_spawn_quat_xyzw": (
-        -0.0402991,
-        -0.0166924,
-        0.9230002,
-        0.3823192,
-    ),
-    "camera_pose_rollouts_num": 1,
+    "camera_spawn_quat_xyzw": (-0.0402991, -0.0166924, 0.9230002, 0.3823192),
+    "camera_random_pose_rollouts_num": 1,
     "camera_random_pose_distance": 1.0,
     "camera_random_pose_height_range": (0.1, 0.7),
 }
@@ -238,6 +235,7 @@ GRASP_AGENT_RATE: float = 2.5
 GRASP_KWARGS: Dict = {
     "agent_rate": GRASP_AGENT_RATE,
     "robot_model": DRL_GRASPING_ROBOT_MODEL,
+    "workspace_frame_id": "world",
     "workspace_centre": (0.5, 0.0, 0.11),
     "workspace_volume": (0.24, 0.24, 0.24),
     "restrict_position_goal_to_workspace": True,
@@ -275,7 +273,7 @@ GRASP_KWARGS_CURRICULUM: Dict = {
     "max_episode_length": GRASP_MAX_EPISODE_STEPS,
 }
 GRASP_KWARGS_OCTREE: Dict = {
-    "octree_reference_frame_id": "base_link",
+    "octree_reference_frame_id": "world",
     "octree_dimension": 0.24,
     "octree_depth": 4,
     "octree_full_depth": 2,
@@ -314,14 +312,10 @@ GRASP_KWARGS_RANDOMIZER_CAMERA: Dict = {
     "camera_vertical_fov": pi / 3.0,
     "camera_noise_mean": 0.0,
     "camera_noise_stddev": 0.001,
+    "camera_relative_to": "world",
     "camera_spawn_position": (0.95, -0.55, 0.25),
-    "camera_spawn_quat_xyzw": (
-        -0.0402991,
-        -0.0166924,
-        0.9230002,
-        0.3823192,
-    ),
-    "camera_pose_rollouts_num": 1,
+    "camera_spawn_quat_xyzw": (-0.0402991, -0.0166924, 0.9230002, 0.3823192),
+    "camera_random_pose_rollouts_num": 1,
     "camera_random_pose_distance": 1.0,
     "camera_random_pose_height_range": (0.1, 0.7),
 }
@@ -362,6 +356,7 @@ register(
         "env": "Grasp-Octree-v0",
         **GRASP_KWARGS_SIM,
         **GRASP_KWARGS_RANDOMIZER,
+        **GRASP_KWARGS_RANDOMIZER_CAMERA,
         "terrain_type": "flat",
         "terrain_model_rollouts_num": 0,
         "camera_type": "depth_camera",
@@ -376,6 +371,7 @@ register(
         "env": "Grasp-OctreeWithColor-v0",
         **GRASP_KWARGS_SIM,
         **GRASP_KWARGS_RANDOMIZER,
+        **GRASP_KWARGS_RANDOMIZER_CAMERA,
         "terrain_type": "random_flat",
         "terrain_model_rollouts_num": 1,
         "camera_type": "rgbd_camera",
@@ -392,6 +388,7 @@ GRASP_PLANETARY_AGENT_RATE: float = 2.5
 GRASP_PLANETARY_KWARGS: Dict = {
     "agent_rate": GRASP_PLANETARY_AGENT_RATE,
     "robot_model": DRL_GRASPING_ROBOT_MODEL_MOBILE,
+    "workspace_frame_id": "base_link",
     "workspace_centre": (0.0, 0.0, 0.0),
     "workspace_volume": (1.0, 1.0, 1.0),
     "restrict_position_goal_to_workspace": False,
@@ -495,7 +492,7 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA: Dict = {
     # "camera_relative_to": "end_effector",
     # "camera_spawn_position": (0, 0.07, -0.05),
     # "camera_spawn_quat_xyzw": (0, -0.707107, 0, 0.707107),
-    "camera_pose_rollouts_num": 1,
+    "camera_random_pose_rollouts_num": 1,
     # "camera_random_pose_distance": 1.0,
     # "camera_random_pose_height_range": (0.1, 0.7),
 }

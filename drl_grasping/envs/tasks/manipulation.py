@@ -20,6 +20,7 @@ class Manipulation(task.Task, abc.ABC):
         self,
         agent_rate: float,
         robot_model: str,
+        workspace_frame_id: str,
         workspace_centre: Tuple[float, float, float],
         workspace_volume: Tuple[float, float, float],
         restrict_position_goal_to_workspace: bool,
@@ -74,6 +75,9 @@ class Manipulation(task.Task, abc.ABC):
             self.robot_prefix
         )
 
+        # Get exact name substitution of the frame for workspace
+        self.workspace_frame_id = self.substitute_special_frames(workspace_frame_id)
+
         # Specify initial positions (default configuration is used here)
         self.initial_arm_joint_positions = (
             self.robot_model_class.DEFAULT_ARM_JOINT_POSITIONS
@@ -95,7 +99,7 @@ class Manipulation(task.Task, abc.ABC):
             use_sim_time=self._use_sim_time,
         )
 
-        # Names of important models
+        # Names of important models (in addition to robot model)
         self.terrain_name = "terrain"
         self.object_names = []
 
@@ -259,3 +263,19 @@ class Manipulation(task.Task, abc.ABC):
         robot = self.world.get_model(self.robot_name)
         quat_wxyz = robot.get_link(self.robot_ee_link_name).orientation()
         return quat_to_xyzw(quat_wxyz)
+
+    def substitute_special_frames(self, frame_id: str) -> str:
+
+        if "world" == frame_id:
+            try:
+                return self.world.to_gazebo().name()
+            except:
+                return "drl_grasping_world"
+        elif "base_link" == frame_id:
+            return self.robot_base_link_name
+        elif "arm_base_link" == frame_id:
+            return self.arm_base_link_name
+        elif "end_effector" == frame_id:
+            return self.ee_link_name
+        else:
+            return frame_id

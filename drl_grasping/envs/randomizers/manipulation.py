@@ -66,7 +66,7 @@ class ManipulationGazeboEnvRandomizer(
             0,
             0.70710678118,
         ),
-        camera_random_pose_rollouts_num: int = 0,
+        camera_random_pose_rollouts_num: int = 1,
         camera_random_pose_distance: float = 1.0,
         camera_random_pose_height_range: Tuple[float, float] = (0.1, 0.7),
         # Terrain
@@ -344,9 +344,7 @@ class ManipulationGazeboEnvRandomizer(
         if self._camera_enable:
             if task._verbose:
                 print("Inserting camera into the environment...")
-            self.add_camera(
-                task=task, gazebo=gazebo, attach_to_robot=self.robot.is_mobile
-            )
+            self.add_camera(task=task, gazebo=gazebo)
 
         # Insert default terrain if enabled and terrain randomization is disabled
         if self._terrain_enable and not self.__terrain_model_randomizer_enabled():
@@ -412,31 +410,26 @@ class ManipulationGazeboEnvRandomizer(
         self,
         task: SupportedTasks,
         gazebo: scenario.GazeboSimulator,
-        attach_to_robot: bool = True,
     ):
         """
         Configure and insert camera into the simulation. Camera is places with respect to the robot
         """
 
         # Determine what is the relative link
-        if "base_link" == self._camera_relative_to:
-            robot_link = self.robot.robot_base_link_name
-        elif "arm_base_link" == self._camera_relative_to:
-            robot_link = self.robot.arm_base_link_name
-        elif "end_effector" == self._camera_relative_to:
-            robot_link = self.robot.ee_link_name
-        else:
-            robot_link = self._camera_relative_to
+        # Get exact name substitution of the frame for octree
+        camera_relative_to_frame_id = task.substitute_special_frames(
+            self._camera_relative_to
+        )
 
-        if "world" == self._camera_relative_to:
+        if task.world.to_gazebo().name() == camera_relative_to_frame_id:
             camera_position = self._camera_spawn_position
-            camera_quat_xyzw = self._camera_spawn_quat_xyzw
+            camera_quat_wxyz = quat_to_wxyz(self._camera_spawn_quat_xyzw)
         else:
             # Transform the pose of camera to be with respect to robot - but represented in world reference frame for insertion into the world
             robot_base_link_position, robot_base_link_quat_xyzw = get_model_pose(
                 task.world,
                 model=self.robot,
-                link=robot_link,
+                link=camera_relative_to_frame_id,
                 xyzw=True,
             )
             camera_position = (
@@ -445,7 +438,7 @@ class ManipulationGazeboEnvRandomizer(
                 )
                 + robot_base_link_position
             )
-            camera_quat_xyzw = quat_to_wxyz(
+            camera_quat_wxyz = quat_to_wxyz(
                 quat_mul(
                     self._camera_spawn_quat_xyzw, robot_base_link_quat_xyzw, xyzw=True
                 )
@@ -455,7 +448,7 @@ class ManipulationGazeboEnvRandomizer(
         self.camera = models.Camera(
             world=task.world,
             position=camera_position,
-            orientation=camera_quat_xyzw,
+            orientation=camera_quat_wxyz,
             camera_type=self._camera_type,
             width=self._camera_width,
             height=self._camera_height,
@@ -472,30 +465,32 @@ class ManipulationGazeboEnvRandomizer(
         )
 
         # Attach to robot
-        if attach_to_robot and "world" != self._camera_relative_to:
+        if (
+            self.robot.is_mobile
+            and task.world.to_gazebo().name() != camera_relative_to_frame_id
+        ):
             detach_camera_topic = f"{self.robot.name()}/detach_{self.camera.name()}"
             self.robot.to_gazebo().insert_model_plugin(
                 "libignition-gazebo-detachable-joint-system.so",
                 "ignition::gazebo::systems::DetachableJoint",
                 "<sdf version='1.9'>"
-                f"<parent_link>{robot_link}</parent_link>"
+                f"<parent_link>{camera_relative_to_frame_id}</parent_link>"
                 f"<child_model>{self.camera.name()}</child_model>"
                 f"<child_link>{self.camera.link_name}</child_link>"
                 f"<topic>/{detach_camera_topic}</topic>"
                 "</sdf>",
             )
+            self.__is_camera_attached = True
+        else:
+            self.__is_camera_attached = False
 
         # Broadcast tf
-        if "world" == self._camera_relative_to:
-            parent_frame_id = "drl_grasping_world"
-        else:
-            parent_frame_id = robot_link
         task.tf2_broadcaster.broadcast_tf(
+            parent_frame_id=camera_relative_to_frame_id,
+            child_frame_id=self.camera.frame_id,
             translation=self._camera_spawn_position,
             rotation=self._camera_spawn_quat_xyzw,
             xyzw=True,
-            child_frame_id=self.camera.frame_id,
-            parent_frame_id=parent_frame_id,
         )
 
         # Execute a paused run to process model insertion
@@ -641,7 +636,12 @@ class ManipulationGazeboEnvRandomizer(
             self.randomize_light(task=task)
 
         # Randomize camera if needed
-        if self._camera_enable and self._camera_pose_expired():
+        # TODO: Implement camera pose randomization for cameras attached to robot
+        if (
+            self._camera_enable
+            and not self.__is_camera_attached
+            and self._camera_pose_expired()
+        ):
             self.randomize_camera_pose(task=task)
 
         # Randomize objects if needed
@@ -719,14 +719,10 @@ class ManipulationGazeboEnvRandomizer(
 
     def randomize_camera_pose(self, task: SupportedTasks):
 
-        if self.robot.is_mobile:
-            # TODO: Implement camera pose randomization for mobile robots (currently not working due to detachable joint)
-            raise NotImplementedError
-
         # Get random camera pose, centred at object position (or centre of object spawn box)
         position, quat_xyzw = self.get_random_camera_pose(
             task,
-            centre=self.object_spawn_position,
+            centre=self._object_spawn_position,
             distance=self._camera_random_pose_distance,
             height=self._camera_random_pose_height_range,
         )
@@ -737,10 +733,11 @@ class ManipulationGazeboEnvRandomizer(
 
         # Broadcast tf
         task.tf2_broadcaster.broadcast_tf(
+            parent_frame_id=task.substitute_special_frames(self._camera_relative_to),
+            child_frame_id=self.camera.frame_id,
             translation=position,
             rotation=quat_xyzw,
             xyzw=True,
-            child_frame_id=self.camera.frame_id,
         )
 
     def get_random_camera_pose(
