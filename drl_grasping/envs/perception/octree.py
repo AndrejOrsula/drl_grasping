@@ -1,6 +1,6 @@
 from drl_grasping.envs.utils import conversions
 from geometry_msgs.msg import Transform
-from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from sensor_msgs.msg import PointCloud2
@@ -17,7 +17,7 @@ import torch
 class OctreeCreator(Node):
     def __init__(
         self,
-        robot_frame_id: str = "panda_link0",
+        reference_frame_id: str,
         min_bound: Tuple[float, float, float] = (-1.0, -1.0, -1.0),
         max_bound: Tuple[float, float, float] = (1.0, 1.0, 1.0),
         normals_radius: float = 0.05,
@@ -61,7 +61,7 @@ class OctreeCreator(Node):
         )
 
         # Parameters
-        self._robot_frame_id = robot_frame_id
+        self._reference_frame_id = reference_frame_id
         self._min_bound = min_bound
         self._max_bound = max_bound
         self._normals_radius = normals_radius
@@ -91,9 +91,8 @@ class OctreeCreator(Node):
         )
 
         # Spin executor in another thread
-        self._executor = MultiThreadedExecutor(2)
+        self._executor = SingleThreadedExecutor()
         self._executor.add_node(self)
-        self._executor.add_node(self.__tf2_listener.node)
         self._executor_thread = Thread(target=self._executor.spin, args=(), daemon=True)
         self._executor_thread.start()
 
@@ -108,7 +107,7 @@ class OctreeCreator(Node):
         open3d_point_cloud = self.preprocess_point_cloud(
             open3d_point_cloud=open3d_point_cloud,
             camera_frame_id=ros_point_cloud2.header.frame_id,
-            robot_frame_id=self._robot_frame_id,
+            reference_frame_id=self._reference_frame_id,
             min_bound=self._min_bound,
             max_bound=self._max_bound,
             normals_radius=self._normals_radius,
@@ -142,7 +141,7 @@ class OctreeCreator(Node):
         self,
         open3d_point_cloud: open3d.geometry.PointCloud,
         camera_frame_id: str,
-        robot_frame_id: str,
+        reference_frame_id: str,
         min_bound: List[float],
         max_bound: List[float],
         normals_radius: float,
@@ -157,7 +156,7 @@ class OctreeCreator(Node):
         # Get transformation from camera to robot and use it to transform point
         # cloud into robot's base coordinate frame
         transform = self.lookup_transform_sync(
-            target_frame=robot_frame_id, source_frame=camera_frame_id
+            target_frame=reference_frame_id, source_frame=camera_frame_id
         )
         transform_mat = conversions.transform_to_matrix(transform=transform)
         open3d_point_cloud = open3d_point_cloud.transform(transform_mat)

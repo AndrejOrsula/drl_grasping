@@ -17,6 +17,7 @@ class ReachOctree(Reach, abc.ABC):
 
     def __init__(
         self,
+        octree_reference_frame_id: str,
         octree_dimension: float,
         camera_type: str,
         octree_depth: int,
@@ -45,6 +46,14 @@ class ReachOctree(Reach, abc.ABC):
             use_sim_time=self._use_sim_time,
         )
 
+        # Substitute certain special robot frames for exact name
+        if "base_link" == octree_reference_frame_id:
+            octree_reference_frame_id = self.robot_base_link_name
+        elif "arm_base_link" == octree_reference_frame_id:
+            octree_reference_frame_id = self.arm_base_link_name
+        elif "end_effector" == octree_reference_frame_id:
+            octree_reference_frame_id = self.ee_link_name
+
         octree_min_bound: Tuple[float, float, float] = (
             self.workspace_centre[0] - octree_dimension / 2,
             self.workspace_centre[1] - octree_dimension / 2,
@@ -64,7 +73,7 @@ class ReachOctree(Reach, abc.ABC):
             use_sim_time=self._use_sim_time,
             debug_draw=False,
             debug_write_octree=False,
-            robot_frame_id=self.robot_arm_base_link_name,
+            reference_frame_id=octree_reference_frame_id,
             node_name=f"drl_grasping_octree_creator_{self.id}",
         )
 
