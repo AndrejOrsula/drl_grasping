@@ -1,7 +1,8 @@
 from gym_ignition.scenario import model_wrapper
 from gym_ignition.utils.scenario import get_unique_model_name
+from numpy.random import RandomState
 from scenario import core as scenario
-from typing import Tuple
+from typing import Tuple, Optional
 import numpy as np
 
 
@@ -10,10 +11,19 @@ class RandomSun(model_wrapper.ModelWrapper):
         self,
         world: scenario.World,
         name: str = "sun",
-        distance: float = 1000.0,
+        direction_minmax_elevation: Tuple[float, float] = (-0.15, -0.65),
+        distance: float = 800.0,
         visual: bool = True,
-        radius: float = 25.0,
-        np_random=None,
+        radius: float = 20.0,
+        color_minmax_r: Tuple[float, float] = (0.95, 1.0),
+        color_minmax_g: Tuple[float, float] = (0.95, 1.0),
+        color_minmax_b: Tuple[float, float] = (0.95, 1.0),
+        specular: float = 1.0,
+        attenuation_minmax_range: Tuple[float, float] = (750.0, 15000.0),
+        attenuation_minmax_constant: Tuple[float, float] = (0.5, 1.0),
+        attenuation_minmax_linear: Tuple[float, float] = (0.001, 0.1),
+        attenuation_minmax_quadratic: Tuple[float, float] = (0.0001, 0.01),
+        np_random: Optional[RandomState] = None,
         **kwargs,
     ):
 
@@ -23,12 +33,19 @@ class RandomSun(model_wrapper.ModelWrapper):
         # Get a unique model name
         model_name = get_unique_model_name(world, name)
 
-        # Get random direction
-        direction = list(np_random.uniform(-1.0, 1.0, (2,)))
-        direction.append(np_random.uniform(-0.95, -0.05))
+        # Get random yaw direction
+        direction = np_random.uniform(-1.0, 1.0, (2,))
+        # Normalize yaw direction
+        direction = direction / np.linalg.norm(direction)
 
-        # Normalize direction
-        direction = np.array(direction)
+        # Get random elevation
+        direction = np.append(
+            direction,
+            np_random.uniform(
+                direction_minmax_elevation[0], direction_minmax_elevation[1]
+            ),
+        )
+        # Normalize again
         direction = direction / np.linalg.norm(direction)
 
         # Initial pose
@@ -47,6 +64,14 @@ class RandomSun(model_wrapper.ModelWrapper):
             direction=direction,
             visual=visual,
             radius=radius,
+            color_minmax_r=color_minmax_r,
+            color_minmax_g=color_minmax_g,
+            color_minmax_b=color_minmax_b,
+            attenuation_minmax_range=attenuation_minmax_range,
+            attenuation_minmax_constant=attenuation_minmax_constant,
+            attenuation_minmax_linear=attenuation_minmax_linear,
+            attenuation_minmax_quadratic=attenuation_minmax_quadratic,
+            specular=specular,
             np_random=np_random,
         )
 
@@ -70,12 +95,33 @@ class RandomSun(model_wrapper.ModelWrapper):
         direction: Tuple[float, float, float],
         visual: bool,
         radius: float,
-        np_random,
+        color_minmax_r: Tuple[float, float],
+        color_minmax_g: Tuple[float, float],
+        color_minmax_b: Tuple[float, float],
+        attenuation_minmax_range: Tuple[float, float],
+        attenuation_minmax_constant: Tuple[float, float],
+        attenuation_minmax_linear: Tuple[float, float],
+        attenuation_minmax_quadratic: Tuple[float, float],
+        specular: float,
+        np_random: RandomState,
     ) -> str:
 
-        # Get random direction
-        color = list(np_random.uniform(0.95, 1.0, (3,)))
-        color.append(1)
+        # Sample random values for parameters
+        color_r = np_random.uniform(color_minmax_r[0], color_minmax_r[1])
+        color_g = np_random.uniform(color_minmax_g[0], color_minmax_g[1])
+        color_b = np_random.uniform(color_minmax_b[0], color_minmax_b[1])
+        attenuation_range = np_random.uniform(
+            attenuation_minmax_range[0], attenuation_minmax_range[1]
+        )
+        attenuation_constant = np_random.uniform(
+            attenuation_minmax_constant[0], attenuation_minmax_constant[1]
+        )
+        attenuation_linear = np_random.uniform(
+            attenuation_minmax_linear[0], attenuation_minmax_linear[1]
+        )
+        attenuation_quadratic = np_random.uniform(
+            attenuation_minmax_quadratic[0], attenuation_minmax_quadratic[1]
+        )
 
         return f'''<sdf version="1.9">
                 <model name="{model_name}">
@@ -84,13 +130,13 @@ class RandomSun(model_wrapper.ModelWrapper):
                         <light type="directional" name="{model_name}_light">
                             <direction>{direction[0]} {direction[1]} {direction[2]}</direction>
                             <attenuation>
-                                <range>1000</range>
-                                <constant>0.9</constant>
-                                <linear>0.01</linear>
-                                <quadratic>0.001</quadratic>
+                                <range>{attenuation_range}</range>
+                                <constant>{attenuation_constant}</constant>
+                                <linear>{attenuation_linear}</linear>
+                                <quadratic>{attenuation_quadratic}</quadratic>
                             </attenuation>
-                            <diffuse>{color[0]} {color[1]} {color[2]} {color[3]}</diffuse>
-                            <specular>{color[0]} {color[1]} {color[2]} {color[3]}</specular>
+                            <diffuse>{color_r} {color_g} {color_b} 1</diffuse>
+                            <specular>{specular*color_r} {specular*color_g} {specular*color_b} 1</specular>
                             <cast_shadows>true</cast_shadows>
                         </light>
                         {
@@ -102,7 +148,7 @@ class RandomSun(model_wrapper.ModelWrapper):
                                 </sphere>
                             </geometry>
                             <material>
-                                <emissive>{color[0]} {color[1]} {color[2]} {color[3]}</emissive>
+                                <emissive>{color_r} {color_g} {color_b} 1</emissive>
                             </material>
                             <cast_shadows>false</cast_shadows>
                         </visual>

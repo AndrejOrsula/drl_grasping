@@ -2,8 +2,9 @@ from . import Box, Cylinder, Sphere
 from gym_ignition.scenario import model_wrapper
 from gym_ignition.utils import misc
 from gym_ignition.utils.scenario import get_unique_model_name
+from numpy.random import RandomState
 from scenario import core as scenario
-from typing import List, Union
+from typing import List, Optional, Union
 import numpy as np
 
 
@@ -19,7 +20,7 @@ class RandomPrimitive(model_wrapper.ModelWrapper):
         collision: bool = True,
         visual: bool = True,
         gui_only: bool = False,
-        np_random=None,
+        np_random: Optional[RandomState] = None,
         **kwargs,
     ):
 
@@ -65,7 +66,7 @@ class RandomPrimitive(model_wrapper.ModelWrapper):
         collision: bool,
         visual: bool,
         gui_only: bool,
-        np_random,
+        np_random: RandomState,
     ) -> str:
 
         if use_specific_primitive is not None:

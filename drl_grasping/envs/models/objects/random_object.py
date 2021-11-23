@@ -3,8 +3,9 @@ from drl_grasping.envs.utils.model_collection_randomizer import (
 )
 from gym_ignition.scenario import model_wrapper
 from gym_ignition.utils.scenario import get_unique_model_name
+from numpy.random import RandomState
 from scenario import core as scenario
-from typing import List
+from typing import List, Optional
 
 
 class RandomObject(model_wrapper.ModelWrapper):
@@ -21,7 +22,7 @@ class RandomObject(model_wrapper.ModelWrapper):
         server_version: str = "1.0",
         unique_cache: bool = False,
         reset_collection: bool = False,
-        np_random=None,
+        np_random: Optional[RandomState] = None,
         **kwargs,
     ):
 

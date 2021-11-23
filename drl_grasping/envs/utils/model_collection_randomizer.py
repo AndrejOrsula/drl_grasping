@@ -2,10 +2,11 @@ from gym_ignition.utils import logger
 from pcg_gazebo.parsers import parse_sdf
 from pcg_gazebo.parsers.sdf import create_sdf_element
 from scenario import gazebo as scenario_gazebo
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import glob
 import numpy as np
 import os
+from numpy.random import RandomState
 import trimesh
 
 # Note: only models with mesh geometry are supported
@@ -31,7 +32,7 @@ class ModelCollectionRandomizer:
         unique_cache=False,
         reset_collection=False,
         enable_blacklisting=True,
-        np_random=None,
+        np_random: Optional[RandomState] = None,
     ):
 
         # If enabled, the newly created objects of this class will use its own individual cache
