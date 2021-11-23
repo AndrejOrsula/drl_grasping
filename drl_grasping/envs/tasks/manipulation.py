@@ -25,6 +25,7 @@ class Manipulation(task.Task, abc.ABC):
         restrict_position_goal_to_workspace: bool = False,
         relative_position_scaling_factor: float = 0.1,
         z_relative_orientation_scaling_factor: float = np.pi / 4.0,
+        use_sim_time: bool = True,
         verbose: bool = False,
         **kwargs,
     ):
@@ -42,6 +43,7 @@ class Manipulation(task.Task, abc.ABC):
         self.__z_relative_orientation_scaling_factor = (
             z_relative_orientation_scaling_factor
         )
+        self._use_sim_time = use_sim_time
         self._verbose = verbose
 
         # Get class of the robot model based on passed argument
@@ -82,12 +84,15 @@ class Manipulation(task.Task, abc.ABC):
 
         # Setup broadcaster of transforms via tf2
         self.tf2_broadcaster = Tf2Broadcaster(
-            node_name=f"drl_grasping_tf_broadcaster_{self.id}"
+            node_name=f"drl_grasping_tf_broadcaster_{self.id}",
+            use_sim_time=self._use_sim_time,
         )
 
         # Setup control of the manipulator with MoveIt 2
         self.moveit2 = MoveIt2(
-            robot_model=robot_model, node_name=f"drl_grasping_moveit2_py_{self.id}"
+            robot_model=robot_model,
+            node_name=f"drl_grasping_moveit2_py_{self.id}",
+            use_sim_time=self._use_sim_time,
         )
 
         # Names of important models

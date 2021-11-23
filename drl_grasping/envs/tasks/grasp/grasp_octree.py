@@ -38,7 +38,8 @@ class GraspOctree(Grasp, abc.ABC):
         self.camera_sub = CameraSubscriber(
             topic=f"/{self.camera_type}/points",
             is_point_cloud=True,
-            node_name=f"drl_grasping_point_cloud_sub_{self.id}",
+            node_name=f"drl_grasping_camera_sub_{self.id}",
+            use_sim_time=self._use_sim_time,
         )
 
         octree_min_bound: Tuple[float, float, float] = (
@@ -57,7 +58,7 @@ class GraspOctree(Grasp, abc.ABC):
             depth=octree_depth,
             full_depth=octree_full_depth,
             include_color=octree_include_color,
-            use_sim_time=True,
+            use_sim_time=self._use_sim_time,
             debug_draw=False,
             debug_write_octree=False,
             robot_frame_id=self.robot_arm_base_link_name,
