@@ -58,9 +58,11 @@ REACH_KWARGS: Dict = {
     "sparse_reward": False,
     "act_quick_reward": -0.01,
     "required_accuracy": 0.05,
+    "use_sim_time": True,
     "verbose": DRL_GRASPING_VERBOSE,
 }
 REACH_KWARGS_OCTREE: Dict = {
+    "octree_reference_frame_id": "base_link",
     "octree_dimension": 0.5,
     "octree_depth": 4,
     "octree_full_depth": 2,
@@ -243,6 +245,7 @@ GRASP_KWARGS: Dict = {
     "z_relative_orientation_scaling_factor": pi / 4.0,
     "gripper_dead_zone": 0.0,
     "full_3d_orientation": False,
+    "use_sim_time": True,
     "verbose": DRL_GRASPING_VERBOSE,
 }
 GRASP_KWARGS_CURRICULUM: Dict = {
@@ -272,6 +275,7 @@ GRASP_KWARGS_CURRICULUM: Dict = {
     "max_episode_length": GRASP_MAX_EPISODE_STEPS,
 }
 GRASP_KWARGS_OCTREE: Dict = {
+    "octree_reference_frame_id": "base_link",
     "octree_dimension": 0.24,
     "octree_depth": 4,
     "octree_full_depth": 2,
@@ -383,7 +387,7 @@ register(
 ##################
 # GraspPlanetary #
 ##################
-GRASP_PLANETARY_MAX_EPISODE_STEPS: int = 100
+GRASP_PLANETARY_MAX_EPISODE_STEPS: int = 20
 GRASP_PLANETARY_AGENT_RATE: float = 2.5
 GRASP_PLANETARY_KWARGS: Dict = {
     "agent_rate": GRASP_PLANETARY_AGENT_RATE,
@@ -394,7 +398,8 @@ GRASP_PLANETARY_KWARGS: Dict = {
     "relative_position_scaling_factor": 0.1,
     "z_relative_orientation_scaling_factor": pi / 4.0,
     "gripper_dead_zone": 0.0,
-    "full_3d_orientation": True,
+    "full_3d_orientation": False,
+    "use_sim_time": True,
     "verbose": DRL_GRASPING_VERBOSE,
 }
 GRASP_PLANETARY_KWARGS_CURRICULUM: Dict = {
@@ -424,10 +429,11 @@ GRASP_PLANETARY_KWARGS_CURRICULUM: Dict = {
     "max_episode_length": GRASP_PLANETARY_MAX_EPISODE_STEPS,
 }
 GRASP_PLANETARY_KWARGS_OCTREE: Dict = {
-    "octree_dimension": 0.24,
+    "octree_reference_frame_id": "base_link",
+    "octree_dimension": 2.0,
     "octree_depth": 4,
     "octree_full_depth": 2,
-    "octree_n_stacked": 3,
+    "octree_n_stacked": 2,
     "proprieceptive_observations": True,
 }
 GRASP_PLANETARY_KWARGS_SIM: Dict = {
