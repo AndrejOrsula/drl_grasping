@@ -33,7 +33,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         "gazebo_joint_trajectory_controller": True,
         "gazebo_joint_state_publisher": True,
         "gazebo_pose_publisher": True,
-        # TODO: All of these could also be part of xacro_mapping (needs to be added to xacro in description package)
+        # TODO (medium): All of these could also be part of xacro_mapping (needs to be added to xacro in description package)
         # "wheels_collisions": True,
         # "arm_collision": True,
         # "hand_collision": True,

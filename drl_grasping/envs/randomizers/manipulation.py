@@ -232,7 +232,7 @@ class ManipulationGazeboEnvRandomizer(
 
     def randomize_physics(self, task: SupportedTasks, **kwargs):
 
-        # TODO: Add gravity preset for Moon (and other bodies)
+        # TODO (high): Add gravity preset for Moon (and other bodies)
         gravity_z = task.np_random.normal(loc=-9.80665, scale=0.02)
         if not task.world.to_gazebo().set_gravity((0, 0, gravity_z)):
             raise RuntimeError("Failed to set the gravity")
@@ -294,7 +294,7 @@ class ManipulationGazeboEnvRandomizer(
         if environ.get(
             "DRL_GRASPING_BROADCAST_INTERACTIVE_GUI", default="false"
         ).lower() in ("true", "1"):
-            # TODO: Do not open GUI client when DRL_GRASPING_BROADCAST_INTERACTIVE_GUI is set, only enable the broadcaster plugin
+            # TODO (medium): Do not open GUI client when DRL_GRASPING_BROADCAST_INTERACTIVE_GUI is set, only enable the broadcaster plugin
             if task._verbose:
                 print(
                     "Inserting world plugins for broadcasting GUI with enabled user commands..."
@@ -365,7 +365,7 @@ class ManipulationGazeboEnvRandomizer(
             self.add_defaults_object(task=task, gazebo=gazebo)
 
         # Insert invisible plane below the terrain to prevent objects from falling into the abyss and causing physics errors
-        # TODO: Consider replacing invisiable plane with removal of all objects that are too low along z axis
+        # TODO (medium): Consider replacing invisible plane with removal of all objects that are too low along z axis
         if self._underworld_collision_plane:
             if task._verbose:
                 print(
@@ -387,7 +387,7 @@ class ManipulationGazeboEnvRandomizer(
             orientation=quat_to_wxyz(self._robot_spawn_quat_xyzw),
             initial_arm_joint_positions=task.initial_arm_joint_positions,
             initial_gripper_joint_positions=task.initial_gripper_joint_positions,
-            # TODO: Pass xacro mappings to the function
+            # TODO (medium): Pass xacro mappings to the function
             # xacro_mappings={},
             # kwargs={},
         )
@@ -636,7 +636,7 @@ class ManipulationGazeboEnvRandomizer(
             self.randomize_light(task=task)
 
         # Randomize camera if needed
-        # TODO: Implement camera pose randomization for cameras attached to robot
+        # TODO (medium): Implement camera pose randomization for cameras attached to robot
         if (
             self._camera_enable
             and not self.__is_camera_attached
@@ -707,7 +707,7 @@ class ManipulationGazeboEnvRandomizer(
                 self.robot.gripper_joint_names,
             ):
                 raise RuntimeError("Failed to reset gripper joint velocities")
-            # TODO: Send gripper commands also to the controller (JointTrajectoryController). Test if needed first
+            # TODO (high): Send gripper commands also to the controller (JointTrajectoryController). Test if needed first
 
         # Passive joints - apply 0 velocities to all
         if self.robot.passive_joint_names:

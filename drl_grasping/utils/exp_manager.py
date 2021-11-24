@@ -677,7 +677,7 @@ class ExperimentManager(object):
         if sampler_method == "random":
             sampler = RandomSampler(seed=self.seed)
         elif sampler_method == "tpe":
-            # TODO: try with multivariate=True
+            # TODO (external): try with multivariate=True
             sampler = TPESampler(n_startup_trials=self.n_startup_trials, seed=self.seed)
         elif sampler_method == "skopt":
             # cf https://scikit-optimize.github.io/#skopt.Optimizer
@@ -838,7 +838,7 @@ class ExperimentManager(object):
             )
             self.tensorboard_log = None
 
-        # TODO: eval each hyperparams several times to account for noisy evaluation
+        # TODO (external): eval each hyperparams several times to account for noisy evaluation
         sampler = self._create_sampler(self.sampler)
         pruner = self._create_pruner(self.pruner)
 

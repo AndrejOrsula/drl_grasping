@@ -205,7 +205,7 @@ class HistoryWrapper(gym.Wrapper):
         wrapped_obs_space = env.observation_space
         wrapped_action_space = env.action_space
 
-        # TODO: double check, it seems wrong when we have different low and highs
+        # TODO (external): double check, it seems wrong when we have different low and highs
         low_obs = np.repeat(wrapped_obs_space.low, horizon, axis=-1)
         high_obs = np.repeat(wrapped_obs_space.high, horizon, axis=-1)
 
@@ -268,7 +268,7 @@ class HistoryWrapperObsDict(gym.Wrapper):
         wrapped_obs_space = env.observation_space.spaces["observation"]
         wrapped_action_space = env.action_space
 
-        # TODO: double check, it seems wrong when we have different low and highs
+        # TODO (external): double check, it seems wrong when we have different low and highs
         low_obs = np.repeat(wrapped_obs_space.low, horizon, axis=-1)
         high_obs = np.repeat(wrapped_obs_space.high, horizon, axis=-1)
 
