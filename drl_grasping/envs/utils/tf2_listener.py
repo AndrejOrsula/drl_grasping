@@ -13,27 +13,34 @@ class Tf2Listener:
 
         # Create tf2 buffer and listener for transform lookup
         self.__tf2_buffer = Buffer()
-        self.__tf2_listener = TransformListener(buffer=self.__tf2_buffer, node=node)
+        TransformListener(buffer=self.__tf2_buffer, node=node)
 
     def lookup_transform_sync(self, target_frame: str, source_frame: str) -> Transform:
 
-        while rclpy.ok():
-            if self.__tf2_buffer.can_transform(
+        try:
+            return self.__tf2_buffer.lookup_transform(
                 target_frame=target_frame,
                 source_frame=source_frame,
                 time=rclpy.time.Time(),
-                timeout=rclpy.time.Duration(seconds=1, nanoseconds=0),
-            ):
-                return self.__tf2_buffer.lookup_transform(
+            ).transform
+        except:
+            while rclpy.ok():
+                if self.__tf2_buffer.can_transform(
                     target_frame=target_frame,
                     source_frame=source_frame,
                     time=rclpy.time.Time(),
-                ).transform
+                    timeout=rclpy.time.Duration(seconds=1, nanoseconds=0),
+                ):
+                    return self.__tf2_buffer.lookup_transform(
+                        target_frame=target_frame,
+                        source_frame=source_frame,
+                        time=rclpy.time.Time(),
+                    ).transform
 
-            print(
-                f'Lookup of transform from "{source_frame}"'
-                f' to "{target_frame}" failed, retrying...'
-            )
+                print(
+                    f'Lookup of transform from "{source_frame}"'
+                    f' to "{target_frame}" failed, retrying...'
+                )
 
 
 class Tf2ListenerStandalone(Node, Tf2Listener):

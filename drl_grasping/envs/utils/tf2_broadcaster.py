@@ -12,8 +12,8 @@ class Tf2Broadcaster:
         node: Node,
     ):
 
-        self.node = node
-        self.__tf2_broadcaster = StaticTransformBroadcaster(node=self.node)
+        self._node = node
+        self.__tf2_broadcaster = StaticTransformBroadcaster(node=self._node)
         self._transform_stamped = TransformStamped()
 
     def broadcast_tf(
@@ -31,7 +31,7 @@ class Tf2Broadcaster:
         self._transform_stamped.header.frame_id = parent_frame_id
         self._transform_stamped.child_frame_id = child_frame_id
 
-        self._transform_stamped.header.stamp = self.node.get_clock().now().to_msg()
+        self._transform_stamped.header.stamp = self._node.get_clock().now().to_msg()
 
         self._transform_stamped.transform.translation.x = float(translation[0])
         self._transform_stamped.transform.translation.y = float(translation[1])
