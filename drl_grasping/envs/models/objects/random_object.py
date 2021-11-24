@@ -1,6 +1,4 @@
-from drl_grasping.envs.utils.model_collection_randomizer import (
-    ModelCollectionRandomizer,
-)
+from drl_grasping.envs.models.utils import ModelCollectionRandomizer
 from gym_ignition.scenario import model_wrapper
 from gym_ignition.utils.scenario import get_unique_model_name
 from numpy.random import RandomState

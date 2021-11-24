@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-from drl_grasping.envs.utils import ModelCollectionRandomizer
+from drl_grasping.envs.models.utils import ModelCollectionRandomizer
 
 
 def main(args=None):
