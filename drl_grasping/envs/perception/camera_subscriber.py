@@ -32,10 +32,9 @@ class CameraSubscriber:
             topic=topic,
             callback=self.observation_callback,
             qos_profile=QoSProfile(
-                reliability=QoSReliabilityPolicy.BEST_EFFORT,
+                reliability=QoSReliabilityPolicy.RELIABLE,
                 durability=QoSDurabilityPolicy.VOLATILE,
-                history=QoSHistoryPolicy.KEEP_LAST,
-                depth=1,
+                history=QoSHistoryPolicy.KEEP_ALL,
             ),
         )
         self.__observation_mutex = Lock()
@@ -73,7 +72,9 @@ class CameraSubscriber:
         Reset checker of new observations, i.e. `self.new_observation_available()`
         """
 
+        self.__observation_mutex.acquire()
         self.__new_observation_available = False
+        self.__observation_mutex.release()
 
 
 class CameraSubscriberStandalone(Node, CameraSubscriber):
