@@ -12,7 +12,7 @@ from gym_ignition.runtimes.gazebo_runtime import GazeboRuntime
 from gym_ignition.utils import logger as gym_ign_logger
 from numpy import pi
 from os import environ, path
-from typing import Dict
+from typing import Dict, Tuple
 
 
 # Set debug level
@@ -40,6 +40,15 @@ DRL_GRASPING_VERBOSE: bool = True
 DRL_GRASPING_WORLDS_DIR: str = path.join(
     get_package_share_directory("drl_grasping"), "worlds"
 )
+# Gravity preset for Earth
+GRAVITY_EARTH: Tuple[float, float, float] = (0.0, 0.0, -9.80665)
+GRAVITY_EARTH_STD: Tuple[float, float, float] = (0.0, 0.0, 0.0232)
+# Gravity preset for Moon
+GRAVITY_MOON: Tuple[float, float, float] = (0.0, 0.0, -1.625)
+GRAVITY_MOON_STD: Tuple[float, float, float] = (0.0, 0.0, 0.0084)
+# Gravity preset for Mars
+GRAVITY_MARS: Tuple[float, float, float] = (0.0, 0.0, -3.72076)
+GRAVITY_MARS_STD: Tuple[float, float, float] = (0.0, 0.0, 0.0191)
 
 
 #########
@@ -76,6 +85,8 @@ REACH_KWARGS_SIM: Dict = {
 }
 REACH_RANDOMIZER: str = "drl_grasping.envs.randomizers:ManipulationGazeboEnvRandomizer"
 REACH_KWARGS_RANDOMIZER: Dict = {
+    "gravity": GRAVITY_EARTH,
+    "gravity_std": GRAVITY_EARTH_STD,
     "robot_random_joint_positions": True,
     "robot_random_joint_positions_std": 0.1,
     "terrain_enable": True,
@@ -287,6 +298,8 @@ GRASP_KWARGS_SIM: Dict = {
 }
 GRASP_RANDOMIZER: str = "drl_grasping.envs.randomizers:ManipulationGazeboEnvRandomizer"
 GRASP_KWARGS_RANDOMIZER: Dict = {
+    "gravity": GRAVITY_EARTH,
+    "gravity_std": GRAVITY_EARTH_STD,
     "robot_random_joint_positions": True,
     "robot_random_joint_positions_std": 0.1,
     "terrain_enable": True,
@@ -442,6 +455,8 @@ GRASP_PLANETARY_RANDOMIZER: str = (
     "drl_grasping.envs.randomizers:ManipulationPlanetaryGazeboEnvRandomizer"
 )
 GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict = {
+    "gravity": GRAVITY_MOON,
+    "gravity_std": GRAVITY_MOON_STD,
     "robot_spawn_position": (-2.0, 0, 0.5),
     "robot_spawn_quat_xyzw": (0, 0, 0, 1),
     "robot_random_joint_positions": True,

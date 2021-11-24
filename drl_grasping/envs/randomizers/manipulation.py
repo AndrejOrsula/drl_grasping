@@ -31,7 +31,10 @@ class ManipulationGazeboEnvRandomizer(
     def __init__(
         self,
         env: MakeEnvCallable,
+        # Physics
         physics_rollouts_num: int = 0,
+        gravity: Tuple[float, float, float] = (0.0, 0.0, -9.80665),
+        gravity_std: Tuple[float, float, float] = (0.0, 0.0, 0.0232),
         # Robot
         robot_spawn_position: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         robot_spawn_quat_xyzw: Tuple[float, float, float, float] = (
@@ -108,6 +111,13 @@ class ManipulationGazeboEnvRandomizer(
         **kwargs,
     ):
 
+        # TODO (a lot of work): Implement proper physics randomization.
+        if physics_rollouts_num != 0:
+            physics_rollouts_num = 0
+            print(
+                '"Proper" physics randomization at each reset is not yet implemented. Disabling...'
+            )
+
         # Update kwargs before passing them to the task constructor (some tasks might need them)
         kwargs.update(
             {
@@ -127,6 +137,10 @@ class ManipulationGazeboEnvRandomizer(
         )
 
         # Store parameters for later use #
+        # Physics
+        self._gravity = gravity
+        self._gravity_std = gravity_std
+
         # Robot
         self._robot_spawn_position = robot_spawn_position
         self._robot_spawn_quat_xyzw = robot_spawn_quat_xyzw
@@ -226,16 +240,28 @@ class ManipulationGazeboEnvRandomizer(
     # PhysicsRandomizer impl #
     ##########################
 
-    def get_engine(self):
+    def init_physics_preset(self, task: SupportedTasks):
 
-        return scenario.PhysicsEngine_dart
+        self.set_gravity(task=task)
 
     def randomize_physics(self, task: SupportedTasks, **kwargs):
 
-        # TODO (high): Add gravity preset for Moon (and other bodies)
-        gravity_z = task.np_random.normal(loc=-9.80665, scale=0.02)
-        if not task.world.to_gazebo().set_gravity((0, 0, gravity_z)):
+        self.set_gravity(task=task)
+
+    def set_gravity(self, task: SupportedTasks):
+
+        if not task.world.to_gazebo().set_gravity(
+            (
+                task.np_random.normal(loc=self._gravity[0], scale=self._gravity_std[0]),
+                task.np_random.normal(loc=self._gravity[1], scale=self._gravity_std[1]),
+                task.np_random.normal(loc=self._gravity[2], scale=self._gravity_std[2]),
+            )
+        ):
             raise RuntimeError("Failed to set the gravity")
+
+    def get_engine(self):
+
+        return scenario.PhysicsEngine_dart
 
     #######################
     # TaskRandomizer impl #
@@ -274,6 +300,9 @@ class ManipulationGazeboEnvRandomizer(
         """
         Initialise an instance of the environment before the very first iteration
         """
+
+        # Initialise custom physics preset
+        self.init_physics_preset(task=task)
 
         # Insert world plugins needed by the task or selected by user
         self.init_world_plugins(task=task, gazebo=gazebo)
