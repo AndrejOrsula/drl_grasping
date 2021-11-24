@@ -54,8 +54,8 @@ class Manipulation(task.Task, Node, abc.ABC):
         self.set_parameters(
             [Parameter("use_sim_time", type_=Parameter.Type.BOOL, value=use_sim_time)]
         )
-        self._executor = MultiThreadedExecutor(num_threads=num_threads)
-        self._executor.add_node(self)
+        executor = MultiThreadedExecutor(num_threads=num_threads)
+        executor.add_node(self)
 
         # Store passed arguments for later use
         self.workspace_centre = workspace_centre
@@ -118,14 +118,14 @@ class Manipulation(task.Task, Node, abc.ABC):
             use_sim_time=self._use_sim_time,
             standalone_executor=False,
         )
-        self._executor.add_node(self.moveit2)
+        executor.add_node(self.moveit2)
 
         # Names of important models (in addition to robot model)
         self.terrain_name = "terrain"
         self.object_names = []
 
         # Spin this node in background thread(s)
-        self._executor_thread = Thread(target=self._executor.spin, daemon=True, args=())
+        self._executor_thread = Thread(target=executor.spin, daemon=True, args=())
         self._executor_thread.start()
 
     def create_spaces(self) -> Tuple[ActionSpace, ObservationSpace]:
@@ -199,8 +199,7 @@ class Manipulation(task.Task, Node, abc.ABC):
                         max(centre[i] - volume[i] / 2, target_pos[i]),
                     )
             # Set position goal
-            # TODO (high): This needs to be fixed (get_ee_pose must return pose w.r.t arm base)
-            self.moveit2.set_position_goal(target_pos, frame="drl_grasping_world")
+            self.moveit2.set_position_goal(target_pos, frame=self.robot_base_link_name)
         else:
             print("error: Neither absolute or relative position is set")
 
@@ -272,24 +271,52 @@ class Manipulation(task.Task, Node, abc.ABC):
         else:
             print("error: Neither absolute or relative orientation is set")
 
-    def get_ee_position(self) -> Tuple[float, float, float]:
+    def get_ee_pose(
+        self,
+    ) -> Tuple[Tuple[float, float, float], Tuple[float, float, float, float]]:
         """
-        Return the current position of the end effector
+        Return the current pose of the end effector with respect to robot base link.
         """
 
-        robot = self.world.get_model(self.robot_name)
-        return robot.get_link(self.robot_ee_link_name).position()
+        # TODO: Use `get_ee_pose()` at it would provide a slight performance as opposed to `get_ee_position()` + `get_ee_orientation()` [not relevant once moveit_servo is used]
+
+        transform = self.tf2_listener.lookup_transform_sync(
+            source_frame=self.robot_ee_link_name, target_frame=self.robot_base_link_name
+        )
+        return (
+            (transform.translation.x, transform.translation.y, transform.translation.z),
+            (
+                transform.rotation.x,
+                transform.rotation.y,
+                transform.rotation.z,
+                transform.rotation.w,
+            ),
+        )
+
+    def get_ee_position(self) -> Tuple[float, float, float]:
+        """
+        Return the current position of the end effector with respect to robot base link.
+        """
+
+        position = self.tf2_listener.lookup_transform_sync(
+            source_frame=self.robot_ee_link_name, target_frame=self.robot_base_link_name
+        ).translation
+        return (position.x, position.y, position.z)
 
     def get_ee_orientation(self) -> Tuple[float, float, float, float]:
         """
-        Return the current xyzw quaternion of the end effector
+        Return the current xyzw quaternion of the end effector with respect to robot base link.
         """
 
-        # TODO: Use tf2 listener
-
-        robot = self.world.get_model(self.robot_name)
-        quat_wxyz = robot.get_link(self.robot_ee_link_name).orientation()
-        return quat_to_xyzw(quat_wxyz)
+        orientation = self.tf2_listener.lookup_transform_sync(
+            source_frame=self.robot_ee_link_name, target_frame=self.robot_base_link_name
+        ).rotation
+        return (
+            orientation.x,
+            orientation.y,
+            orientation.z,
+            orientation.w,
+        )
 
     def substitute_special_frames(self, frame_id: str) -> str:
 
