@@ -1,74 +1,49 @@
 from drl_grasping.envs.utils import conversions
-from geometry_msgs.msg import Transform
-from rclpy.executors import SingleThreadedExecutor
-from rclpy.node import Node
-from rclpy.parameter import Parameter
+from drl_grasping.envs.utils import Tf2Listener
 from sensor_msgs.msg import PointCloud2
-from threading import Thread
 from typing import List, Tuple
 import numpy as np
 import ocnn
 import open3d
-import rclpy
-import tf2_ros
 import torch
 
 
-class OctreeCreator(Node):
+class OctreeCreator:
     def __init__(
         self,
+        tf2_listener: Tf2Listener,
         reference_frame_id: str,
         min_bound: Tuple[float, float, float] = (-1.0, -1.0, -1.0),
         max_bound: Tuple[float, float, float] = (1.0, 1.0, 1.0),
-        normals_radius: float = 0.05,
-        normals_max_nn: int = 10,
         include_color: bool = False,
         depth: int = 4,
         full_depth: int = 2,
+        adaptive: bool = False,
+        adp_depth: int = 4,
+        normals_radius: float = 0.05,
+        normals_max_nn: int = 10,
         node_dis: bool = True,
         node_feature: bool = False,
         split_label: bool = False,
-        adaptive: bool = False,
-        adp_depth: int = 4,
         th_normal: float = 0.1,
         th_distance: float = 2.0,
         extrapolate: bool = False,
         save_pts: bool = False,
         key2xyz: bool = False,
-        use_sim_time: bool = True,
         debug_draw: bool = False,
         debug_write_octree: bool = False,
-        node_name: str = "drl_grasping_octree_creator",
     ):
 
-        # Initialise node
-        try:
-            rclpy.init()
-        except:
-            if not rclpy.ok():
-                import sys
-
-                sys.exit("ROS 2 could not be initialised")
-        Node.__init__(self, node_name)
-        self.set_parameters(
-            [Parameter("use_sim_time", type_=Parameter.Type.BOOL, value=use_sim_time)]
-        )
-
-        # Create tf2 buffer and listener for transform lookup
-        self.__tf2_buffer = tf2_ros.Buffer()
-        self.__tf2_listener = tf2_ros.TransformListener(
-            buffer=self.__tf2_buffer, node=self
-        )
+        # Listener of tf2 transforms is shared with the owner
+        self.__tf2_listener = tf2_listener
 
         # Parameters
         self._reference_frame_id = reference_frame_id
         self._min_bound = min_bound
         self._max_bound = max_bound
+        self._include_color = include_color
         self._normals_radius = normals_radius
         self._normals_max_nn = normals_max_nn
-        self._include_color = include_color
-        self._depth = depth
-        self._full_depth = full_depth
         self._debug_draw = debug_draw
         self._debug_write_octree = debug_write_octree
 
@@ -89,12 +64,6 @@ class OctreeCreator(Node):
             bb_min=min_bound,
             bb_max=max_bound,
         )
-
-        # Spin executor in another thread
-        self._executor = SingleThreadedExecutor()
-        self._executor.add_node(self)
-        self._executor_thread = Thread(target=self._executor.spin, args=(), daemon=True)
-        self._executor_thread.start()
 
     def __call__(self, ros_point_cloud2: PointCloud2) -> torch.Tensor:
 
@@ -156,7 +125,7 @@ class OctreeCreator(Node):
         # Get transformation from camera to robot and use it to transform point
         # cloud into robot's base coordinate frame
         if camera_frame_id != reference_frame_id:
-            transform = self.lookup_transform_sync(
+            transform = self.__tf2_listener.lookup_transform_sync(
                 target_frame=reference_frame_id, source_frame=camera_frame_id
             )
             transform_mat = conversions.transform_to_matrix(transform=transform)
@@ -218,24 +187,3 @@ class OctreeCreator(Node):
 
         # Finally, create an octree from the points
         return self._points_to_octree(octree_points_tensor)
-
-    def lookup_transform_sync(self, target_frame: str, source_frame: str) -> Transform:
-
-        while rclpy.ok():
-            if self.__tf2_buffer.can_transform(
-                target_frame=target_frame,
-                source_frame=source_frame,
-                time=rclpy.time.Time(),
-                timeout=rclpy.time.Duration(seconds=1, nanoseconds=0),
-            ):
-                transform_stamped = self.__tf2_buffer.lookup_transform(
-                    target_frame=target_frame,
-                    source_frame=source_frame,
-                    time=rclpy.time.Time(),
-                )
-                return transform_stamped.transform
-
-            print(
-                f'Lookup of transform from "{source_frame}"'
-                f' to "{target_frame}" failed, retrying...'
-            )

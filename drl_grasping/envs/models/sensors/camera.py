@@ -1,5 +1,4 @@
 from gym_ignition.scenario import model_wrapper
-from gym_ignition.utils import misc
 from gym_ignition.utils.scenario import get_unique_model_name
 from scenario import core as scenario
 from threading import Thread

@@ -13,52 +13,33 @@ from typing import Union
 import rclpy
 
 
-class CameraSubscriber(Node):
+class CameraSubscriber:
     def __init__(
         self,
+        node: Node,
         topic: str,
         is_point_cloud: bool,
-        use_sim_time: bool = True,
-        node_name: str = "drl_grasping_camera_sub",
     ):
-
-        try:
-            rclpy.init()
-        except:
-            if not rclpy.ok():
-                import sys
-
-                sys.exit("ROS 2 could not be initialised")
-
-        Node.__init__(self, node_name)
-        self.set_parameters(
-            [Parameter("use_sim_time", type_=Parameter.Type.BOOL, value=use_sim_time)]
-        )
 
         # Prepare the subscriber
         if is_point_cloud:
-            observation_type = PointCloud2
+            camera_msg_type = PointCloud2
         else:
-            observation_type = Image
-        self.__observation = observation_type()
-        self.__observation_sub = self.create_subscription(
-            msg_type=observation_type,
+            camera_msg_type = Image
+        self.__observation = camera_msg_type()
+        node.create_subscription(
+            msg_type=camera_msg_type,
             topic=topic,
             callback=self.observation_callback,
             qos_profile=QoSProfile(
-                durability=QoSDurabilityPolicy.SYSTEM_DEFAULT,
                 reliability=QoSReliabilityPolicy.BEST_EFFORT,
-                history=QoSHistoryPolicy.SYSTEM_DEFAULT,
+                durability=QoSDurabilityPolicy.VOLATILE,
+                history=QoSHistoryPolicy.KEEP_LAST,
+                depth=1,
             ),
         )
         self.__observation_mutex = Lock()
         self.__new_observation_available = False
-
-        # Spin the node in a separate thread
-        self._executor = SingleThreadedExecutor()
-        self._executor.add_node(self)
-        self._executor_thread = Thread(target=self._executor.spin, args=(), daemon=True)
-        self._executor_thread.start()
 
     def observation_callback(self, msg):
         """
@@ -93,3 +74,36 @@ class CameraSubscriber(Node):
         """
 
         self.__new_observation_available = False
+
+
+class CameraSubscriberStandalone(Node, CameraSubscriber):
+    def __init__(
+        self,
+        topic: str,
+        is_point_cloud: bool,
+        node_name: str = "drl_grasping_camera_sub",
+        use_sim_time: bool = True,
+    ):
+
+        try:
+            rclpy.init()
+        except:
+            if not rclpy.ok():
+                import sys
+
+                sys.exit("ROS 2 could not be initialised")
+
+        Node.__init__(self, node_name)
+        self.set_parameters(
+            [Parameter("use_sim_time", type_=Parameter.Type.BOOL, value=use_sim_time)]
+        )
+
+        CameraSubscriber.__init__(
+            self, node=self, topic=topic, is_point_cloud=is_point_cloud
+        )
+
+        # Spin the node in a separate thread
+        self._executor = SingleThreadedExecutor()
+        self._executor.add_node(self)
+        self._executor_thread = Thread(target=self._executor.spin, daemon=True, args=())
+        self._executor_thread.start()

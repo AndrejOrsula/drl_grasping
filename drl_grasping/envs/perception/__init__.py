@@ -1,2 +1,2 @@
-from .camera_subscriber import CameraSubscriber
+from .camera_subscriber import CameraSubscriber, CameraSubscriberStandalone
 from .octree import OctreeCreator

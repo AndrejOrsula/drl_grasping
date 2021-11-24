@@ -1,4 +1,5 @@
 from collections import deque
+from drl_grasping.envs.models.sensors import Camera
 from drl_grasping.envs.perception import CameraSubscriber, OctreeCreator
 from drl_grasping.envs.tasks.grasp import Grasp
 from drl_grasping.envs.utils.conversions import orientation_quat_to_6d
@@ -13,6 +14,7 @@ import numpy as np
 class GraspOctree(Grasp, abc.ABC):
     def __init__(
         self,
+        camera_type: str,
         octree_reference_frame_id: str,
         octree_dimension: float,
         octree_depth: int,
@@ -30,17 +32,11 @@ class GraspOctree(Grasp, abc.ABC):
             **kwargs,
         )
 
-        if octree_include_color:
-            self.camera_type = "rgbd_camera"
-        else:
-            self.camera_type = "depth_camera"
-
-        # Perception (RGB-D camera - point cloud)
+        # Perception (depth/RGB-D camera - point cloud)
         self.camera_sub = CameraSubscriber(
-            topic=f"/{self.camera_type}/points",
+            node=self,
+            topic=Camera.get_points_topic(camera_type),
             is_point_cloud=True,
-            node_name=f"drl_grasping_camera_sub_{self.id}",
-            use_sim_time=self._use_sim_time,
         )
 
         # Get exact name substitution of the frame for octree
@@ -59,16 +55,13 @@ class GraspOctree(Grasp, abc.ABC):
             self.workspace_centre[2] + octree_dimension / 2,
         )
         self.octree_creator = OctreeCreator(
+            tf2_listener=self.tf2_listener,
+            reference_frame_id=octree_reference_frame_id,
             min_bound=octree_min_bound,
             max_bound=octree_max_bound,
+            include_color=octree_include_color,
             depth=octree_depth,
             full_depth=octree_full_depth,
-            include_color=octree_include_color,
-            use_sim_time=self._use_sim_time,
-            debug_draw=False,
-            debug_write_octree=False,
-            reference_frame_id=octree_reference_frame_id,
-            node_name=f"drl_grasping_octree_creator_{self.id}",
         )
 
         # Additional parameters

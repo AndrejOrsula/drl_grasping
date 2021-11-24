@@ -30,12 +30,11 @@ class ReachDepthImage(Reach, abc.ABC):
         self._camera_width = camera_width
         self._camera_height = camera_height
 
-        # Perception (RGB camera)
+        # Perception (depth camera)
         self.camera_sub = CameraSubscriber(
+            node=self,
             topic=Camera.get_depth_topic(camera_type),
             is_point_cloud=False,
-            node_name=f"drl_grasping_camera_sub_{self.id}",
-            use_sim_time=self._use_sim_time,
         )
 
     def create_observation_space(self) -> ObservationSpace:

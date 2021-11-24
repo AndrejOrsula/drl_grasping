@@ -30,10 +30,9 @@ class ReachColorImage(Reach, abc.ABC):
 
         # Perception (RGB camera)
         self.camera_sub = CameraSubscriber(
+            node=self,
             topic=Camera.get_color_topic(camera_type),
             is_point_cloud=False,
-            node_name=f"drl_grasping_camera_sub_{self.id}",
-            use_sim_time=self._use_sim_time,
         )
 
     def create_observation_space(self) -> ObservationSpace:

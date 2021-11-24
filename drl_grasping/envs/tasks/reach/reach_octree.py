@@ -9,6 +9,8 @@ import abc
 import gym
 import numpy as np
 
+from tf2_ros import transform_listener
+
 
 class ReachOctree(Reach, abc.ABC):
 
@@ -17,9 +19,9 @@ class ReachOctree(Reach, abc.ABC):
 
     def __init__(
         self,
+        camera_type: str,
         octree_reference_frame_id: str,
         octree_dimension: float,
-        camera_type: str,
         octree_depth: int,
         octree_full_depth: int,
         octree_include_color: bool,
@@ -40,10 +42,9 @@ class ReachOctree(Reach, abc.ABC):
 
         # Perception (RGB-D camera - point cloud)
         self.camera_sub = CameraSubscriber(
+            node=self,
             topic=Camera.get_points_topic(camera_type),
             is_point_cloud=True,
-            node_name=f"drl_grasping_camera_sub_{self.id}",
-            use_sim_time=self._use_sim_time,
         )
 
         # Get exact name substitution of the frame for octree
@@ -62,16 +63,13 @@ class ReachOctree(Reach, abc.ABC):
             self.workspace_centre[2] + octree_dimension / 2,
         )
         self.octree_creator = OctreeCreator(
+            tf2_listener=self.tf2_listener,
+            reference_frame_id=octree_reference_frame_id,
             min_bound=octree_min_bound,
             max_bound=octree_max_bound,
+            include_color=octree_include_color,
             depth=octree_depth,
             full_depth=octree_full_depth,
-            include_color=octree_include_color,
-            use_sim_time=self._use_sim_time,
-            debug_draw=False,
-            debug_write_octree=False,
-            reference_frame_id=octree_reference_frame_id,
-            node_name=f"drl_grasping_octree_creator_{self.id}",
         )
 
         # Variable initialisation

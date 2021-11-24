@@ -11,14 +11,16 @@ class MoveIt2(MoveIt2Interface):
         separate_gripper_controller: bool = True,
         use_sim_time: bool = True,
         node_name: str = "ign_moveit2_py",
+        standalone_executor: bool = False,
     ):
-        try:
-            rclpy.init()
-        except:
-            if not rclpy.ok():
-                import sys
+        if standalone_executor:
+            try:
+                rclpy.init()
+            except:
+                if not rclpy.ok():
+                    import sys
 
-                sys.exit("ROS 2 could not be initialised")
+                    sys.exit("ROS 2 could not be initialised")
 
         if "lunalab_summit_xl_gen" == robot_model:
             super().__init__(
@@ -39,8 +41,8 @@ class MoveIt2(MoveIt2Interface):
                 node_name=node_name,
             )
 
-        self._moveit2_executor = MultiThreadedExecutor(2)
-        self._moveit2_executor.add_node(self)
-        thread = Thread(target=self._moveit2_executor.spin, args=())
-        thread.daemon = True
-        thread.start()
+        if standalone_executor:
+            self._moveit2_executor = MultiThreadedExecutor(2)
+            self._moveit2_executor.add_node(self)
+            thread = Thread(target=self._moveit2_executor.spin, daemon=True, args=())
+            thread.start()

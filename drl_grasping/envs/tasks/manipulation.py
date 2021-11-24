@@ -1,19 +1,25 @@
 from drl_grasping.envs.control import MoveIt2
 from drl_grasping.envs.models.robots import get_robot_model_class
-from drl_grasping.envs.utils import Tf2Broadcaster
+from drl_grasping.envs.utils import Tf2Broadcaster, Tf2Listener
 from drl_grasping.envs.utils.conversions import orientation_6d_to_quat, quat_to_xyzw
 from drl_grasping.envs.utils.math import quat_mul
 from gym_ignition.base import task
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
 from itertools import count
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.node import Node
+from rclpy.parameter import Parameter
 from scipy.spatial.transform import Rotation
+from threading import Thread
 from typing import Tuple, Union
 import abc
 import numpy as np
+import rclpy
+import sys
 
 
-class Manipulation(task.Task, abc.ABC):
+class Manipulation(task.Task, Node, abc.ABC):
     _ids = count(0)
 
     def __init__(
@@ -26,15 +32,30 @@ class Manipulation(task.Task, abc.ABC):
         restrict_position_goal_to_workspace: bool,
         relative_position_scaling_factor: float,
         z_relative_orientation_scaling_factor: float,
+        num_threads: int = 3,
         use_sim_time: bool = True,
         verbose: bool = False,
         **kwargs,
     ):
-        # Initialize the Task base class
-        task.Task.__init__(self, agent_rate=agent_rate)
 
         # Get next ID for this task instance
         self.id = next(self._ids)
+
+        # Initialize the Task base class
+        task.Task.__init__(self, agent_rate=agent_rate)
+
+        # Initialize ROS 2 Node base class and executor
+        try:
+            rclpy.init()
+        except:
+            if not rclpy.ok():
+                sys.exit("ROS 2 could not be initialised")
+        Node.__init__(self, f"drl_grasping_{self.id}")
+        self.set_parameters(
+            [Parameter("use_sim_time", type_=Parameter.Type.BOOL, value=use_sim_time)]
+        )
+        self._executor = MultiThreadedExecutor(num_threads=num_threads)
+        self._executor.add_node(self)
 
         # Store passed arguments for later use
         self.workspace_centre = workspace_centre
@@ -86,22 +107,26 @@ class Manipulation(task.Task, abc.ABC):
             self.robot_model_class.DEFAULT_GRIPPER_JOINT_POSITIONS
         )
 
-        # Setup broadcaster of transforms via tf2
-        self.tf2_broadcaster = Tf2Broadcaster(
-            node_name=f"drl_grasping_tf_broadcaster_{self.id}",
-            use_sim_time=self._use_sim_time,
-        )
+        # Setup listener and broadcaster of transforms via tf2
+        self.tf2_listener = Tf2Listener(node=self)
+        self.tf2_broadcaster = Tf2Broadcaster(node=self)
 
         # Setup control of the manipulator with MoveIt 2
         self.moveit2 = MoveIt2(
             robot_model=robot_model,
             node_name=f"drl_grasping_moveit2_py_{self.id}",
             use_sim_time=self._use_sim_time,
+            standalone_executor=False,
         )
+        self._executor.add_node(self.moveit2)
 
         # Names of important models (in addition to robot model)
         self.terrain_name = "terrain"
         self.object_names = []
+
+        # Spin this node in background thread(s)
+        self._executor_thread = Thread(target=self._executor.spin, daemon=True, args=())
+        self._executor_thread.start()
 
     def create_spaces(self) -> Tuple[ActionSpace, ObservationSpace]:
 
@@ -174,7 +199,7 @@ class Manipulation(task.Task, abc.ABC):
                         max(centre[i] - volume[i] / 2, target_pos[i]),
                     )
             # Set position goal
-            # TODO: This needs to be fixed (get_ee_pose must return pose w.r.t arm base)
+            # TODO (high): This needs to be fixed (get_ee_pose must return pose w.r.t arm base)
             self.moveit2.set_position_goal(target_pos, frame="drl_grasping_world")
         else:
             print("error: Neither absolute or relative position is set")
@@ -260,6 +285,8 @@ class Manipulation(task.Task, abc.ABC):
         Return the current xyzw quaternion of the end effector
         """
 
+        # TODO: Use tf2 listener
+
         robot = self.world.get_model(self.robot_name)
         quat_wxyz = robot.get_link(self.robot_ee_link_name).orientation()
         return quat_to_xyzw(quat_wxyz)
@@ -268,8 +295,10 @@ class Manipulation(task.Task, abc.ABC):
 
         if "world" == frame_id:
             try:
+                # In Gazebo, where multiple worlds are allowed
                 return self.world.to_gazebo().name()
             except:
+                # Otherwise (e.g. real world)
                 return "drl_grasping_world"
         elif "base_link" == frame_id:
             return self.robot_base_link_name
