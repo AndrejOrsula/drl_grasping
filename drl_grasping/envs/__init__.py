@@ -87,6 +87,7 @@ REACH_RANDOMIZER: str = "drl_grasping.envs.randomizers:ManipulationGazeboEnvRand
 REACH_KWARGS_RANDOMIZER: Dict = {
     "gravity": GRAVITY_EARTH,
     "gravity_std": GRAVITY_EARTH_STD,
+    "robot_random_pose": False,
     "robot_random_joint_positions": True,
     "robot_random_joint_positions_std": 0.1,
     "terrain_enable": True,
@@ -100,7 +101,7 @@ REACH_KWARGS_RANDOMIZER: Dict = {
     "object_model_count": 1,
     "object_random_pose": True,
     "object_spawn_position": (0.45, 0, 0.25),
-    "object_random_spawn_volume": [0.4, 0.4, 0.4],
+    "object_random_spawn_volume": (0.4, 0.4, 0.4),
     "object_models_rollouts_num": 0,
     "underworld_collision_plane": False,
 }
@@ -300,6 +301,7 @@ GRASP_RANDOMIZER: str = "drl_grasping.envs.randomizers:ManipulationGazeboEnvRand
 GRASP_KWARGS_RANDOMIZER: Dict = {
     "gravity": GRAVITY_EARTH,
     "gravity_std": GRAVITY_EARTH_STD,
+    "robot_random_pose": False,
     "robot_random_joint_positions": True,
     "robot_random_joint_positions_std": 0.1,
     "terrain_enable": True,
@@ -311,7 +313,7 @@ GRASP_KWARGS_RANDOMIZER: Dict = {
     "object_model_count": 4,
     "object_random_pose": True,
     "object_spawn_position": (0.5, 0.0, 0.15),
-    "object_random_spawn_volume": [0.18, 0.18, 0.075],
+    "object_random_spawn_volume": (0.18, 0.18, 0.075),
     "object_models_rollouts_num": 1,
     "underworld_collision_plane": True,
 }
@@ -459,6 +461,8 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict = {
     "gravity_std": GRAVITY_MOON_STD,
     "robot_spawn_position": (-2.0, 0, 0.5),
     "robot_spawn_quat_xyzw": (0, 0, 0, 1),
+    "robot_random_pose": True,
+    "robot_random_spawn_volume": (2.0, 2.0, 0.0),
     "robot_random_joint_positions": True,
     "robot_random_joint_positions_std": 0.1,
     "terrain_enable": True,
@@ -477,7 +481,7 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict = {
     "object_model_count": 4,
     "object_random_pose": True,
     "object_spawn_position": (-1.2, 0.0, 0.2),
-    "object_random_spawn_volume": [0.5, 0.5, 0.1],
+    "object_random_spawn_volume": (0.5, 0.5, 0.1),
     "object_models_rollouts_num": 1,
     "underworld_collision_plane": True,
 }

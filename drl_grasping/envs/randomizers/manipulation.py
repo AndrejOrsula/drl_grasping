@@ -43,6 +43,8 @@ class ManipulationGazeboEnvRandomizer(
             0.0,
             1.0,
         ),
+        robot_random_pose: bool = False,
+        robot_random_spawn_volume: Tuple[float, float, float] = (1.0, 1.0, 0.0),
         robot_random_joint_positions: bool = False,
         robot_random_joint_positions_std: float = 0.1,
         # Camera #
@@ -98,9 +100,9 @@ class ManipulationGazeboEnvRandomizer(
         object_dimensions: List[float] = [0.05, 0.05, 0.05],
         object_mass: float = 0.1,
         object_model_count: int = 1,
-        object_spawn_position: List[float] = [0.0, 0.0, 0.0],
+        object_spawn_position: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         object_random_pose: bool = True,
-        object_random_spawn_volume: List[float] = [0.5, 0.5, 0.5],
+        object_random_spawn_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5),
         object_models_rollouts_num: int = 1,
         # Collision plane below terrain
         underworld_collision_plane: bool = True,
@@ -144,6 +146,8 @@ class ManipulationGazeboEnvRandomizer(
         # Robot
         self._robot_spawn_position = robot_spawn_position
         self._robot_spawn_quat_xyzw = robot_spawn_quat_xyzw
+        self._robot_random_pose = robot_random_pose
+        self._robot_random_spawn_volume = robot_random_spawn_volume
         self._robot_random_joint_positions = robot_random_joint_positions
         self._robot_random_joint_positions_std = robot_random_joint_positions_std
 
@@ -651,7 +655,11 @@ class ManipulationGazeboEnvRandomizer(
         Randomize models if needed
         """
 
-        # Randomize robot joint positions if needed, else reset to
+        # Randomize robot model pose if needed
+        if self._robot_random_pose and self.robot.is_mobile:
+            self.randomize_robot_pose(task=task)
+
+        # Reset/randomize robot joint positions
         self.reset_robot_joint_positions(
             task=task, randomize=self._robot_random_joint_positions
         )
@@ -687,6 +695,33 @@ class ManipulationGazeboEnvRandomizer(
         # Execute a paused run to process these randomization operations
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
+
+    def randomize_robot_pose(self, task: SupportedTasks):
+
+        position = [
+            self._robot_spawn_position[0]
+            + task.np_random.uniform(
+                -self._robot_random_spawn_volume[0] / 2,
+                self._robot_random_spawn_volume[0] / 2,
+            ),
+            self._robot_spawn_position[1]
+            + task.np_random.uniform(
+                -self._robot_random_spawn_volume[1] / 2,
+                self._robot_random_spawn_volume[1] / 2,
+            ),
+            self._robot_spawn_position[2]
+            + task.np_random.uniform(
+                -self._robot_random_spawn_volume[2] / 2,
+                self._robot_random_spawn_volume[2] / 2,
+            ),
+        ]
+        quat_xyzw = Rotation.from_euler(
+            "xyz", [0, 0, task.np_random.uniform(-np.pi, np.pi)]
+        ).as_quat()
+
+        gazebo_robot = self.robot.to_gazebo()
+        gazebo_robot.reset_base_pose(position, quat_to_wxyz(quat_xyzw))
+        gazebo_robot.reset_base_world_velocity([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
 
     def reset_robot_joint_positions(
         self, task: SupportedTasks, randomize: bool = False
@@ -969,7 +1004,9 @@ class ManipulationGazeboEnvRandomizer(
     def post_randomization(
         self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
     ):
-        """ """
+        """
+        Perform steps that are required once randomization is complete and the simulation can be stepped a few times unpaused.
+        """
 
         object_overlapping_ok = False
         if hasattr(task, "camera_sub"):
