@@ -77,7 +77,6 @@ class Grasp(Manipulation, abc.ABC):
             skip_grasp_stage=curriculum_skip_grasp_stage,
             restart_exploration_at_start=curriculum_restart_exploration_at_start,
             max_episode_length=max_episode_length,
-            verbose=self._verbose,
         )
 
         # Additional parameters
@@ -86,22 +85,28 @@ class Grasp(Manipulation, abc.ABC):
 
         self._original_workspace_volume = self.workspace_volume
 
-        # Indicates whether gripper is opened or closed
-        self._gripper_state = 1.0
-
         # Flag that indicates whether to collect transitions with custom heuristic
         self._preload_replay_buffer = preload_replay_buffer
 
     def create_action_space(self) -> ActionSpace:
 
         if self._full_3d_orientation:
-            # 0   - (gripper) Gripper action
-            #       - Open if positive (i.e. increase width)
-            #       - Close if negative (i.e. decrease width)
-            # 1:4 - (x, y, z) displacement
-            #       - rescaled to metric units before use
-            # 4:10 - (v1_x, v1_y, v1_z, v2_x, v2_y, v2_z) relative 3D orientation in "6D representation"
-            return gym.spaces.Box(low=-1.0, high=1.0, shape=(10,), dtype=np.float32)
+            if self._use_servo:
+                # 0   - (gripper) Gripper action
+                #       - Open if positive (i.e. increase width)
+                #       - Close if negative (i.e. decrease width)
+                # 1:4 - (x, y, z) displacement
+                #       - rescaled to metric units before use
+                # 4:7 - (angular_x, angular_y, angular_z) relative rotation for moveit_servo
+                return gym.spaces.Box(low=-1.0, high=1.0, shape=(7,), dtype=np.float32)
+            else:
+                # 0   - (gripper) Gripper action
+                #       - Open if positive (i.e. increase width)
+                #       - Close if negative (i.e. decrease width)
+                # 1:4 - (x, y, z) displacement
+                #       - rescaled to metric units before use
+                # 4:10 - (v1_x, v1_y, v1_z, v2_x, v2_y, v2_z) relative 3D orientation in "6D representation"
+                return gym.spaces.Box(low=-1.0, high=1.0, shape=(10,), dtype=np.float32)
         else:
             # 0   - (gripper) Gripper action
             #       - Open if positive (i.e. increase width)
@@ -120,37 +125,36 @@ class Grasp(Manipulation, abc.ABC):
         if self._preload_replay_buffer:
             action = self._demonstrate_action()
 
-        if self._verbose:
-            print(f"action: {action}")
+        self.get_logger().debug(f"action: {action}")
 
         # Gripper action
-        # gripper_action = action['gripper_action']
         gripper_action = action[0]
         if gripper_action < -self._gripper_dead_zone:
-            self.moveit2.gripper_close(manual_plan=True)
-            self._gripper_state = -1.0
+            self.gripper.close()
         elif gripper_action > self._gripper_dead_zone:
-            self.moveit2.gripper_open(manual_plan=True)
-            self._gripper_state = 1.0
+            self.gripper.open()
         else:
-            # No-op for the gripper as it is in the dead zone
+            # No-op for the gripper if action is within the dead zone
             pass
 
-        # Set position goal
-        relative_position = action[1:4]
-        self.set_position_goal(relative=relative_position)
-
-        # Set orientation goal
-        if self._full_3d_orientation:
-            orientation_6d = action[4:10]
-            self.set_orientation_goal(relative=orientation_6d, representation="6d")
+        # Motion
+        if self._use_servo:
+            if self._full_3d_orientation:
+                angular = action[4:7]
+            else:
+                angular = [0.0, 0.0, action[4]]
+            self.servo(linear=action[1:4], angular=angular)
         else:
-            orientation_z = action[4]
-            self.set_orientation_goal(relative=orientation_z, representation="z")
-
-        # Plan and execute motion to target pose
-        self.moveit2.plan_kinematic_path(allowed_planning_time=0.1)
-        self.moveit2.execute()
+            position = self.get_relative_position(action[1:4])
+            if self._full_3d_orientation:
+                quat_xyzw = self.get_relative_orientation(
+                    rotation=action[4:10], representation="6d"
+                )
+            else:
+                quat_xyzw = self.get_relative_orientation(
+                    rotation=action[4], representation="z"
+                )
+            self.moveit2.move_to_pose(position=position, quat_xyzw=quat_xyzw)
 
     def get_observation(self) -> Observation:
 
@@ -160,8 +164,7 @@ class Grasp(Manipulation, abc.ABC):
 
         reward = self.curriculum.get_reward()
 
-        if self._verbose:
-            print(f"reward: {reward}")
+        self.get_logger().debug(f"reward: {reward}")
 
         return Reward(reward)
 
@@ -169,8 +172,7 @@ class Grasp(Manipulation, abc.ABC):
 
         done = self.curriculum.is_done()
 
-        if self._verbose:
-            print(f"done: {done}")
+        self.get_logger().debug(f"done: {done}")
 
         return done
 
@@ -189,10 +191,7 @@ class Grasp(Manipulation, abc.ABC):
 
         self.curriculum.reset_task()
 
-        self._gripper_state = 1.0
-
-        if self._verbose:
-            print(f"\ntask reset")
+        self.get_logger().debug(f"\ntask reset")
 
     def get_object_positions(self) -> Dict[str, Tuple[float, float, float]]:
 
@@ -284,7 +283,7 @@ class Grasp(Manipulation, abc.ABC):
         Grasped object must be in contact with all gripper links (fingers) and their contant normals must be dissimilar.
         """
 
-        if 1.0 == self._gripper_state:
+        if self.gripper.is_open:
             # Return empty if the gripper is opened
             return []
 
@@ -365,14 +364,14 @@ class Grasp(Manipulation, abc.ABC):
         """
 
         ws_min_bound = (
-            self.workspace_centre[0] - self.workspace_volume[0] / 2 - extra_padding,
-            self.workspace_centre[1] - self.workspace_volume[1] / 2 - extra_padding,
-            self.workspace_centre[2] - self.workspace_volume[2] / 2 - extra_padding,
+            self.workspace_centre[0] - self.workspace_volume_half[0] - extra_padding,
+            self.workspace_centre[1] - self.workspace_volume_half[1] - extra_padding,
+            self.workspace_centre[2] - self.workspace_volume_half[2] - extra_padding,
         )
         ws_max_bound = (
-            self.workspace_centre[0] + self.workspace_volume[0] / 2 + extra_padding,
-            self.workspace_centre[1] + self.workspace_volume[1] / 2 + extra_padding,
-            self.workspace_centre[2] + self.workspace_volume[2] / 2 + extra_padding,
+            self.workspace_centre[0] + self.workspace_volume_half[0] + extra_padding,
+            self.workspace_centre[1] + self.workspace_volume_half[1] + extra_padding,
+            self.workspace_centre[2] + self.workspace_volume_half[2] + extra_padding,
         )
 
         return all(
@@ -414,7 +413,7 @@ class Grasp(Manipulation, abc.ABC):
 
         if distance_mag < 0.02:
             # Object is approached
-            if 1.0 == self._gripper_state:
+            if self.gripper.is_open:
                 # Gripper is currently opened and should be closed
                 self.__actual_actions[0] = -1.0
                 # Don't move this step

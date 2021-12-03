@@ -1,5 +1,4 @@
 from drl_grasping.envs import tasks, models
-from drl_grasping.envs.utils import Tf2Broadcaster
 from drl_grasping.envs.utils.conversions import quat_to_xyzw, quat_to_wxyz
 from drl_grasping.envs.utils.gazebo import get_model_pose
 from drl_grasping.envs.utils.math import quat_mul

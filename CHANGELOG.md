@@ -4,9 +4,11 @@
 
 ### Added
 
-- Added support for mobile manipulators.
+- Integration with ROS 2 control.
+- Support for `moveit_servo`.
+- Support for mobile manipulators.
 - `lunalab_summit_xl_gen` is now added to the supported robot models.
-- Configuration of pre-commit git hooks
+- Configuration of pre-commit git hooks.
 - Support for `DRL_GRASPING_BROADCAST_INTERACTIVE_GUI` environment variable.
 - Support for `DRL_GRASPING_SENSORS_RENDER_ENGINE` environment variable
 - Models for `Sun` and `RandomSun`, replacing the default light contained in SDF worlds.
@@ -27,6 +29,8 @@
 - Changed PEP 8 python formatting for black to improve consistency.
 - Changed bash formatter to beautysh (minor changes).
 - Custom SDF world `default_interactive` is no longer used in favour of enabling/disabling interactive mode through `DRL_GRASPING_BROADCAST_INTERACTIVE_GUI` environment variable.
+- Custom environment logging is now performed via ROS 2 loggers.
+- Local classes for interfacing with MoveIt 2.
 
 ### Fixed
 

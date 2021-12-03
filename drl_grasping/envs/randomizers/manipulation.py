@@ -116,9 +116,8 @@ class ManipulationGazeboEnvRandomizer(
 
         # TODO (a lot of work): Implement proper physics randomization.
         if physics_rollouts_num != 0:
-            physics_rollouts_num = 0
-            print(
-                '"Proper" physics randomization at each reset is not yet implemented. Disabling...'
+            raise TypeError(
+                "Proper physics randomization at each reset is not yet implemented. Please set `physics_rollouts_num=0`."
             )
 
         # Update kwargs before passing them to the task constructor (some tasks might need them)
@@ -338,10 +337,9 @@ class ManipulationGazeboEnvRandomizer(
             "DRL_GRASPING_BROADCAST_INTERACTIVE_GUI", default="false"
         ).lower() in ("true", "1"):
             # TODO (medium): Do not open GUI client when DRL_GRASPING_BROADCAST_INTERACTIVE_GUI is set, only enable the broadcaster plugin
-            if task._verbose:
-                print(
-                    "Inserting world plugins for broadcasting GUI with enabled user commands..."
-                )
+            task.get_logger().info(
+                "Inserting world plugins for broadcasting GUI with enabled user commands..."
+            )
             gazebo.gui()
             task.world.to_gazebo().insert_world_plugin(
                 "ignition-gazebo-user-commands-system",
@@ -353,10 +351,9 @@ class ManipulationGazeboEnvRandomizer(
             camera_render_engine = environ.get(
                 "DRL_GRASPING_SENSORS_RENDER_ENGINE", default="ogre2"
             )
-            if task._verbose:
-                print(
-                    f"Inserting world plugins for sensors with {camera_render_engine} rendering engine..."
-                )
+            task.get_logger().info(
+                f"Inserting world plugins for sensors with {camera_render_engine} rendering engine..."
+            )
             task.world.to_gazebo().insert_world_plugin(
                 "libignition-gazebo-sensors-system.so",
                 "ignition::gazebo::systems::Sensors",
@@ -372,48 +369,42 @@ class ManipulationGazeboEnvRandomizer(
         """
 
         model_names = task.world.to_gazebo().model_names()
-        if task._verbose and len(model_names) > 0:
-            print(
+        if len(model_names) > 0:
+            task.get_logger().warn(
                 "Before initialisation, the world already contains the following models:"
                 f"\n\t{model_names}"
             )
 
         # Insert robot
-        if task._verbose:
-            print("Inserting robot into the environment...")
+        task.get_logger().info("Inserting robot into the environment...")
         self.add_robot(task=task, gazebo=gazebo)
 
         # Insert camera
         if self._camera_enable:
-            if task._verbose:
-                print("Inserting camera into the environment...")
+            task.get_logger().info("Inserting camera into the environment...")
             self.add_camera(task=task, gazebo=gazebo)
 
         # Insert default terrain if enabled and terrain randomization is disabled
         if self._terrain_enable and not self.__terrain_model_randomizer_enabled():
-            if task._verbose:
-                print("Inserting default terrain into the environment...")
+            task.get_logger().info("Inserting default terrain into the environment...")
             self.add_default_terrain(task=task, gazebo=gazebo)
 
         # Insert default light if enabled and light randomization is disabled
         if self._light_enable and not self.__light_model_randomizer_enabled():
-            if task._verbose:
-                print("Inserting default light into the environment...")
+            task.get_logger().info("Inserting default light into the environment...")
             self.add_default_light(task=task, gazebo=gazebo)
 
         # Insert default object if enabled and object randomization is disabled
         if self._object_enable and not self.__object_models_randomizer_enabled():
-            if task._verbose:
-                print("Inserting default objects into the environment...")
+            task.get_logger().info("Inserting default objects into the environment...")
             self.add_default_objects(task=task, gazebo=gazebo)
 
         # Insert invisible plane below the terrain to prevent objects from falling into the abyss and causing physics errors
         # TODO (medium): Consider replacing invisible plane with removal of all objects that are too low along z axis
         if self._underworld_collision_plane:
-            if task._verbose:
-                print(
-                    "Inserting invisible plane below the terrain into the environment..."
-                )
+            task.get_logger().info(
+                "Inserting invisible plane below the terrain into the environment..."
+            )
             self.add_underworld_collision_plane(task=task, gazebo=gazebo)
 
     def add_robot(self, task: SupportedTasks, gazebo: scenario.GazeboSimulator):
@@ -716,10 +707,6 @@ class ManipulationGazeboEnvRandomizer(
             else:
                 self.reset_default_object_pose(task=task)
 
-        # Execute a paused run to process these randomization operations
-        if not gazebo.run(paused=True):
-            raise RuntimeError("Failed to execute a paused Gazebo run")
-
     def randomize_robot_pose(self, task: SupportedTasks):
 
         position = [
@@ -771,21 +758,11 @@ class ManipulationGazeboEnvRandomizer(
             self.robot.arm_joint_names,
         ):
             raise RuntimeError("Failed to reset robot joint velocities")
-        # Send new positions also to the controller
-        # Note: 'move_to_joint_positions' requires that joints need to be sorted alphabetically
-        arm_joint_names = self.robot.arm_joint_names
-        task.moveit2.move_to_joint_positions(
-            list(
-                operator.itemgetter(
-                    *sorted(
-                        range(len(arm_joint_names)), key=arm_joint_names.__getitem__
-                    )
-                )(arm_joint_positions)
-            )
-        )
+        # Reset also in the controller
+        task.moveit2.reset_controller(joint_state=arm_joint_positions)
 
         # Gripper joints - apply positions and 0 velocities
-        if self.robot.gripper_joint_names:
+        if task._enable_gripper and self.robot.gripper_joint_names:
             if not gazebo_robot.reset_joint_positions(
                 task.initial_gripper_joint_positions, self.robot.gripper_joint_names
             ):
@@ -795,7 +772,14 @@ class ManipulationGazeboEnvRandomizer(
                 self.robot.gripper_joint_names,
             ):
                 raise RuntimeError("Failed to reset gripper joint velocities")
-            # TODO (high): Send gripper commands also to the controller (JointTrajectoryController). Test if needed first
+            # Reset also in the controller
+            if (
+                self.robot.CLOSED_GRIPPER_JOINT_POSITIONS
+                == task.initial_gripper_joint_positions
+            ):
+                task.gripper.reset_closed()
+            else:
+                task.gripper.reset_open()
 
         # Passive joints - apply 0 velocities to all
         if self.robot.passive_joint_names:
@@ -957,7 +941,7 @@ class ManipulationGazeboEnvRandomizer(
                 link = model.to_gazebo().get_link(link_name=model.link_names()[0])
                 link.enable_contact_detection(True)
             except Exception as ex:
-                print(
+                task.get_logger().warn(
                     "Model "
                     + model_name
                     + " could not be insterted. Reason: "
@@ -1045,13 +1029,21 @@ class ManipulationGazeboEnvRandomizer(
         Perform steps that are required once randomization is complete and the simulation can be stepped a few times unpaused.
         """
 
+        POST_RANDOMIZATION_MAX_ATTEMPTS = 5
+
         object_overlapping_ok = False
         if hasattr(task, "camera_sub"):
             # Execute steps until observation after reset is available
             task.camera_sub.reset_new_observation_checker()
+            attempts = 0
             while not task.camera_sub.new_observation_available():
-                if task._verbose:
-                    print("Waiting for new observation after reset")
+                attempts += 1
+                if attempts < POST_RANDOMIZATION_MAX_ATTEMPTS:
+                    task.get_logger().info("Waiting for new observation after reset.")
+                else:
+                    task.get_logger().warn(
+                        f"Waiting for new observation after reset. Interation #{attempts}..."
+                    )
                 if not gazebo.run(paused=False):
                     raise RuntimeError("Failed to execute a running Gazebo run")
                 object_overlapping_ok = self.check_object_overlapping(task=task)
@@ -1063,13 +1055,16 @@ class ManipulationGazeboEnvRandomizer(
 
         # Make sure no objects are overlapping (intersections between collision geometry)
         attemps = 0
-        while not object_overlapping_ok and attemps < 5:
+        while not object_overlapping_ok and attemps < POST_RANDOMIZATION_MAX_ATTEMPTS:
             attemps += 1
-            if task._verbose:
-                print("Objects overlapping, trying new positions")
+            task.get_logger().info("Objects overlapping, trying new positions")
             if not gazebo.run(paused=False):
                 raise RuntimeError("Failed to execute a running Gazebo run")
             object_overlapping_ok = self.check_object_overlapping(task=task)
+        if POST_RANDOMIZATION_MAX_ATTEMPTS == attemps:
+            task.get_logger().warn(
+                "Objects could not be spawned overlapping. The workspace might be too crowded!"
+            )
 
     def check_object_overlapping(
         self,

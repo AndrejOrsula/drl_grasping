@@ -117,7 +117,6 @@ class RandomPrimitive(model_wrapper.ModelWrapper):
                 color=color,
             )
         else:
-            print(
-                f"Error: '{use_specific_primitive}'' in not a supported primitive. "
-                "Pleasure use 'box', 'cylinder' or 'sphere."
+            raise TypeError(
+                f"Type '{use_specific_primitive}' in not a supported primitive. Pleasure use 'box', 'cylinder' or 'sphere."
             )

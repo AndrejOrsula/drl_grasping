@@ -27,21 +27,20 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         "safety_limits": True,
         "safety_soft_limit_margin": 0.17453293,
         "safety_k_position": 20,
+        "collision_chassis": False,
+        "collision_wheels": True,
+        "collision_arm": False,
+        "collision_gripper": True,
         "high_quality_mesh": True,
         "mimic_gripper_joints": False,
         "ros2_control": True,
         "ros2_control_plugin": "ignition",
-        "ros2_control_command_interface": "position,velocity",
+        "ros2_control_command_interface": "effort",
         "gazebo_preserve_fixed_joint": False,
         "gazebo_diff_drive": True,
         "gazebo_joint_trajectory_controller": False,
         "gazebo_joint_state_publisher": False,
         "gazebo_pose_publisher": True,
-        # TODO (medium): All of these could also be part of xacro_mapping (needs to be added to xacro in description package)
-        # "wheels_collisions": True,
-        # "arm_collision": True,
-        # "hand_collision": True,
-        # "separate_gripper_controller": True,
     }
     __XACRO_MODEL_PATH_REMAP: Tuple[str, str] = (
         __DESCRIPTION_PACKAGE,
@@ -50,11 +49,11 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
 
     DEFAULT_ARM_JOINT_POSITIONS: List[float] = (
         0.0,
-        3.490658503988659,
+        3.141592653589793,
         0.0,
-        5.235987755982989,
+        4.71238898038469,
         0.0,
-        1.7453292519943295,
+        1.5707963267948966,
         0.0,
     )
     OPEN_GRIPPER_JOINT_POSITIONS: List[float] = (
@@ -63,9 +62,9 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         0.2,
     )
     CLOSED_GRIPPER_JOINT_POSITIONS: List[float] = (
-        1.2,
-        1.2,
-        1.2,
+        1.3,
+        1.3,
+        1.3,
     )
     DEFAULT_GRIPPER_JOINT_POSITIONS: List[float] = OPEN_GRIPPER_JOINT_POSITIONS
 
@@ -192,27 +191,37 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
 
         return self.arm_joint_names + self.gripper_joint_names
 
+    @classmethod
+    def get_arm_joint_names(cls, prefix: str = "") -> List[str]:
+
+        return [
+            prefix + cls.__PREFIX_MANIPULATOR + "joint_1",
+            prefix + cls.__PREFIX_MANIPULATOR + "joint_2",
+            prefix + cls.__PREFIX_MANIPULATOR + "joint_3",
+            prefix + cls.__PREFIX_MANIPULATOR + "joint_4",
+            prefix + cls.__PREFIX_MANIPULATOR + "joint_5",
+            prefix + cls.__PREFIX_MANIPULATOR + "joint_6",
+            prefix + cls.__PREFIX_MANIPULATOR + "joint_7",
+        ]
+
     @property
     def arm_joint_names(self) -> List[str]:
 
+        return self.get_arm_joint_names(self.prefix)
+
+    @classmethod
+    def get_gripper_joint_names(cls, prefix: str = "") -> List[str]:
+
         return [
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint_1",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint_2",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint_3",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint_4",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint_5",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint_6",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint_7",
+            prefix + cls.__PREFIX_MANIPULATOR + "joint_finger_1",
+            prefix + cls.__PREFIX_MANIPULATOR + "joint_finger_2",
+            prefix + cls.__PREFIX_MANIPULATOR + "joint_finger_3",
         ]
 
     @property
     def gripper_joint_names(self) -> List[str]:
 
-        return [
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint_finger_1",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint_finger_2",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint_finger_3",
-        ]
+        return self.get_gripper_joint_names(self.prefix)
 
     @property
     def move_base_joint_limits(self) -> Optional[List[Tuple[float, float]]]:

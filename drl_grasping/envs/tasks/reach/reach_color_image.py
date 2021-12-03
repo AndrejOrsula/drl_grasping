@@ -3,7 +3,6 @@ from drl_grasping.envs.perception import CameraSubscriber
 from drl_grasping.envs.models.sensors import Camera
 from gym_ignition.utils.typing import Observation
 from gym_ignition.utils.typing import ObservationSpace
-from typing import Tuple
 import abc
 import gym
 import numpy as np
@@ -33,6 +32,7 @@ class ReachColorImage(Reach, abc.ABC):
             node=self,
             topic=Camera.get_color_topic(camera_type),
             is_point_cloud=False,
+            callback_group=self._callback_group,
         )
 
     def create_observation_space(self) -> ObservationSpace:
@@ -57,8 +57,7 @@ class ReachColorImage(Reach, abc.ABC):
 
         observation = Observation(color_image)
 
-        if self._verbose:
-            print(f"\nobservation: {observation}")
+        self.get_logger().debug(f"\nobservation: {observation}")
 
         # Return the observation
         return observation

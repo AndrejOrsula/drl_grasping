@@ -1,19 +1,23 @@
-from drl_grasping.envs.control import MoveIt2
+from drl_grasping.envs.control import MoveIt2, MoveIt2Servo, MoveIt2Gripper
 from drl_grasping.envs.models.robots import get_robot_model_class
 from drl_grasping.envs.utils import Tf2Broadcaster, Tf2Listener
-from drl_grasping.envs.utils.conversions import orientation_6d_to_quat, quat_to_xyzw
+from drl_grasping.envs.utils.conversions import orientation_6d_to_quat, quat_to_wxyz
 from drl_grasping.envs.utils.math import quat_mul
 from gym_ignition.base import task
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
 from itertools import count
-from rclpy.executors import MultiThreadedExecutor
+from os import environ
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import SingleThreadedExecutor, MultiThreadedExecutor
+from rclpy.logging import LoggingSeverity
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from scipy.spatial.transform import Rotation
 from threading import Thread
 from typing import Tuple, Union
 import abc
+import multiprocessing
 import numpy as np
 import rclpy
 import sys
@@ -29,12 +33,14 @@ class Manipulation(task.Task, Node, abc.ABC):
         workspace_frame_id: str,
         workspace_centre: Tuple[float, float, float],
         workspace_volume: Tuple[float, float, float],
+        ignore_new_actions_while_executing: bool,
+        use_servo: bool,
+        scaling_factor_translation: float,
+        scaling_factor_rotation: float,
         restrict_position_goal_to_workspace: bool,
-        relative_position_scaling_factor: float,
-        z_relative_orientation_scaling_factor: float,
-        num_threads: int = 3,
+        enable_gripper: bool,
+        num_threads: int,
         use_sim_time: bool = True,
-        verbose: bool = False,
         **kwargs,
     ):
 
@@ -44,7 +50,7 @@ class Manipulation(task.Task, Node, abc.ABC):
         # Initialize the Task base class
         task.Task.__init__(self, agent_rate=agent_rate)
 
-        # Initialize ROS 2 Node base class and executor
+        # Initialize ROS 2 Node base class
         try:
             rclpy.init()
         except:
@@ -54,19 +60,31 @@ class Manipulation(task.Task, Node, abc.ABC):
         self.set_parameters(
             [Parameter("use_sim_time", type_=Parameter.Type.BOOL, value=use_sim_time)]
         )
-        executor = MultiThreadedExecutor(num_threads=num_threads)
-        executor.add_node(self)
+
+        # Set logging level for ROS 2 Node based on environment variable
+        self.get_logger().set_level(
+            getattr(
+                LoggingSeverity,
+                environ.get("DRL_GRASPING_DEBUG_LEVEL", default="ERROR").upper(),
+            )
+        )
 
         # Store passed arguments for later use
         self.workspace_centre = workspace_centre
         self.workspace_volume = workspace_volume
         self.__restrict_position_goal_to_workspace = restrict_position_goal_to_workspace
-        self.__relative_position_scaling_factor = relative_position_scaling_factor
-        self.__z_relative_orientation_scaling_factor = (
-            z_relative_orientation_scaling_factor
-        )
+        self._use_servo = use_servo
+        self.__scaling_factor_translation = scaling_factor_translation
+        self.__scaling_factor_rotation = scaling_factor_rotation
+        self._enable_gripper = enable_gripper
         self._use_sim_time = use_sim_time
-        self._verbose = verbose
+
+        # Get half of the workspace volume, useful is many computations
+        self.workspace_volume_half = (
+            workspace_volume[0] / 2,
+            workspace_volume[1] / 2,
+            workspace_volume[2] / 2,
+        )
 
         # Get class of the robot model based on passed argument
         self.robot_model_class = get_robot_model_class(robot_model)
@@ -95,6 +113,12 @@ class Manipulation(task.Task, Node, abc.ABC):
         self.robot_gripper_link_names = self.robot_model_class.get_gripper_link_names(
             self.robot_prefix
         )
+        self.robot_arm_joint_names = self.robot_model_class.get_arm_joint_names(
+            self.robot_prefix
+        )
+        self.robot_gripper_joint_names = self.robot_model_class.get_gripper_joint_names(
+            self.robot_prefix
+        )
 
         # Get exact name substitution of the frame for workspace
         self.workspace_frame_id = self.substitute_special_frames(workspace_frame_id)
@@ -107,22 +131,59 @@ class Manipulation(task.Task, Node, abc.ABC):
             self.robot_model_class.DEFAULT_GRIPPER_JOINT_POSITIONS
         )
 
+        # Names of important models (in addition to robot model)
+        self.terrain_name = "terrain"
+        self.object_names = []
+
+        # Create executor
+        if num_threads == 1:
+            executor = SingleThreadedExecutor()
+        elif num_threads > 1:
+            executor = MultiThreadedExecutor(
+                num_threads=num_threads,
+            )
+        else:
+            executor = MultiThreadedExecutor(num_threads=multiprocessing.cpu_count())
+
+        # Create callback group that allows execution of callbacks in parallel without restrictions
+        self._callback_group = ReentrantCallbackGroup()
+
+        # Add this node to the executor
+        executor.add_node(self)
+
         # Setup listener and broadcaster of transforms via tf2
         self.tf2_listener = Tf2Listener(node=self)
         self.tf2_broadcaster = Tf2Broadcaster(node=self)
 
-        # Setup control of the manipulator with MoveIt 2
+        # MoveIt 2 for motion planning with arm (always needed at least for joint position resets)
         self.moveit2 = MoveIt2(
-            robot_model=robot_model,
-            node_name=f"drl_grasping_moveit2_py_{self.id}",
-            use_sim_time=self._use_sim_time,
-            standalone_executor=False,
+            node=self,
+            joint_names=self.robot_arm_joint_names,
+            base_link_name=self.robot_arm_base_link_name,
+            end_effector_name=self.robot_ee_link_name,
+            ignore_new_calls_while_executing=ignore_new_actions_while_executing,
+            callback_group=self._callback_group,
         )
-        executor.add_node(self.moveit2)
-
-        # Names of important models (in addition to robot model)
-        self.terrain_name = "terrain"
-        self.object_names = []
+        # MoveIt2 real-time control (servo)
+        if self._use_servo:
+            self.servo = MoveIt2Servo(
+                node=self,
+                frame_id=self.robot_arm_base_link_name,
+                linear_speed=scaling_factor_translation,
+                angular_speed=scaling_factor_rotation,
+                callback_group=self._callback_group,
+            )
+        # Gripper interface
+        if self._enable_gripper:
+            self.gripper = MoveIt2Gripper(
+                node=self,
+                frame_id=self.robot_arm_base_link_name,
+                gripper_joint_names=self.robot_gripper_joint_names,
+                open_gripper_joint_positions=self.robot_model_class.OPEN_GRIPPER_JOINT_POSITIONS,
+                closed_gripper_joint_positions=self.robot_model_class.CLOSED_GRIPPER_JOINT_POSITIONS,
+                ignore_new_calls_while_executing=ignore_new_actions_while_executing,
+                callback_group=self._callback_group,
+            )
 
         # Spin this node in background thread(s)
         self._executor_thread = Thread(target=executor.spin, daemon=True, args=())
@@ -164,112 +225,120 @@ class Manipulation(task.Task, Node, abc.ABC):
         raise NotImplementedError()
 
     # Helper functions #
-    def set_position_goal(
+    def get_relative_position(
+        self, translation: Tuple[float, float, float]
+    ) -> Tuple[float, float, float]:
+
+        # Scale relative action to metric units
+        translation = self.scale_relative_translation(translation)
+        # Get current position
+        current_position = self.get_ee_position()
+        # Compute target position
+        target_position = (
+            current_position[0] + translation[0],
+            current_position[1] + translation[1],
+            current_position[2] + translation[2],
+        )
+
+        # Restrict target position to a limited workspace, if desired
+        if self.__restrict_position_goal_to_workspace:
+            target_position = self.restrict_position_goal_to_workspace(target_position)
+
+        return target_position
+
+    def get_relative_orientation(
         self,
-        absolute: Union[Tuple[float, float, float], None] = None,
-        relative: Union[Tuple[float, float, float], None] = None,
-    ):
-
-        target_pos = None
-
-        if absolute is not None:
-            # If absolute position is selected, directly use the action as target
-            target_pos = absolute
-        elif relative is not None:
-            # Scale relative action to metric units
-            relative_pos = self.__relative_position_scaling_factor * relative
-            # Get current position
-            current_pos = self.get_ee_position()
-
-            # Compute target position
-            target_pos = [
-                current_pos[0] + relative_pos[0],
-                current_pos[1] + relative_pos[1],
-                current_pos[2] + relative_pos[2],
-            ]
-
-        if target_pos is not None:
-            # Restrict target position to a limited workspace
-            if self.__restrict_position_goal_to_workspace:
-                centre = self.workspace_centre
-                volume = self.workspace_volume
-                for i in range(3):
-                    target_pos[i] = min(
-                        centre[i] + volume[i] / 2,
-                        max(centre[i] - volume[i] / 2, target_pos[i]),
-                    )
-            # Set position goal
-            self.moveit2.set_position_goal(target_pos, frame=self.robot_base_link_name)
-        else:
-            print("error: Neither absolute or relative position is set")
-
-    def set_orientation_goal(
-        self,
-        absolute: Union[Tuple[float, ...], None] = None,
-        relative: Union[Tuple[float, ...], None] = None,
+        rotation: Union[
+            float,
+            Tuple[float, float, float, float],
+            Tuple[float, float, float, float, float, float],
+        ],
         representation: str = "quat",
-        xyzw: bool = True,
-    ):
+    ) -> Tuple[float, float, float, float]:
 
-        target_quat_xyzw = None
+        # Get current orientation
+        current_quat_xyzw = self.get_ee_orientation()
 
-        if absolute is not None:
-            # Convert absolute orientation representation to quaternion
-            if "quat" == representation:
-                if xyzw:
-                    target_quat_xyzw = absolute
-                else:
-                    target_quat_xyzw = quat_to_xyzw(absolute)
-            elif "6d" == representation:
-                vectors = tuple(
-                    absolute[x : x + 3] for x, _ in enumerate(absolute) if x % 3 == 0
-                )
-                target_quat_xyzw = orientation_6d_to_quat(vectors[0], vectors[1])
-            elif "z" == representation:
-                target_quat_xyzw = Rotation.from_euler(
-                    "xyz", [np.pi, 0, absolute]
-                ).as_quat()
+        # For 'z' representation, result should always point down
+        # Therefore, create a new quatertnion that contains only yaw component
+        if "z" == representation:
+            current_yaw = Rotation.from_quat(current_quat_xyzw).as_euler("xyz")[2]
+            current_quat_xyzw = Rotation.from_euler(
+                "xyz", [np.pi, 0, current_yaw]
+            ).as_quat()
 
-        elif relative is not None:
-            # Get current orientation
-            current_quat_xyzw = self.get_ee_orientation()
+        # Convert relative orientation representation to quaternion
+        relative_quat_xyzw = None
+        if "quat" == representation:
+            relative_quat_xyzw = rotation
+        elif "6d" == representation:
+            vectors = tuple(
+                rotation[x : x + 3] for x, _ in enumerate(rotation) if x % 3 == 0
+            )
+            relative_quat_xyzw = orientation_6d_to_quat(vectors[0], vectors[1])
+        elif "z" == representation:
+            rotation = self.scale_relative_rotation(rotation)
+            relative_quat_xyzw = Rotation.from_euler("xyz", [0, 0, rotation]).as_quat()
 
-            # For 'z' representation, result should always point down
-            # Therefore, create a new quatertnion that contains only yaw component
-            if "z" == representation:
-                current_yaw = Rotation.from_quat(current_quat_xyzw).as_euler("xyz")[2]
-                current_quat_xyzw = Rotation.from_euler(
-                    "xyz", [np.pi, 0, current_yaw]
-                ).as_quat()
+        # Compute target position (combine quaternions)
+        target_quat_xyzw = quat_mul(current_quat_xyzw, relative_quat_xyzw)
 
-            # Convert relative orientation representation to quaternion
-            relative_quat_xyzw = None
-            if "quat" == representation:
-                if xyzw:
-                    relative_quat_xyzw = relative
-                else:
-                    relative_quat_xyzw = quat_to_xyzw(relative)
-            elif "6d" == representation:
-                vectors = tuple(
-                    relative[x : x + 3] for x, _ in enumerate(relative) if x % 3 == 0
-                )
-                relative_quat_xyzw = orientation_6d_to_quat(vectors[0], vectors[1])
-            elif "z" == representation:
-                relative *= self.__z_relative_orientation_scaling_factor
-                relative_quat_xyzw = Rotation.from_euler(
-                    "xyz", [0, 0, relative]
-                ).as_quat()
+        # Normalise quaternion (should not be needed, but just to be safe)
+        target_quat_xyzw /= np.linalg.norm(target_quat_xyzw)
 
-            # Compute target position (combine quaternions)
-            target_quat_xyzw = quat_mul(current_quat_xyzw, relative_quat_xyzw)
+        return target_quat_xyzw
 
-        if target_quat_xyzw is not None:
-            # Normalise quaternion (should not be needed, but just to be safe)
-            target_quat_xyzw /= np.linalg.norm(target_quat_xyzw)
-            # Set orientation goal
-            self.moveit2.set_orientation_goal(target_quat_xyzw)
+    def scale_relative_translation(
+        self, translation: Tuple[float, float, float]
+    ) -> Tuple[float, float, float]:
+
+        return (
+            self.__scaling_factor_translation * translation[0],
+            self.__scaling_factor_translation * translation[1],
+            self.__scaling_factor_translation * translation[2],
+        )
+
+    def scale_relative_rotation(
+        self,
+        rotation: Union[float, Tuple[float, float, float], np.floating, np.ndarray],
+    ) -> float:
+
+        if not hasattr(rotation, "__len__"):
+            return self.__scaling_factor_rotation * rotation
         else:
-            print("error: Neither absolute or relative orientation is set")
+            return (
+                self.__scaling_factor_rotation * rotation[0],
+                self.__scaling_factor_rotation * rotation[1],
+                self.__scaling_factor_rotation * rotation[2],
+            )
+
+    def restrict_position_goal_to_workspace(
+        self, position: Tuple[float, float, float]
+    ) -> Tuple[float, float, float]:
+
+        return (
+            min(
+                self.workspace_centre[0] + self.workspace_volume_half[0],
+                max(
+                    self.workspace_centre[0] - self.workspace_volume_half[0],
+                    position[0],
+                ),
+            ),
+            min(
+                self.workspace_centre[1] + self.workspace_volume_half[1],
+                max(
+                    self.workspace_centre[1] - self.workspace_volume_half[1],
+                    position[1],
+                ),
+            ),
+            min(
+                self.workspace_centre[2] + self.workspace_volume_half[2],
+                max(
+                    self.workspace_centre[2] - self.workspace_volume_half[2],
+                    position[2],
+                ),
+            ),
+        )
 
     def get_ee_pose(
         self,
@@ -281,42 +350,90 @@ class Manipulation(task.Task, Node, abc.ABC):
         # TODO: Use `get_ee_pose()` at it would provide a slight performance as opposed to `get_ee_position()` + `get_ee_orientation()` [not relevant once moveit_servo is used]
 
         transform = self.tf2_listener.lookup_transform_sync(
-            source_frame=self.robot_ee_link_name, target_frame=self.robot_base_link_name
+            source_frame=self.robot_ee_link_name,
+            target_frame=self.robot_arm_base_link_name,
+            retry=False,
         )
-        return (
-            (transform.translation.x, transform.translation.y, transform.translation.z),
-            (
-                transform.rotation.x,
-                transform.rotation.y,
-                transform.rotation.z,
-                transform.rotation.w,
-            ),
-        )
+        if transform is not None:
+            return (
+                (
+                    transform.translation.x,
+                    transform.translation.y,
+                    transform.translation.z,
+                ),
+                (
+                    transform.rotation.x,
+                    transform.rotation.y,
+                    transform.rotation.z,
+                    transform.rotation.w,
+                ),
+            )
+        else:
+            try:
+                robot_model = self.world.get_model(self.robot_name).to_gazebo()
+                ee_link = robot_model.get_link(link_name=self.robot_ee_link_name)
+                return (ee_link.position(), quat_to_wxyz(ee_link.orientation()))
+            except:
+                return (
+                    (0.0, 0.0, 0.0),
+                    (
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                    ),
+                )
 
     def get_ee_position(self) -> Tuple[float, float, float]:
         """
         Return the current position of the end effector with respect to robot base link.
         """
 
-        position = self.tf2_listener.lookup_transform_sync(
-            source_frame=self.robot_ee_link_name, target_frame=self.robot_base_link_name
-        ).translation
-        return (position.x, position.y, position.z)
+        transform = self.tf2_listener.lookup_transform_sync(
+            source_frame=self.robot_ee_link_name,
+            target_frame=self.robot_arm_base_link_name,
+            retry=False,
+        )
+        if transform is not None:
+            position = transform.translation
+            return (position.x, position.y, position.z)
+        else:
+            try:
+                robot_model = self.world.get_model(self.robot_name).to_gazebo()
+                return robot_model.get_link(
+                    link_name=self.robot_ee_link_name
+                ).position()
+            except:
+                return (0.0, 0.0, 0.0)
 
     def get_ee_orientation(self) -> Tuple[float, float, float, float]:
         """
         Return the current xyzw quaternion of the end effector with respect to robot base link.
         """
 
-        orientation = self.tf2_listener.lookup_transform_sync(
-            source_frame=self.robot_ee_link_name, target_frame=self.robot_base_link_name
-        ).rotation
-        return (
-            orientation.x,
-            orientation.y,
-            orientation.z,
-            orientation.w,
+        transform = self.tf2_listener.lookup_transform_sync(
+            source_frame=self.robot_ee_link_name,
+            target_frame=self.robot_arm_base_link_name,
+            retry=False,
         )
+        if transform is not None:
+            orientation = transform.rotation
+            return (
+                orientation.x,
+                orientation.y,
+                orientation.z,
+                orientation.w,
+            )
+        else:
+            try:
+                robot_model = self.world.get_model(self.robot_name).to_gazebo()
+                return quat_to_wxyz(
+                    robot_model.get_link(
+                        link_name=self.robot_ee_link_name
+                    ).orientation()
+                )
+            except:
+                return (0.0, 0.0, 0.0, 1.0)
 
     def substitute_special_frames(self, frame_id: str) -> str:
 

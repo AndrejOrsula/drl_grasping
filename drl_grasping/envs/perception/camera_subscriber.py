@@ -1,3 +1,4 @@
+from rclpy.callback_groups import CallbackGroup
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -9,7 +10,7 @@ from rclpy.qos import (
 )
 from sensor_msgs.msg import PointCloud2, Image
 from threading import Thread, Lock
-from typing import Union
+from typing import Optional, Union
 import rclpy
 
 
@@ -19,7 +20,10 @@ class CameraSubscriber:
         node: Node,
         topic: str,
         is_point_cloud: bool,
+        callback_group: Optional[CallbackGroup] = None,
     ):
+
+        self._node = node
 
         # Prepare the subscriber
         if is_point_cloud:
@@ -27,15 +31,17 @@ class CameraSubscriber:
         else:
             camera_msg_type = Image
         self.__observation = camera_msg_type()
-        node.create_subscription(
+        self._node.create_subscription(
             msg_type=camera_msg_type,
             topic=topic,
             callback=self.observation_callback,
             qos_profile=QoSProfile(
                 reliability=QoSReliabilityPolicy.RELIABLE,
                 durability=QoSDurabilityPolicy.VOLATILE,
-                history=QoSHistoryPolicy.KEEP_ALL,
+                history=QoSHistoryPolicy.KEEP_LAST,
+                depth=1,
             ),
+            callback_group=callback_group,
         )
         self.__observation_mutex = Lock()
         self.__new_observation_available = False
@@ -48,6 +54,7 @@ class CameraSubscriber:
         self.__observation_mutex.acquire()
         self.__observation = msg
         self.__new_observation_available = True
+        self._node.get_logger().debug("New observation received.")
         self.__observation_mutex.release()
 
     def get_observation(self) -> Union[PointCloud2, Image]:

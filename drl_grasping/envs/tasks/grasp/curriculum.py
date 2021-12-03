@@ -78,7 +78,6 @@ class GraspCurriculum:
         skip_grasp_stage: bool,
         restart_exploration_at_start: bool,
         max_episode_length: int,
-        verbose: bool = False,
     ):
 
         # Grasp task/environment that will be used to extract information from the scene
@@ -120,7 +119,6 @@ class GraspCurriculum:
         self._skip_reach_stage = skip_reach_stage
         self._skip_grasp_stage = skip_grasp_stage
         self._max_episode_length = max_episode_length
-        self._verbose = verbose
 
         # Make sure parameter combinations are valid
         if self._stage_increase_rewards and self._stage_reward_multiplier < 1.0:
@@ -209,11 +207,10 @@ class GraspCurriculum:
             + float(is_success)
         ) / self._success_rate_rolling_average_n
 
-        if self._verbose:
-            print(
-                f"Average success rate (n={self._success_rate_rolling_average_n}) "
-                f"= {self._success_rate}"
-            )
+        self.task.get_logger().info(
+            f"Average success rate (n={self._success_rate_rolling_average_n}) "
+            f"= {self._success_rate}"
+        )
 
         if self._enable_workspace_scale:
             scale = max(
@@ -244,13 +241,13 @@ class GraspCurriculum:
             # Determine the next stage
             next_stage = self._stage.next()
             if self._skip_grasp_stage and GraspStage.GRASP == next_stage:
-                print(
+                self.task.get_logger().info(
                     f"Skipping {GraspStage.GRASP} stage and "
                     "combining it with the next stage"
                 )
                 next_stage = next_stage.next()
 
-            print(
+            self.task.get_logger().info(
                 "Curriculum stage change:\n"
                 f"\tAverage success rate ({self._success_rate}) is now higher than the threshold ({self._success_rate_threshold}). "
                 f"Moving onto the next stage ({next_stage}). "
@@ -272,7 +269,7 @@ class GraspCurriculum:
         """
 
         if self._reset_step_counter <= 0:
-            print(
+            self.task.get_logger().info(
                 "Curriculum stage change:\n"
                 f"\tRestarting to first stage ({GraspStage.first()}) after {self._restart_every_n_steps} episodes "
                 f"have elapsed since reaching the second stage ({GraspStage(GraspStage.first().value+1)}). "
@@ -478,8 +475,7 @@ class GraspCurriculum:
                 else self._is_success
             )
             self._stage_completed[GraspStage.GRASP] = True
-            if self._verbose:
-                print(f"Object(s) grasped: {grasped_objects}")
+            self.task.get_logger().info(f"Object(s) grasped: {grasped_objects}")
             return 1.0
         else:
             return 0.0
@@ -539,8 +535,7 @@ class GraspCurriculum:
                 self._ground_collision_counter
                 >= self._n_ground_collisions_till_termination
             )
-            if self._verbose:
-                print("Robot collided with the ground plane.")
+            self.task.get_logger().debug("Robot collided with the ground plane.")
             return reward
 
         # If all objects are outside of workspace, terminate and return -1.0
@@ -548,8 +543,7 @@ class GraspCurriculum:
         if self.task.check_all_objects_outside_workspace(object_positions):
             reward -= self._outside_workspace_reward
             self._is_failure = True
-            if self._verbose:
-                print("All objects are outside of the workspace.")
+            self.task.get_logger().debug("All objects are outside of the workspace.")
             return reward
 
         return reward

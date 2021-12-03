@@ -6,16 +6,13 @@ from . import randomizers, tasks
 from ament_index_python.packages import get_package_share_directory
 from gym import logger as gym_logger
 from gym.envs.registration import register
-from gym_ignition.base.runtime import Runtime
-from gym_ignition.randomizers.gazebo_env_randomizer import GazeboEnvRandomizer
-from gym_ignition.runtimes.gazebo_runtime import GazeboRuntime
 from gym_ignition.utils import logger as gym_ign_logger
 from numpy import pi
 from os import environ, path
 from typing import Dict, Tuple
 
 
-# Set debug level
+# Set debug level for Ignition
 __debug_level = getattr(
     gym_logger, environ.get("DRL_GRASPING_DEBUG_LEVEL", default="ERROR").upper()
 )
@@ -30,16 +27,26 @@ gym_ign_logger.set_level(
 ######################
 # Entrypoint for tasks (can be simulated or real)
 DRL_GRASPING_TASK_ENTRYPOINT: str = "gym_ignition.runtimes.gazebo_runtime:GazeboRuntime"
+# A flag to enable use of simulated clock
+DRL_GRASPING_USE_SIM_TIME: bool = True
 # Robot model to use in the tasks where robot can be static
 DRL_GRASPING_ROBOT_MODEL: str = "lunalab_summit_xl_gen"
 # Robot model to use in the tasks where robot needs to be mobile
 DRL_GRASPING_ROBOT_MODEL_MOBILE: str = "lunalab_summit_xl_gen"
-# General verbosity
-DRL_GRASPING_VERBOSE: bool = True
+
+
+######################
+# Datasets and paths #
+######################
 # Path to directory containing base SDF worlds
 DRL_GRASPING_WORLDS_DIR: str = path.join(
     get_package_share_directory("drl_grasping"), "worlds"
 )
+
+
+###########
+# Presets #
+###########
 # Gravity preset for Earth
 GRAVITY_EARTH: Tuple[float, float, float] = (0.0, 0.0, -9.80665)
 GRAVITY_EARTH_STD: Tuple[float, float, float] = (0.0, 0.0, 0.0232)
@@ -55,32 +62,35 @@ GRAVITY_MARS_STD: Tuple[float, float, float] = (0.0, 0.0, 0.0191)
 # Reach #
 #########
 REACH_MAX_EPISODE_STEPS: int = 100
-REACH_AGENT_RATE: float = 2.5
+REACH_AGENT_RATE: float = 5.0
 REACH_KWARGS: Dict = {
     "agent_rate": REACH_AGENT_RATE,
     "robot_model": DRL_GRASPING_ROBOT_MODEL,
     "workspace_frame_id": "world",
     "workspace_centre": (0.45, 0, 0.25),
     "workspace_volume": (0.5, 0.5, 0.5),
+    "ignore_new_actions_while_executing": True,
+    "use_servo": True,
+    "scaling_factor_translation": 0.25,
+    "scaling_factor_rotation": pi / 2.0,
     "restrict_position_goal_to_workspace": True,
-    "relative_position_scaling_factor": 0.1,
-    "z_relative_orientation_scaling_factor": pi / 4.0,
+    "enable_gripper": False,
     "sparse_reward": False,
     "act_quick_reward": -0.01,
     "required_accuracy": 0.05,
-    "use_sim_time": True,
-    "verbose": DRL_GRASPING_VERBOSE,
+    "num_threads": 3,
+    "use_sim_time": DRL_GRASPING_USE_SIM_TIME,
 }
 REACH_KWARGS_OCTREE: Dict = {
     "octree_reference_frame_id": "world",
     "octree_dimension": 0.5,
-    "octree_depth": 4,
+    "octree_depth": 3,
     "octree_full_depth": 2,
     "octree_n_stacked": 2,
 }
 REACH_KWARGS_SIM: Dict = {
     "physics_rate": 100.0,
-    "real_time_factor": 15.0,
+    "real_time_factor": 20.0,
     "world": path.join(DRL_GRASPING_WORLDS_DIR, "default.sdf"),
 }
 REACH_RANDOMIZER: str = "drl_grasping.envs.randomizers:ManipulationGazeboEnvRandomizer"
@@ -244,20 +254,23 @@ register(
 # Grasp #
 #########
 GRASP_MAX_EPISODE_STEPS: int = 100
-GRASP_AGENT_RATE: float = 2.5
+GRASP_AGENT_RATE: float = 5.0
 GRASP_KWARGS: Dict = {
     "agent_rate": GRASP_AGENT_RATE,
     "robot_model": DRL_GRASPING_ROBOT_MODEL,
     "workspace_frame_id": "world",
     "workspace_centre": (0.5, 0.0, 0.11),
     "workspace_volume": (0.24, 0.24, 0.24),
+    "ignore_new_actions_while_executing": True,
+    "use_servo": True,
+    "scaling_factor_translation": 0.25,
+    "scaling_factor_rotation": pi / 2.0,
     "restrict_position_goal_to_workspace": True,
-    "relative_position_scaling_factor": 0.1,
-    "z_relative_orientation_scaling_factor": pi / 4.0,
+    "enable_gripper": True,
     "gripper_dead_zone": 0.0,
     "full_3d_orientation": False,
-    "use_sim_time": True,
-    "verbose": DRL_GRASPING_VERBOSE,
+    "num_threads": 4,
+    "use_sim_time": DRL_GRASPING_USE_SIM_TIME,
 }
 GRASP_KWARGS_CURRICULUM: Dict = {
     "sparse_reward": True,
@@ -295,7 +308,7 @@ GRASP_KWARGS_OCTREE: Dict = {
 }
 GRASP_KWARGS_SIM: Dict = {
     "physics_rate": 250.0,
-    "real_time_factor": 10.0,
+    "real_time_factor": 15.0,
     "world": path.join(DRL_GRASPING_WORLDS_DIR, "default.sdf"),
 }
 GRASP_RANDOMIZER: str = "drl_grasping.envs.randomizers:ManipulationGazeboEnvRandomizer"
@@ -324,7 +337,7 @@ GRASP_KWARGS_RANDOMIZER_CAMERA: Dict = {
     "camera_enable": True,
     "camera_width": 256,
     "camera_height": 256,
-    "camera_update_rate": 1.2 * REACH_AGENT_RATE,
+    "camera_update_rate": 1.2 * GRASP_AGENT_RATE,
     "camera_horizontal_fov": pi / 3.0,
     "camera_vertical_fov": pi / 3.0,
     "camera_noise_mean": 0.0,
@@ -400,21 +413,24 @@ register(
 ##################
 # GraspPlanetary #
 ##################
-GRASP_PLANETARY_MAX_EPISODE_STEPS: int = 20
-GRASP_PLANETARY_AGENT_RATE: float = 2.5
+GRASP_PLANETARY_MAX_EPISODE_STEPS: int = 200
+GRASP_PLANETARY_AGENT_RATE: float = 5.0
 GRASP_PLANETARY_KWARGS: Dict = {
     "agent_rate": GRASP_PLANETARY_AGENT_RATE,
     "robot_model": DRL_GRASPING_ROBOT_MODEL_MOBILE,
     "workspace_frame_id": "base_link",
     "workspace_centre": (0.0, 0.0, 0.0),
-    "workspace_volume": (2.0, 2.0, 2.0),
+    "workspace_volume": (200.0, 200.0, 200.0),
+    "ignore_new_actions_while_executing": True,
+    "use_servo": True,
+    "scaling_factor_translation": 0.25,
+    "scaling_factor_rotation": pi / 2.0,
     "restrict_position_goal_to_workspace": False,
-    "relative_position_scaling_factor": 0.1,
-    "z_relative_orientation_scaling_factor": pi / 4.0,
+    "enable_gripper": True,
     "gripper_dead_zone": 0.0,
     "full_3d_orientation": False,
-    "use_sim_time": True,
-    "verbose": DRL_GRASPING_VERBOSE,
+    "num_threads": 4,
+    "use_sim_time": DRL_GRASPING_USE_SIM_TIME,
 }
 GRASP_PLANETARY_KWARGS_CURRICULUM: Dict = {
     "sparse_reward": True,
@@ -493,23 +509,23 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA: Dict = {
     "camera_enable": True,
     "camera_width": 256,
     "camera_height": 256,
-    "camera_update_rate": 1.2 * REACH_AGENT_RATE,
+    "camera_update_rate": 1.2 * GRASP_PLANETARY_AGENT_RATE,
     "camera_horizontal_fov": pi / 3.0,
     "camera_vertical_fov": pi / 3.0,
     "camera_noise_mean": 0.0,
     "camera_noise_stddev": 0.001,
-    # Above robot
-    "camera_relative_to": "base_link",
-    "camera_spawn_position": (0, 0, 1),
-    "camera_spawn_quat_xyzw": (0, 0.707107, 0, 0.707107),
+    # # Above robot
+    # "camera_relative_to": "base_link",
+    # "camera_spawn_position": (0, 0, 1),
+    # "camera_spawn_quat_xyzw": (0, 0.707107, 0, 0.707107),
     # # Pole-mount
     # "camera_relative_to": "base_link",
     # "camera_spawn_position": (-0.2, 0, 0.75),
     # "camera_spawn_quat_xyzw": (0, 0.258819, 0, 0.9659258),
-    # # Bumper-mount
-    # "camera_relative_to": "base_link",
-    # "camera_spawn_position": (0.37, 0, 0.25),
-    # "camera_spawn_quat_xyzw": (0, 0.2164396, 0, 0.976296),
+    # Bumper-mount
+    "camera_relative_to": "base_link",
+    "camera_spawn_position": (0.37, 0, 0.25),
+    "camera_spawn_quat_xyzw": (0, 0.2164396, 0, 0.976296),
     # # End-effector
     # "camera_relative_to": "end_effector",
     # "camera_spawn_position": (0, 0.07, -0.05),

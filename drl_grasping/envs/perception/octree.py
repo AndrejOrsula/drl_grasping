@@ -1,5 +1,6 @@
 from drl_grasping.envs.utils import conversions
 from drl_grasping.envs.utils import Tf2Listener
+from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2
 from typing import List, Tuple
 import numpy as np
@@ -11,6 +12,7 @@ import torch
 class OctreeCreator:
     def __init__(
         self,
+        node: None,
         tf2_listener: Tf2Listener,
         reference_frame_id: str,
         min_bound: Tuple[float, float, float] = (-1.0, -1.0, -1.0),
@@ -33,6 +35,8 @@ class OctreeCreator:
         debug_draw: bool = False,
         debug_write_octree: bool = False,
     ):
+
+        self._node = node
 
         # Listener of tf2 transforms is shared with the owner
         self.__tf2_listener = tf2_listener
@@ -119,7 +123,9 @@ class OctreeCreator:
 
         # Check if any points remain in the area after cropping
         if not open3d_point_cloud.has_points():
-            print("Point cloud has no points")
+            self._node.get_logger().warn(
+                "Point cloud has no points. Pre-processing skipped."
+            )
             return open3d_point_cloud
 
         # Get transformation from camera to robot and use it to transform point
@@ -140,7 +146,9 @@ class OctreeCreator:
 
         # Check if any points remain in the area after cropping
         if not open3d_point_cloud.has_points():
-            print("Point cloud has no points after cropping to the workspace volume")
+            self._node.get_logger().warn(
+                "Point cloud has no points after cropping it to the workspace volume."
+            )
             return open3d_point_cloud
 
         # Estimate normal vector for each cloud point and orient these towards the camera

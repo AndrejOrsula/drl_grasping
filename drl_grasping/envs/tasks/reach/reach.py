@@ -1,7 +1,7 @@
 from drl_grasping.envs.tasks.manipulation import Manipulation
 from gym_ignition.utils.typing import Action, Reward, Observation
 from gym_ignition.utils.typing import ActionSpace, ObservationSpace
-from typing import List, Tuple
+from typing import Tuple
 import abc
 import gym
 import numpy as np
@@ -50,20 +50,14 @@ class Reach(Manipulation, abc.ABC):
 
     def set_action(self, action: Action):
 
-        if self._verbose:
-            print(f"action: {action}")
+        self.get_logger().debug(f"action: {action}")
 
-        # Set position goal
-        relative_position = action[0:3]
-        self.set_position_goal(relative=relative_position)
-
-        # Set orientation goal
-        absolute_quat_xyzw = (1.0, 0.0, 0.0, 0.0)
-        self.set_orientation_goal(absolute=absolute_quat_xyzw)
-
-        # Plan and execute motion to target pose
-        self.moveit2.plan_kinematic_path(allowed_planning_time=0.1)
-        self.moveit2.execute()
+        if self._use_servo:
+            self.servo(linear=action[0:3])
+        else:
+            position = self.get_relative_position(action[0:3])
+            quat_xyzw = (1.0, 0.0, 0.0, 0.0)
+            self.moveit2.move_to_pose(position=position, quat_xyzw=quat_xyzw)
 
     def get_observation(self) -> Observation:
 
@@ -74,8 +68,7 @@ class Reach(Manipulation, abc.ABC):
         # Create the observation
         observation = Observation(np.concatenate([ee_position, target_position]))
 
-        if self._verbose:
-            print(f"\nobservation: {observation}")
+        self.get_logger().debug(f"\nobservation: {observation}")
 
         # Return the observation
         return observation
@@ -101,8 +94,7 @@ class Reach(Manipulation, abc.ABC):
         # Subtract a small reward each step to provide incentive to act quickly (if enabled)
         reward -= self._act_quick_reward
 
-        if self._verbose:
-            print(f"reward: {reward}")
+        self.get_logger().debug(f"reward: {reward}")
 
         return Reward(reward)
 
@@ -110,8 +102,7 @@ class Reach(Manipulation, abc.ABC):
 
         done = self._is_done
 
-        if self._verbose:
-            print(f"done: {done}")
+        self.get_logger().debug(f"done: {done}")
 
         return done
 
@@ -123,8 +114,7 @@ class Reach(Manipulation, abc.ABC):
         if not self._sparse_reward:
             self._previous_distance = self.get_distance_to_target()
 
-        if self._verbose:
-            print(f"\ntask reset")
+        self.get_logger().debug(f"\ntask reset")
 
     def get_distance_to_target(self) -> Tuple[float, float, float]:
 

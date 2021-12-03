@@ -37,6 +37,7 @@ class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
             node=self,
             topic=Camera.get_points_topic(camera_type),
             is_point_cloud=True,
+            callback_group=self._callback_group,
         )
 
         # Get exact name substitution of the frame for octree
@@ -55,6 +56,7 @@ class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
             self.workspace_centre[2] + octree_dimension / 2,
         )
         self.octree_creator = OctreeCreator(
+            node=self,
             tf2_listener=self.tf2_listener,
             reference_frame_id=octree_reference_frame_id,
             min_bound=octree_min_bound,
@@ -116,9 +118,8 @@ class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
         # TODO: Customize replay buffer to support variable sized observations
         octree_size = octree.shape[0]
         if octree_size > self._octree_max_size:
-            print(
-                f"ERROR: Octree is larger than the maximum "
-                f"allowed size (exceeded with {octree_size})"
+            self.get_logger().error(
+                f"Octree is larger than the maximum allowed size of {self._octree_max_siz} (exceeded with {octree_size})"
             )
         octree = np.pad(
             octree,
@@ -150,7 +151,7 @@ class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
             ee_position = self.get_ee_position()
             ee_orientation = orientation_quat_to_6d(quat_xyzw=self.get_ee_orientation())
             aux_obs = (
-                (self._gripper_state,)
+                (1 if self.gripper.is_open else -1,)
                 + ee_position
                 + ee_orientation[0]
                 + ee_orientation[1]
@@ -171,8 +172,7 @@ class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
         # Create the observation
         observation = Observation(np.array(self.__stacked_octrees))
 
-        if self._verbose:
-            print(f"\nobservation: {observation}")
+        self.get_logger().debug(f"\nobservation: {observation}")
 
         # Return the observation
         return observation
