@@ -1,5 +1,6 @@
 from gym_ignition.scenario.model_wrapper import ModelWrapper
 from .ground import Ground
+from .lunar_heightmap import LunarHeightmap
 from .lunar_surface import LunarSurface
 from .random_ground import RandomGround
 
@@ -10,7 +11,9 @@ def get_terrain_model_class(terrain_type: str) -> ModelWrapper:
         return Ground
     elif "random_flat" == terrain_type:
         return RandomGround
-    elif "lunar" == terrain_type:
+    elif "lunar_heightmap" == terrain_type:
+        return LunarHeightmap
+    elif "lunar_surface" == terrain_type:
         return LunarSurface
 
 

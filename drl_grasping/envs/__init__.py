@@ -71,8 +71,8 @@ REACH_KWARGS: Dict = {
     "workspace_volume": (0.5, 0.5, 0.5),
     "ignore_new_actions_while_executing": True,
     "use_servo": True,
-    "scaling_factor_translation": 0.25,
-    "scaling_factor_rotation": pi / 2.0,
+    "scaling_factor_translation": 0.2,
+    "scaling_factor_rotation": pi / 4.0,
     "restrict_position_goal_to_workspace": True,
     "enable_gripper": False,
     "sparse_reward": False,
@@ -263,8 +263,8 @@ GRASP_KWARGS: Dict = {
     "workspace_volume": (0.24, 0.24, 0.24),
     "ignore_new_actions_while_executing": True,
     "use_servo": True,
-    "scaling_factor_translation": 0.25,
-    "scaling_factor_rotation": pi / 2.0,
+    "scaling_factor_translation": 0.2,
+    "scaling_factor_rotation": pi / 4.0,
     "restrict_position_goal_to_workspace": True,
     "enable_gripper": True,
     "gripper_dead_zone": 0.0,
@@ -423,12 +423,12 @@ GRASP_PLANETARY_KWARGS: Dict = {
     "workspace_volume": (200.0, 200.0, 200.0),
     "ignore_new_actions_while_executing": True,
     "use_servo": True,
-    "scaling_factor_translation": 0.25,
-    "scaling_factor_rotation": pi / 2.0,
+    "scaling_factor_translation": 0.2,
+    "scaling_factor_rotation": pi / 4.0,
     "restrict_position_goal_to_workspace": False,
     "enable_gripper": True,
     "gripper_dead_zone": 0.0,
-    "full_3d_orientation": False,
+    "full_3d_orientation": True,
     "num_threads": 4,
     "use_sim_time": DRL_GRASPING_USE_SIM_TIME,
 }
@@ -472,7 +472,7 @@ GRASP_PLANETARY_KWARGS_SIM: Dict = {
     "world": path.join(DRL_GRASPING_WORLDS_DIR, "lunar.sdf"),
 }
 GRASP_PLANETARY_RANDOMIZER: str = (
-    "drl_grasping.envs.randomizers:ManipulationPlanetaryGazeboEnvRandomizer"
+    "drl_grasping.envs.randomizers:ManipulationGazeboEnvRandomizer"
 )
 GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict = {
     "gravity": GRAVITY_MOON,
@@ -484,7 +484,8 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict = {
     "robot_random_joint_positions": True,
     "robot_random_joint_positions_std": 0.1,
     "terrain_enable": True,
-    "terrain_type": "lunar",
+    "terrain_type": "lunar_surface",
+    # "terrain_type": "lunar_heightmap",
     "terrain_spawn_position": (0.25, 0, 0),
     "terrain_spawn_quat_xyzw": (0, 0, 0, 1),
     "terrain_size": (1.25, 1.25),
