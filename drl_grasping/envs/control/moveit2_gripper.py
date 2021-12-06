@@ -5,10 +5,8 @@ from .common import (
 from action_msgs.msg import GoalStatus
 from control_msgs.action import FollowJointTrajectory
 from moveit_msgs.action import MoveGroup
-from moveit_msgs.msg import (
-    Constraints,
-    JointConstraint,
-)
+from moveit_msgs.msg import Constraints, JointConstraint, MoveItErrorCodes
+from moveit_msgs.srv import GetMotionPlan
 from rclpy.action import ActionClient
 from rclpy.callback_groups import CallbackGroup
 from rclpy.node import Node
@@ -32,6 +30,7 @@ class MoveIt2Gripper:
         open_gripper_joint_positions: List[float],
         closed_gripper_joint_positions: List[float],
         gripper_group_name: str = "gripper",
+        use_planning_service: bool = True,
         plan_once: bool = True,
         ignore_new_calls_while_executing: bool = True,
         callback_group: Optional[CallbackGroup] = None,
@@ -40,42 +39,43 @@ class MoveIt2Gripper:
         self._node = node
 
         # Create action client for move action
-        self.__move_action_client = ActionClient(
-            node=self._node,
-            action_type=MoveGroup,
-            action_name="move_action",
-            goal_service_qos_profile=QoSProfile(
-                durability=QoSDurabilityPolicy.VOLATILE,
-                reliability=QoSReliabilityPolicy.RELIABLE,
-                history=QoSHistoryPolicy.KEEP_LAST,
-                depth=1,
-            ),
-            result_service_qos_profile=QoSProfile(
-                durability=QoSDurabilityPolicy.VOLATILE,
-                reliability=QoSReliabilityPolicy.RELIABLE,
-                history=QoSHistoryPolicy.KEEP_LAST,
-                depth=5,
-            ),
-            cancel_service_qos_profile=QoSProfile(
-                durability=QoSDurabilityPolicy.VOLATILE,
-                reliability=QoSReliabilityPolicy.RELIABLE,
-                history=QoSHistoryPolicy.KEEP_LAST,
-                depth=5,
-            ),
-            feedback_sub_qos_profile=QoSProfile(
-                durability=QoSDurabilityPolicy.VOLATILE,
-                reliability=QoSReliabilityPolicy.BEST_EFFORT,
-                history=QoSHistoryPolicy.KEEP_LAST,
-                depth=1,
-            ),
-            status_sub_qos_profile=QoSProfile(
-                durability=QoSDurabilityPolicy.VOLATILE,
-                reliability=QoSReliabilityPolicy.BEST_EFFORT,
-                history=QoSHistoryPolicy.KEEP_LAST,
-                depth=1,
-            ),
-            callback_group=callback_group,
-        )
+        if not (use_planning_service and plan_once):
+            self.__move_action_client = ActionClient(
+                node=self._node,
+                action_type=MoveGroup,
+                action_name="move_action",
+                goal_service_qos_profile=QoSProfile(
+                    durability=QoSDurabilityPolicy.VOLATILE,
+                    reliability=QoSReliabilityPolicy.RELIABLE,
+                    history=QoSHistoryPolicy.KEEP_LAST,
+                    depth=1,
+                ),
+                result_service_qos_profile=QoSProfile(
+                    durability=QoSDurabilityPolicy.VOLATILE,
+                    reliability=QoSReliabilityPolicy.RELIABLE,
+                    history=QoSHistoryPolicy.KEEP_LAST,
+                    depth=5,
+                ),
+                cancel_service_qos_profile=QoSProfile(
+                    durability=QoSDurabilityPolicy.VOLATILE,
+                    reliability=QoSReliabilityPolicy.RELIABLE,
+                    history=QoSHistoryPolicy.KEEP_LAST,
+                    depth=5,
+                ),
+                feedback_sub_qos_profile=QoSProfile(
+                    durability=QoSDurabilityPolicy.VOLATILE,
+                    reliability=QoSReliabilityPolicy.BEST_EFFORT,
+                    history=QoSHistoryPolicy.KEEP_LAST,
+                    depth=1,
+                ),
+                status_sub_qos_profile=QoSProfile(
+                    durability=QoSDurabilityPolicy.VOLATILE,
+                    reliability=QoSReliabilityPolicy.BEST_EFFORT,
+                    history=QoSHistoryPolicy.KEEP_LAST,
+                    depth=1,
+                ),
+                callback_group=callback_group,
+            )
 
         # Create action client for trajectory execution
         self.__follow_joint_trajectory_action_client = ActionClient(
@@ -114,6 +114,17 @@ class MoveIt2Gripper:
             ),
             callback_group=callback_group,
         )
+
+        # If desired, a separate service will be used to plan paths instead of relying onmove action server
+        # This service seems to be much faster than communicating with move action server
+        self.__use_planning_service = use_planning_service
+        if self.__use_planning_service:
+            self.__plan_kinematic_path_service = self._node.create_client(
+                srv_type=GetMotionPlan,
+                srv_name="plan_kinematic_path",
+                callback_group=callback_group,
+            )
+            self.__kinematic_path_request = GetMotionPlan.Request()
 
         self.__move_action_goal = self.__init_move_action_goal(
             frame_id=frame_id, gripper_group_name=gripper_group_name
@@ -180,10 +191,12 @@ class MoveIt2Gripper:
             # Plan trajectory if needed (first time only)
             if self.__open_follow_joint_trajectory_req is None:
                 self.__prepare_move_action_goal_open()
+                if self.__use_planning_service:
+                    joint_trajectory = self.__plan_kinematic_path()
+                else:
+                    joint_trajectory = self.__send_goal_move_action_plan_only()
                 self.__open_follow_joint_trajectory_req = (
-                    init_follow_joint_trajectory_goal(
-                        joint_trajectory=self.__send_goal_move_action_plan_only()
-                    )
+                    init_follow_joint_trajectory_goal(joint_trajectory=joint_trajectory)
                 )
                 self.__try_destroy_move_action_client()
 
@@ -208,10 +221,12 @@ class MoveIt2Gripper:
             # Plan trajectory if needed (first time only)
             if self.__close_follow_joint_trajectory_req is None:
                 self.__prepare_move_action_goal_close()
+                if self.__use_planning_service:
+                    joint_trajectory = self.__plan_kinematic_path()
+                else:
+                    joint_trajectory = self.__send_goal_move_action_plan_only()
                 self.__close_follow_joint_trajectory_req = (
-                    init_follow_joint_trajectory_goal(
-                        joint_trajectory=self.__send_goal_move_action_plan_only()
-                    )
+                    init_follow_joint_trajectory_goal(joint_trajectory=joint_trajectory)
                 )
                 self.__try_destroy_move_action_client()
 
@@ -289,6 +304,36 @@ class MoveIt2Gripper:
         if move_action_result.status == GoalStatus.STATUS_SUCCEEDED:
             return move_action_result.result.planned_trajectory.joint_trajectory
         else:
+            return None
+
+    def __plan_kinematic_path(self) -> Optional[JointTrajectory]:
+
+        # Re-use request from move action goal
+        self.__kinematic_path_request.motion_plan_request = (
+            self.__move_action_goal.request
+        )
+
+        stamp = self._node.get_clock().now().to_msg()
+        self.__kinematic_path_request.motion_plan_request.workspace_parameters.header.stamp = (
+            stamp
+        )
+
+        if not self.__plan_kinematic_path_service.wait_for_service(timeout_sec=1.0):
+            self._node.get_logger().warn(
+                f"Service '{self.__plan_kinematic_path_service.srv_name}' is not yet available. Better luck next time!"
+            )
+            return None
+
+        res = self.__plan_kinematic_path_service.call(
+            self.__kinematic_path_request
+        ).motion_plan_response
+
+        if MoveItErrorCodes.SUCCESS == res.error_code.val:
+            return res.trajectory.joint_trajectory
+        else:
+            self._node.get_logger().warn(
+                f"Planning failed! Error Code: {res.error_code.val}"
+            )
             return None
 
     def __send_goal_async_move_action(self):
@@ -499,8 +544,9 @@ class MoveIt2Gripper:
         ):
             return
 
-        self.__move_action_client.destroy()
-        del self.__move_action_client
+        if not (self.__use_planning_service and self.__plan_once):
+            self.__move_action_client.destroy()
+            del self.__move_action_client
         del self.__move_action_goal
         del self.__open_joint_state
         del self.__closed_joint_state

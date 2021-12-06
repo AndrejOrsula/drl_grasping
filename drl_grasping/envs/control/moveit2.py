@@ -69,42 +69,43 @@ class MoveIt2:
         )
 
         # Create action client for move action
-        self.__move_action_client = ActionClient(
-            node=self._node,
-            action_type=MoveGroup,
-            action_name="move_action",
-            goal_service_qos_profile=QoSProfile(
-                durability=QoSDurabilityPolicy.VOLATILE,
-                reliability=QoSReliabilityPolicy.RELIABLE,
-                history=QoSHistoryPolicy.KEEP_LAST,
-                depth=1,
-            ),
-            result_service_qos_profile=QoSProfile(
-                durability=QoSDurabilityPolicy.VOLATILE,
-                reliability=QoSReliabilityPolicy.RELIABLE,
-                history=QoSHistoryPolicy.KEEP_LAST,
-                depth=5,
-            ),
-            cancel_service_qos_profile=QoSProfile(
-                durability=QoSDurabilityPolicy.VOLATILE,
-                reliability=QoSReliabilityPolicy.RELIABLE,
-                history=QoSHistoryPolicy.KEEP_LAST,
-                depth=5,
-            ),
-            feedback_sub_qos_profile=QoSProfile(
-                durability=QoSDurabilityPolicy.VOLATILE,
-                reliability=QoSReliabilityPolicy.BEST_EFFORT,
-                history=QoSHistoryPolicy.KEEP_LAST,
-                depth=1,
-            ),
-            status_sub_qos_profile=QoSProfile(
-                durability=QoSDurabilityPolicy.VOLATILE,
-                reliability=QoSReliabilityPolicy.BEST_EFFORT,
-                history=QoSHistoryPolicy.KEEP_LAST,
-                depth=1,
-            ),
-            callback_group=self._callback_group,
-        )
+        if not use_planning_service or execute_via_moveit:
+            self.__move_action_client = ActionClient(
+                node=self._node,
+                action_type=MoveGroup,
+                action_name="move_action",
+                goal_service_qos_profile=QoSProfile(
+                    durability=QoSDurabilityPolicy.VOLATILE,
+                    reliability=QoSReliabilityPolicy.RELIABLE,
+                    history=QoSHistoryPolicy.KEEP_LAST,
+                    depth=1,
+                ),
+                result_service_qos_profile=QoSProfile(
+                    durability=QoSDurabilityPolicy.VOLATILE,
+                    reliability=QoSReliabilityPolicy.RELIABLE,
+                    history=QoSHistoryPolicy.KEEP_LAST,
+                    depth=5,
+                ),
+                cancel_service_qos_profile=QoSProfile(
+                    durability=QoSDurabilityPolicy.VOLATILE,
+                    reliability=QoSReliabilityPolicy.RELIABLE,
+                    history=QoSHistoryPolicy.KEEP_LAST,
+                    depth=5,
+                ),
+                feedback_sub_qos_profile=QoSProfile(
+                    durability=QoSDurabilityPolicy.VOLATILE,
+                    reliability=QoSReliabilityPolicy.BEST_EFFORT,
+                    history=QoSHistoryPolicy.KEEP_LAST,
+                    depth=1,
+                ),
+                status_sub_qos_profile=QoSProfile(
+                    durability=QoSDurabilityPolicy.VOLATILE,
+                    reliability=QoSReliabilityPolicy.BEST_EFFORT,
+                    history=QoSHistoryPolicy.KEEP_LAST,
+                    depth=1,
+                ),
+                callback_group=self._callback_group,
+            )
 
         # Create action client for trajectory execution
         self.__follow_joint_trajectory_action_client = ActionClient(
@@ -842,13 +843,6 @@ class MoveIt2:
             self.__is_executing = False
 
     def __send_goal_async_follow_joint_trajectory(self, goal: FollowJointTrajectory):
-
-        if self.__ignore_new_calls_while_executing:
-            if self.__is_executing:
-                self._node.get_logger().warn(
-                    "Controller is already following a trajectory. Skipping motion."
-                )
-                return
 
         if not self.__follow_joint_trajectory_action_client.wait_for_server(
             timeout_sec=1.0
