@@ -12,10 +12,18 @@ from scipy.spatial.transform import Rotation
 from typing import Union, Tuple, List
 import abc
 import numpy as np
-import operator
 
 # Tasks that are supported by this randomizer (used primarily for type hinting)
-SupportedTasks = Union[tasks.Reach, tasks.ReachOctree, tasks.Grasp, tasks.GraspOctree]
+SupportedTasks = Union[
+    tasks.Reach,
+    tasks.ReachColorImage,
+    tasks.ReachDepthImage,
+    tasks.ReachOctree,
+    tasks.Grasp,
+    tasks.GraspOctree,
+    tasks.GraspPlanetary,
+    tasks.GraspPlanetaryOctree,
+]
 
 
 class ManipulationGazeboEnvRandomizer(
@@ -25,7 +33,8 @@ class ManipulationGazeboEnvRandomizer(
     abc.ABC,
 ):
     """
-    Basic randomizer for robotic manipulation environments that also populates the simulated world.
+    Basic randomizer of environments for robotic manipulation inside Ignition Gazebo. This randomizer
+    also populates the simulated world with robot, terrain, lighting and other entities.
     """
 
     def __init__(
