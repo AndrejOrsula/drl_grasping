@@ -120,9 +120,7 @@ def generate_launch_description() -> LaunchDescription:
                 ("prefix", prefix),
                 ("enable_rviz", enable_rviz),
                 ("rviz_config", rviz_config),
-                # TODO: Chage move_group to use simulated time. Unfortunately, simulated time currently causes IK to never timeout if a solution does not exist. First, see if https://github.com/ros-planning/moveit2/pull/795 fixes the issue once it is merged.
-                ("use_sim_time", "false"),
-                # ("use_sim_time", use_sim_time),
+                ("use_sim_time", use_sim_time),
                 ("log_level", log_level),
             ],
             condition=LaunchConfigurationEquals("robot_model", "lunalab_summit_xl_gen"),
