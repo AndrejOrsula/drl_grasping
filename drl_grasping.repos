@@ -1,8 +1,8 @@
 repositories:
-  ign_moveit2:
+  ign_ros2_control:
     type: git
-    url: https://github.com/AndrejOrsula/ign_moveit2.git
-    version: master
+    url: https://github.com/ignitionrobotics/ign_ros2_control.git
+    version: main
   panda_ign:
     type: git
     url: https://github.com/AndrejOrsula/panda_ign.git
@@ -30,4 +30,4 @@ repositories:
   lunalab_summit_xl_gen:
     type: git
     url: https://gitlab.uni.lu/spacer/phd/AndrejOrsula/lunalab_summit_xl_gen.git
-    version: ros2
+    version: ros2_devel

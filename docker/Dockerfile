@@ -1,6 +1,8 @@
 ARG PARENT_IMAGE=nvidia/cudagl:11.4.2-devel-ubuntu20.04
 FROM ${PARENT_IMAGE}
 
+# TODO: Docker still needs ros2_control and ros2_controllers that are patched to support joint trajectory controller with effort control
+
 ### Use bash by default
 SHELL ["/bin/bash", "-c"]
 
@@ -163,12 +165,16 @@ RUN git clone https://github.com/AndrejOrsula/gym-ignition.git --depth 1 -b drl_
     pip install ../scenario
 WORKDIR ${DRL_GRASPING_DIR}
 
+### Setup token for accessing private UNILU GitLab repositories
+ARG UNILU_GITLAB_ACCESS_TOKEN
+RUN git config --global url."https://oauth2:${UNILU_GITLAB_ACCESS_TOKEN}@gitlab.uni.lu".insteadOf "https://gitlab.uni.lu"
+
 ### Main repository
-ARG DRL_GRASPING_GIT_BRANCH=master
-ARG DRL_GRASPING_DOCKER_VERSION=1.1.0
+ARG DRL_GRASPING_GIT_BRANCH=devel
+ARG DRL_GRASPING_DOCKER_VERSION=2.x.x
 RUN mkdir -p drl_grasping/src && \
     cd drl_grasping/src && \
-    git clone https://github.com/AndrejOrsula/drl_grasping.git --recursive --depth 1 -b ${DRL_GRASPING_GIT_BRANCH} && \
+    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/drl_grasping.git --recursive --depth 1 -b ${DRL_GRASPING_GIT_BRANCH} && \
     vcs import < drl_grasping/drl_grasping.repos && \
     cd .. && \
     apt update && \
@@ -210,9 +216,7 @@ ENV DRL_GRASPING_BROADCAST_INTERACTIVE_GUI=false
 ### Set debug level
 ENV DRL_GRASPING_DEBUG_LEVEL=ERROR
 
-### Add entrypoint sourcing the environment
-COPY ./entrypoint.bash ./entrypoint.bash
-
 ### Set entrypoint and default command
-ENTRYPOINT ["/bin/bash", "-c", "source ${DRL_GRASPING_DIR}/entrypoint.bash && \"$@\"", "-s"]
+COPY ./entrypoint.bash ${DRL_GRASPING_DIR}/entrypoint.bash
+ENTRYPOINT ["/bin/bash", "-c", "source ${DRL_GRASPING_DIR}/entrypoint.bash && ${@}", "-s"]
 CMD ["/bin/bash"]

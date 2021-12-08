@@ -11,6 +11,9 @@ source ${DRL_GRASPING_DIR}/drl_grasping/install/local_setup.bash
 export PATH=${DRL_GRASPING_DIR}/O-CNN/octree/build:${PATH}
 export PYTHONPATH=${DRL_GRASPING_DIR}/O-CNN/octree/build/python:${PYTHONPATH}
 
+## Robot model
+export IGN_GAZEBO_RESOURCE_PATH=${DRL_GRASPING_DIR}/drl_grasping/src/lunalab_summit_xl_gen/lunalab_summit_xl_gen_description${IGN_GAZEBO_RESOURCE_PATH:+:${IGN_GAZEBO_RESOURCE_PATH}}
+
 ## Path to PBR textures
 if [ -d "${DRL_GRASPING_DIR}/pbr_textures" ]; then
     # Use external textures (mounted as volume)
