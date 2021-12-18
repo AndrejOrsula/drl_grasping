@@ -3,6 +3,10 @@ repositories:
     type: git
     url: https://github.com/ignitionrobotics/ign_ros2_control.git
     version: main
+  pymoveit2:
+    type: git
+    url: https://github.com/AndrejOrsula/pymoveit2.git
+    version: devel
   panda_ign:
     type: git
     url: https://github.com/AndrejOrsula/panda_ign.git
