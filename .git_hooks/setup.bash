@@ -5,6 +5,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 REPO_DIR="$(dirname "${SCRIPT_DIR}")"
 
 pip install --user pre-commit &&
-cd ${REPO_DIR} &&
+cd "${REPO_DIR}" &&
 pre-commit install &&
-cd -
+cd - || exit
