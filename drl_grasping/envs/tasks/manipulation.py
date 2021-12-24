@@ -177,7 +177,6 @@ class Manipulation(task.Task, Node, abc.ABC):
         if self._enable_gripper:
             self.gripper = MoveIt2Gripper(
                 node=self,
-                frame_id=self.robot_arm_base_link_name,
                 gripper_joint_names=self.robot_gripper_joint_names,
                 open_gripper_joint_positions=self.robot_model_class.OPEN_GRIPPER_JOINT_POSITIONS,
                 closed_gripper_joint_positions=self.robot_model_class.CLOSED_GRIPPER_JOINT_POSITIONS,
