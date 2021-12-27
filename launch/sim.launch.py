@@ -1,24 +1,17 @@
 #!/usr/bin/env -S ros2 launch
 """Configure and setup interface with simulated robots inside Ignition Gazebo"""
 
-from ament_index_python.packages import get_package_share_directory
-from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo
-from launch.conditions import (
-    LaunchConfigurationEquals,
-    LaunchConfigurationNotEquals,
-    IfCondition,
-)
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import (
-    LaunchConfiguration,
-    PathJoinSubstitution,
-    PythonExpression,
-)
-from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
 from os import path
 from typing import List
+
+from ament_index_python.packages import get_package_share_directory
+from launch_ros.substitutions import FindPackageShare
+
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo
+from launch.conditions import LaunchConfigurationEquals
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -38,78 +31,12 @@ def generate_launch_description() -> LaunchDescription:
 
     # List of included launch descriptions
     launch_descriptions = [
-        ### panda, ur5_rg2, kinova_j2s7s300 ###
-        # TODO: Deprecate ign_moveit2 setup
-        # Launch ign_moveit2
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                PathJoinSubstitution(
-                    [FindPackageShare("ign_moveit2"), "launch", "ign_moveit2.launch.py"]
-                )
-            ),
-            launch_arguments=[
-                ("world_name", world_name),
-                ("robot_model", robot_model),
-                ("use_sim_time", use_sim_time),
-                ("config_rviz2", rviz_config),
-                ("log_level", log_level),
-            ],
-            condition=(
-                IfCondition(
-                    PythonExpression(
-                        [
-                            "'",
-                            robot_model,
-                            "'",
-                            " != ",
-                            "'lunalab_summit_xl_gen'",
-                            " and ",
-                            "'",
-                            enable_rviz,
-                            "'",
-                        ]
-                    )
-                )
-            ),
-        ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                PathJoinSubstitution(
-                    [FindPackageShare("ign_moveit2"), "launch", "ign_moveit2.launch.py"]
-                )
-            ),
-            launch_arguments=[
-                ("world_name", world_name),
-                ("robot_model", robot_model),
-                ("use_sim_time", use_sim_time),
-                ("config_rviz2", ""),
-                ("log_level", log_level),
-            ],
-            condition=(
-                IfCondition(
-                    PythonExpression(
-                        [
-                            "'",
-                            robot_model,
-                            "'",
-                            " != ",
-                            "'lunalab_summit_xl_gen'",
-                            " and not ",
-                            "'",
-                            enable_rviz,
-                            "'",
-                        ]
-                    )
-                )
-            ),
-        ),
-        ### lunalab_summit_xl_gen ###
         # Launch move_group of MoveIt 2
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 PathJoinSubstitution(
                     [
-                        FindPackageShare("lunalab_summit_xl_gen_moveit_config"),
+                        FindPackageShare([robot_model, "_moveit_config"]),
                         "launch",
                         "move_group.launch.py",
                     ]
@@ -123,9 +50,8 @@ def generate_launch_description() -> LaunchDescription:
                 ("use_sim_time", use_sim_time),
                 ("log_level", log_level),
             ],
-            condition=LaunchConfigurationEquals("robot_model", "lunalab_summit_xl_gen"),
         ),
-        # Launch move_group of MoveIt 2
+        # Launch ROS<->IGN bridges
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 PathJoinSubstitution(
@@ -143,32 +69,13 @@ def generate_launch_description() -> LaunchDescription:
                 ("use_sim_time", use_sim_time),
                 ("log_level", log_level),
             ],
-            condition=LaunchConfigurationEquals("robot_model", "lunalab_summit_xl_gen"),
+            # TODO: Make ROS<->IGN bridges more general to support all robots
+            # condition=LaunchConfigurationEquals("robot_model", "lunalab_summit_xl_gen"),
         ),
     ]
 
     # List of nodes to be launched
-    nodes = [
-        ### panda, ur5_rg2, kinova_j2s7s300 ###
-        # TODO: Deprecate ign_moveit2 setup
-        # JointTrajectory bridge for gripper (ROS2 -> IGN)
-        Node(
-            package="ros_ign_bridge",
-            executable="parameter_bridge",
-            name="parameter_bridge_gripper_trajectory",
-            output="screen",
-            arguments=[
-                "/gripper_trajectory@trajectory_msgs/msg/JointTrajectory]ignition.msgs.JointTrajectory",
-                "--ros-args",
-                "--log-level",
-                log_level,
-            ],
-            parameters=[{"use_sim_time": use_sim_time}],
-            condition=LaunchConfigurationNotEquals(
-                "robot_model", "lunalab_summit_xl_gen"
-            ),
-        ),
-    ]
+    nodes = []
 
     # List for logging
     logs = [

@@ -7,44 +7,49 @@ from scenario import core as scenario
 from scenario import gazebo as scenario_gazebo
 from typing import List, Tuple, Optional, Dict
 
-# TODO: Use description package for panda with xacro support
-
 
 class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
 
     ROBOT_MODEL_NAME: str = "panda"
-    DEFAULT_PREFIX: str = ""
-    __PREFIX_MANIPULATOR: str = "panda_"
+    DEFAULT_PREFIX: str = "panda_"
 
-    # __DESCRIPTION_PACKAGE = ROBOT_MODEL_NAME + "_description"
-    # __DEFAULT_XACRO_FILE = path.join(
-    #     get_package_share_directory(__DESCRIPTION_PACKAGE),
-    #     "urdf",
-    #     ROBOT_MODEL_NAME + ".urdf.xacro",
-    # )
-    # __DEFAULT_XACRO_MAPPINGS: Dict = {
-    #     "name": ROBOT_MODEL_NAME,
-    #     "prefix": DEFAULT_PREFIX,
-    # }
-    # __XACRO_MODEL_PATH_REMAP: Tuple[str, str] = (
-    #     __DESCRIPTION_PACKAGE,
-    #     ROBOT_MODEL_NAME,
-    # )
+    __DESCRIPTION_PACKAGE = ROBOT_MODEL_NAME + "_description"
+    __DEFAULT_XACRO_FILE = path.join(
+        get_package_share_directory(__DESCRIPTION_PACKAGE),
+        "urdf",
+        ROBOT_MODEL_NAME + ".urdf.xacro",
+    )
+    __DEFAULT_XACRO_MAPPINGS: Dict = {
+        "name": ROBOT_MODEL_NAME,
+        "gripper": True,
+        "collision_arm": True,
+        "collision_gripper": True,
+        "ros2_control": True,
+        "ros2_control_plugin": "ignition",
+        "ros2_control_command_interface": "effort",
+        "gazebo_preserve_fixed_joint": False,
+    }
+    __XACRO_MODEL_PATH_REMAP: Tuple[str, str] = (
+        __DESCRIPTION_PACKAGE,
+        ROBOT_MODEL_NAME,
+    )
 
     DEFAULT_ARM_JOINT_POSITIONS: List[float] = (
         0.0,
+        -0.7853981633974483,
         0.0,
+        -2.356194490192345,
         0.0,
-        -1.5707963,
-        0.0,
-        1.5707963,
-        0.78539816,
+        1.5707963267948966,
+        0.7853981633974483,
     )
     OPEN_GRIPPER_JOINT_POSITIONS: List[float] = (
         0.04,
         0.04,
+        0.04,
     )
     CLOSED_GRIPPER_JOINT_POSITIONS: List[float] = (
+        0.0,
         0.0,
         0.0,
     )
@@ -54,38 +59,30 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
         self,
         world: scenario.World,
         name: str = ROBOT_MODEL_NAME,
-        prefix: str = DEFAULT_PREFIX,
         position: List[float] = (0, 0, 0),
         orientation: List[float] = (1, 0, 0, 0),
         model_file: str = None,
-        use_fuel: bool = True,
-        use_xacro: bool = False,
-        # xacro_file: str = __DEFAULT_XACRO_FILE,
-        # xacro_mappings: Dict = __DEFAULT_XACRO_MAPPINGS,
+        use_fuel: bool = False,
+        use_xacro: bool = True,
+        xacro_file: str = __DEFAULT_XACRO_FILE,
+        xacro_mappings: Dict = __DEFAULT_XACRO_MAPPINGS,
         initial_arm_joint_positions: List[float] = DEFAULT_ARM_JOINT_POSITIONS,
         initial_gripper_joint_positions: List[float] = OPEN_GRIPPER_JOINT_POSITIONS,
-        # TODO: Expose the rest of the parameters for panda in xacro once it is available
-        arm_collision: bool = False,
-        hand_collision: bool = True,
-        separate_gripper_controller: bool = True,
         **kwargs,
     ):
 
         # Store params that are needed internally
-        self.__prefix = prefix
+        self.__prefix = f"{name}_"
         self.__initial_arm_joint_positions = initial_arm_joint_positions
         self.__initial_gripper_joint_positions = initial_gripper_joint_positions
-        self.__separate_gripper_controller = separate_gripper_controller
 
         # Allow passing of custom model file as an argument
         if model_file is None:
             if use_xacro:
-                raise NotADirectoryError
                 # Generate SDF from xacro
                 mappings = self.__DEFAULT_XACRO_MAPPINGS
                 mappings.update(kwargs)
                 mappings.update(xacro_mappings)
-                mappings.update({"prefix": prefix})
                 model_file = xacro2sdf(
                     input_file_path=xacro_file,
                     mappings=mappings,
@@ -107,14 +104,6 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
         else:
             insert_fn = scenario_gazebo.World.insert_model_from_file
 
-        # For non-xacro model files, disable hand collisions manually
-        if not use_xacro and (not arm_collision or not hand_collision):
-            model_file = self.disable_collision(
-                model_file=model_file,
-                arm_collision=arm_collision,
-                hand_collision=hand_collision,
-            )
-
         # Insert the model
         ok_model = insert_fn(world.to_gazebo(), model_file, initial_pose, model_name)
         if not ok_model:
@@ -125,12 +114,6 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
 
         # Set initial joint configuration
         self.set_initial_joint_positions(model)
-
-        # Add JointStatePublisher
-        self.__add_joint_state_publisher(model)
-
-        # Add JointTrajectoryController
-        self.__add_joint_trajectory_controller(model)
 
         # Initialize base class
         super().__init__(model=model)
@@ -151,6 +134,8 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
     def get_model_file(cls, fuel: bool = False) -> str:
 
         if fuel:
+            # TODO: Add updated "panda" to Fuel
+            raise NotImplementedError
             return scenario_gazebo.get_model_file_from_fuel(
                 "https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/"
                 + cls.ROBOT_MODEL_NAME
@@ -186,26 +171,37 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
 
         return self.arm_joint_names + self.gripper_joint_names
 
+    @classmethod
+    def get_arm_joint_names(cls, prefix: str = "") -> List[str]:
+
+        return [
+            prefix + "joint1",
+            prefix + "joint2",
+            prefix + "joint3",
+            prefix + "joint4",
+            prefix + "joint5",
+            prefix + "joint6",
+            prefix + "joint7",
+        ]
+
     @property
     def arm_joint_names(self) -> List[str]:
 
+        return self.get_arm_joint_names(self.prefix)
+
+    @classmethod
+    def get_gripper_joint_names(cls, prefix: str = "") -> List[str]:
+
         return [
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint1",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint2",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint3",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint4",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint5",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint6",
-            self.prefix + self.__PREFIX_MANIPULATOR + "joint7",
+            prefix + "finger_joint1",
+            prefix + "finger_joint2",
+            prefix + "finger_joint3",
         ]
 
     @property
     def gripper_joint_names(self) -> List[str]:
 
-        return [
-            self.prefix + self.__PREFIX_MANIPULATOR + "finger_joint1",
-            self.prefix + self.__PREFIX_MANIPULATOR + "finger_joint2",
-        ]
+        return self.get_gripper_joint_names(self.prefix)
 
     @property
     def move_base_joint_limits(self) -> Optional[List[Tuple[float, float]]]:
@@ -292,7 +288,7 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
     def get_arm_base_link_name(cls, prefix: str = "") -> str:
 
         # Same as `self.arm_link_names[0]``
-        return prefix + cls.__PREFIX_MANIPULATOR + "link0"
+        return prefix + "link0"
 
     @property
     def arm_base_link_name(self) -> str:
@@ -302,7 +298,7 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
     @classmethod
     def get_ee_link_name(cls, prefix: str = "") -> str:
 
-        return prefix + cls.__PREFIX_MANIPULATOR + "link8"
+        return prefix + "hand_tcp"
 
     @property
     def ee_link_name(self) -> str:
@@ -323,15 +319,14 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
     def get_arm_link_names(cls, prefix: str = "") -> List[str]:
 
         return [
-            prefix + cls.__PREFIX_MANIPULATOR + "link_0",
-            prefix + cls.__PREFIX_MANIPULATOR + "link_1",
-            prefix + cls.__PREFIX_MANIPULATOR + "link_2",
-            prefix + cls.__PREFIX_MANIPULATOR + "link_3",
-            prefix + cls.__PREFIX_MANIPULATOR + "link_4",
-            prefix + cls.__PREFIX_MANIPULATOR + "link_5",
-            prefix + cls.__PREFIX_MANIPULATOR + "link_6",
-            prefix + cls.__PREFIX_MANIPULATOR + "link_7",
-            prefix + cls.__PREFIX_MANIPULATOR + "hand",
+            prefix + "link0",
+            prefix + "link1",
+            prefix + "link2",
+            prefix + "link3",
+            prefix + "link4",
+            prefix + "link5",
+            prefix + "link6",
+            prefix + "link7",
         ]
 
     @property
@@ -343,338 +338,12 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
     def get_gripper_link_names(cls, prefix: str = "") -> List[str]:
 
         return [
-            prefix + cls.__PREFIX_MANIPULATOR + "leftfinger",
-            prefix + cls.__PREFIX_MANIPULATOR + "rightfinger",
+            prefix + "hand",
+            prefix + "leftfinger",
+            prefix + "rightfinger",
         ]
 
     @property
     def gripper_link_names(self) -> List[str]:
 
         return self.get_gripper_link_names(self.prefix)
-
-    # TODO: Replace all custom functions below with panda xacros
-    def __add_joint_state_publisher(self, model) -> bool:
-
-        """Add JointTrajectoryController"""
-        model.to_gazebo().insert_model_plugin(
-            "libignition-gazebo-joint-state-publisher-system.so",
-            "ignition::gazebo::systems::JointStatePublisher",
-            self.__get_joint_state_publisher_config(),
-        )
-
-    def __get_joint_state_publisher_config(self) -> str:
-
-        return """
-            <sdf version="1.7">
-            %s
-            </sdf>
-            """ % " ".join(
-            ("<joint_name>" + joint + "</joint_name>" for joint in self.joint_names)
-        )
-
-    def __add_joint_trajectory_controller(self, model) -> bool:
-
-        if self.__separate_gripper_controller:
-            model.to_gazebo().insert_model_plugin(
-                "libignition-gazebo-joint-trajectory-controller-system.so",
-                "ignition::gazebo::systems::JointTrajectoryController",
-                self.__get_joint_trajectory_controller_config_joints_only(),
-            )
-            model.to_gazebo().insert_model_plugin(
-                "libignition-gazebo-joint-trajectory-controller-system.so",
-                "ignition::gazebo::systems::JointTrajectoryController",
-                self.__get_joint_trajectory_controller_config_gripper_only(),
-            )
-        else:
-            model.to_gazebo().insert_model_plugin(
-                "libignition-gazebo-joint-trajectory-controller-system.so",
-                "ignition::gazebo::systems::JointTrajectoryController",
-                self.__get_joint_trajectory_controller_config(),
-            )
-
-    def __get_joint_trajectory_controller_config(self) -> str:
-
-        return """
-            <sdf version="1.7">
-            <topic>joint_trajectory</topic>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>3000</position_p_gain>
-            <position_d_gain>15</position_d_gain>
-            <position_i_gain>1650</position_i_gain>
-            <position_i_min>-15</position_i_min>
-            <position_i_max>15</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>9500</position_p_gain>
-            <position_d_gain>47.5</position_d_gain>
-            <position_i_gain>5225</position_i_gain>
-            <position_i_min>-47.5</position_i_min>
-            <position_i_max>47.5</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>6500</position_p_gain>
-            <position_d_gain>32.5</position_d_gain>
-            <position_i_gain>3575</position_i_gain>
-            <position_i_min>-32.5</position_i_min>
-            <position_i_max>32.5</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s1.57</initial_position>
-            <position_p_gain>6000</position_p_gain>
-            <position_d_gain>30</position_d_gain>
-            <position_i_gain>3300</position_i_gain>
-            <position_i_min>-30</position_i_min>
-            <position_i_max>30</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>2750</position_p_gain>
-            <position_d_gain>2.75</position_d_gain>
-            <position_i_gain>1515</position_i_gain>
-            <position_i_min>-6.88</position_i_min>
-            <position_i_max>6.88</position_i_max>
-            <position_cmd_min>-12</position_cmd_min>
-            <position_cmd_max>12</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>2500</position_p_gain>
-            <position_d_gain>2.5</position_d_gain>
-            <position_i_gain>1375</position_i_gain>
-            <position_i_min>-6.25</position_i_min>
-            <position_i_max>6.25</position_i_max>
-            <position_cmd_min>-12</position_cmd_min>
-            <position_cmd_max>12</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>2000</position_p_gain>
-            <position_d_gain>2</position_d_gain>
-            <position_i_gain>1100</position_i_gain>
-            <position_i_min>-5</position_i_min>
-            <position_i_max>5</position_i_max>
-            <position_cmd_min>-12</position_cmd_min>
-            <position_cmd_max>12</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>250</position_p_gain>
-            <position_d_gain>0.2</position_d_gain>
-            <position_i_gain>50</position_i_gain>
-            <position_i_min>-10</position_i_min>
-            <position_i_max>10</position_i_max>
-            <position_cmd_min>-20</position_cmd_min>
-            <position_cmd_max>20</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>250</position_p_gain>
-            <position_d_gain>0.2</position_d_gain>
-            <position_i_gain>50</position_i_gain>
-            <position_i_min>-10</position_i_min>
-            <position_i_max>10</position_i_max>
-            <position_cmd_min>-20</position_cmd_min>
-            <position_cmd_max>20</position_cmd_max>
-            </sdf>
-            """ % (
-            self.arm_joint_names[0],
-            str(self.initial_arm_joint_positions[0]),
-            self.arm_joint_names[1],
-            str(self.initial_arm_joint_positions[1]),
-            self.arm_joint_names[2],
-            str(self.initial_arm_joint_positions[2]),
-            self.arm_joint_names[3],
-            str(self.initial_arm_joint_positions[3]),
-            self.arm_joint_names[4],
-            str(self.initial_arm_joint_positions[4]),
-            self.arm_joint_names[5],
-            str(self.initial_arm_joint_positions[5]),
-            self.arm_joint_names[6],
-            str(self.initial_arm_joint_positions[6]),
-            self.gripper_joint_names[0],
-            str(self.initial_gripper_joint_positions[0]),
-            self.gripper_joint_names[1],
-            str(self.initial_gripper_joint_positions[1]),
-        )
-
-    def __get_joint_trajectory_controller_config_joints_only(self) -> str:
-
-        return """
-            <sdf version="1.7">
-            <topic>joint_trajectory</topic>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>3000</position_p_gain>
-            <position_d_gain>15</position_d_gain>
-            <position_i_gain>1650</position_i_gain>
-            <position_i_min>-15</position_i_min>
-            <position_i_max>15</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>9500</position_p_gain>
-            <position_d_gain>47.5</position_d_gain>
-            <position_i_gain>5225</position_i_gain>
-            <position_i_min>-47.5</position_i_min>
-            <position_i_max>47.5</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>6500</position_p_gain>
-            <position_d_gain>32.5</position_d_gain>
-            <position_i_gain>3575</position_i_gain>
-            <position_i_min>-32.5</position_i_min>
-            <position_i_max>32.5</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>6000</position_p_gain>
-            <position_d_gain>30</position_d_gain>
-            <position_i_gain>3300</position_i_gain>
-            <position_i_min>-30</position_i_min>
-            <position_i_max>30</position_i_max>
-            <position_cmd_min>-87</position_cmd_min>
-            <position_cmd_max>87</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>2750</position_p_gain>
-            <position_d_gain>2.75</position_d_gain>
-            <position_i_gain>1515</position_i_gain>
-            <position_i_min>-6.88</position_i_min>
-            <position_i_max>6.88</position_i_max>
-            <position_cmd_min>-12</position_cmd_min>
-            <position_cmd_max>12</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>2500</position_p_gain>
-            <position_d_gain>2.5</position_d_gain>
-            <position_i_gain>1375</position_i_gain>
-            <position_i_min>-6.25</position_i_min>
-            <position_i_max>6.25</position_i_max>
-            <position_cmd_min>-12</position_cmd_min>
-            <position_cmd_max>12</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>2000</position_p_gain>
-            <position_d_gain>2</position_d_gain>
-            <position_i_gain>1100</position_i_gain>
-            <position_i_min>-5</position_i_min>
-            <position_i_max>5</position_i_max>
-            <position_cmd_min>-12</position_cmd_min>
-            <position_cmd_max>12</position_cmd_max>
-            </sdf>
-            """ % (
-            self.arm_joint_names[0],
-            str(self.initial_arm_joint_positions[0]),
-            self.arm_joint_names[1],
-            str(self.initial_arm_joint_positions[1]),
-            self.arm_joint_names[2],
-            str(self.initial_arm_joint_positions[2]),
-            self.arm_joint_names[3],
-            str(self.initial_arm_joint_positions[3]),
-            self.arm_joint_names[4],
-            str(self.initial_arm_joint_positions[4]),
-            self.arm_joint_names[5],
-            str(self.initial_arm_joint_positions[5]),
-            self.arm_joint_names[6],
-            str(self.initial_arm_joint_positions[6]),
-        )
-
-    def __get_joint_trajectory_controller_config_gripper_only(self) -> str:
-
-        return """
-            <sdf version="1.7">
-            <topic>gripper_trajectory</topic>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>250</position_p_gain>
-            <position_d_gain>0.2</position_d_gain>
-            <position_i_gain>50</position_i_gain>
-            <position_i_min>-10</position_i_min>
-            <position_i_max>10</position_i_max>
-            <position_cmd_min>-20</position_cmd_min>
-            <position_cmd_max>20</position_cmd_max>
-
-            <joint_name>%s</joint_name>
-            <initial_position>%s</initial_position>
-            <position_p_gain>250</position_p_gain>
-            <position_d_gain>0.2</position_d_gain>
-            <position_i_gain>50</position_i_gain>
-            <position_i_min>-10</position_i_min>
-            <position_i_max>10</position_i_max>
-            <position_cmd_min>-20</position_cmd_min>
-            <position_cmd_max>20</position_cmd_max>
-            </sdf>
-            """ % (
-            self.gripper_joint_names[0],
-            str(self.initial_gripper_joint_positions[0]),
-            self.gripper_joint_names[1],
-            str(self.initial_gripper_joint_positions[1]),
-        )
-
-    @classmethod
-    def disable_collision(
-        self, model_file: str, arm_collision: bool, hand_collision: bool
-    ) -> str:
-
-        new_model_file = path.join(
-            path.dirname(model_file), "model_without_arm_collision.sdf"
-        )
-
-        # Remove collision geometry
-        with open(model_file, "r") as original_sdf_file:
-            with open(new_model_file, "w") as new_sdf_file:
-                while True:
-                    # Read a new line and make sure it is not the end of the file
-                    line = original_sdf_file.readline()
-                    if not line.rstrip():
-                        break
-
-                    # Once `<collision>` for lower links is encountered, skip that and all lines until `</collision>` is reached
-                    if not arm_collision:
-                        if '<collision name="panda_link' in line:
-                            line = original_sdf_file.readline()
-                            while not "</collision>" in line:
-                                line = original_sdf_file.readline()
-                            continue
-
-                    # Same as for arm, but check for hand and both fingers
-                    if not hand_collision:
-                        if (
-                            '<collision name="panda_hand_collision">' in line
-                            or '<collision name="panda_leftfinger_collision">' in line
-                            or '<collision name="panda_rightfinger_collision">' in line
-                        ):
-                            line = original_sdf_file.readline()
-                            while not "</collision>" in line:
-                                line = original_sdf_file.readline()
-                            continue
-
-                    # Write all other lines into the new file
-                    new_sdf_file.write(line)
-
-        # Return path to the new file
-        return new_model_file

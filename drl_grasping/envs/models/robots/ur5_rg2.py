@@ -70,6 +70,10 @@ class UR5RG2(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
         **kwargs,
     ):
 
+        raise NotImplementedError(
+            "ur5_rg2 robot is currently not implemented for ign_ros2_control setup."
+        )
+
         # Store params that are needed internally
         self.__prefix = prefix
         self.__initial_arm_joint_positions = initial_arm_joint_positions
