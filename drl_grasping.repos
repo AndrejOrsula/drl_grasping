@@ -1,35 +1,11 @@
 repositories:
-  ign_ros2_control:
-    type: git
-    url: https://github.com/ignitionrobotics/ign_ros2_control.git
-    version: main
   pymoveit2:
     type: git
     url: https://github.com/AndrejOrsula/pymoveit2.git
     version: devel
-  panda_ign:
+  panda_ign_moveit2:
     type: git
-    url: https://github.com/AndrejOrsula/panda_ign.git
-    version: master
-  panda_moveit2_config:
-    type: git
-    url: https://github.com/AndrejOrsula/panda_moveit2_config.git
-    version: master
-  ur5_rg2_ign:
-    type: git
-    url: https://github.com/AndrejOrsula/ur5_rg2_ign.git
-    version: master
-  ur5_rg2_moveit2_config:
-    type: git
-    url: https://github.com/AndrejOrsula/ur5_rg2_moveit2_config.git
-    version: master
-  kinova_j2s7s300_ign:
-    type: git
-    url: https://github.com/AndrejOrsula/kinova_j2s7s300_ign.git
-    version: master
-  kinova_j2s7s300_moveit2_config:
-    type: git
-    url: https://github.com/AndrejOrsula/kinova_j2s7s300_moveit2_config.git
+    url: https://github.com/AndrejOrsula/panda_ign_moveit2.git
     version: master
   lunalab_summit_xl_gen:
     type: git

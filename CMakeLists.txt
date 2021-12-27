@@ -24,9 +24,8 @@ endif()
 # Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
-find_package(rclcpp REQUIRED)
 
-# Install python module
+# Install Python module
 ament_python_install_module(
     drl_grasping
 )
@@ -47,14 +46,6 @@ install(PROGRAMS
     DESTINATION lib/${PROJECT_NAME}
 )
 
-# Install tests
-set(TESTS_DIR tests)
-install(PROGRAMS
-    ${TESTS_DIR}/test_env.py
-    ${TESTS_DIR}/test_octree_conv.py
-    DESTINATION lib/${PROJECT_NAME}
-)
-
 # Install examples
 set(EXAMPLES_DIR examples)
 install(PROGRAMS
@@ -63,6 +54,14 @@ install(PROGRAMS
     ${EXAMPLES_DIR}/ex_optimize.bash
     ${EXAMPLES_DIR}/ex_train.bash
     ${EXAMPLES_DIR}/ex_preload_replay_buffer.bash
+    DESTINATION lib/${PROJECT_NAME}
+)
+
+# Install tests
+set(TESTS_DIR tests)
+install(PROGRAMS
+    ${TESTS_DIR}/test_env.py
+    ${TESTS_DIR}/test_octree_conv.py
     DESTINATION lib/${PROJECT_NAME}
 )
 
