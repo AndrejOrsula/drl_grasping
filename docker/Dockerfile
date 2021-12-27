@@ -1,8 +1,6 @@
 ARG PARENT_IMAGE=nvidia/cudagl:11.4.2-devel-ubuntu20.04
 FROM ${PARENT_IMAGE}
 
-# TODO: Docker still needs ros2_control and ros2_controllers that are patched to support joint trajectory controller with effort control
-
 ### Use bash by default
 SHELL ["/bin/bash", "-c"]
 
@@ -18,36 +16,36 @@ WORKDIR ${DRL_GRASPING_DIR}
 ARG PYTHON_VERSION=3
 RUN apt update && \
     apt install -yq --no-install-recommends \
-        apt-utils \
-        locales \
-        locales-all \
-        tzdata \
-        software-properties-common \
-        git \
-        wget \
-        curl \
-        gnupg \
-        lsb-release \
-        build-essential \
-        make \
-        cmake \
-        g++ \
-        autoconf \
-        automake \
-        clang \
-        ninja-build \
-        python${PYTHON_VERSION} \
-        python${PYTHON_VERSION}-dev \
-        python${PYTHON_VERSION}-pip \
-        python${PYTHON_VERSION}-wheel \
-        python${PYTHON_VERSION}-numpy \
-        python${PYTHON_VERSION}-tk \
-        python${PYTHON_VERSION}-pybind11 \
-        libpython${PYTHON_VERSION}-dev \
-        libopenmpi-dev \
-        zlib1g-dev \
-        libcudnn8-dev \
-        nano && \
+    apt-utils \
+    locales \
+    locales-all \
+    tzdata \
+    software-properties-common \
+    git \
+    wget \
+    curl \
+    gnupg \
+    lsb-release \
+    build-essential \
+    make \
+    cmake \
+    g++ \
+    autoconf \
+    automake \
+    clang \
+    ninja-build \
+    python${PYTHON_VERSION} \
+    python${PYTHON_VERSION}-dev \
+    python${PYTHON_VERSION}-pip \
+    python${PYTHON_VERSION}-wheel \
+    python${PYTHON_VERSION}-numpy \
+    python${PYTHON_VERSION}-tk \
+    python${PYTHON_VERSION}-pybind11 \
+    libpython${PYTHON_VERSION}-dev \
+    libopenmpi-dev \
+    zlib1g-dev \
+    libcudnn8-dev \
+    nano && \
     rm -rf /var/lib/apt/lists/*
 
 ### Install ROS 2
@@ -57,35 +55,72 @@ RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o 
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list >/dev/null && \
     apt update && \
     apt install -yq --no-install-recommends \
-        ros-${ROS2_DISTRO}-desktop \
-        python${PYTHON_VERSION}-colcon-common-extensions \
-        python${PYTHON_VERSION}-vcstool \
-        python${PYTHON_VERSION}-argcomplete \
-        python${PYTHON_VERSION}-rosdep && \
+    ros-${ROS2_DISTRO}-desktop \
+    python${PYTHON_VERSION}-colcon-common-extensions \
+    python${PYTHON_VERSION}-vcstool \
+    python${PYTHON_VERSION}-argcomplete \
+    python${PYTHON_VERSION}-rosdep && \
     rosdep init && rosdep update && \
     source /opt/ros/${ROS2_DISTRO}/setup.bash && \
     rm -rf /var/lib/apt/lists/*
 
-### Install MoveIt 2
-RUN apt update && \
-    apt install -yq --no-install-recommends \
-        ros-${ROS2_DISTRO}-moveit-common \
-        ros-${ROS2_DISTRO}-moveit-core \
-        ros-${ROS2_DISTRO}-moveit-kinematics \
-        ros-${ROS2_DISTRO}-moveit-msgs \
-        ros-${ROS2_DISTRO}-moveit-planners \
-        ros-${ROS2_DISTRO}-moveit-planners-ompl \
-        ros-${ROS2_DISTRO}-moveit-plugins \
-        ros-${ROS2_DISTRO}-moveit-resources \
-        ros-${ROS2_DISTRO}-moveit-ros \
-        ros-${ROS2_DISTRO}-moveit-ros-occupancy-map-monitor \
-        ros-${ROS2_DISTRO}-moveit-ros-perception \
-        ros-${ROS2_DISTRO}-moveit-ros-planning \
-        ros-${ROS2_DISTRO}-moveit-ros-planning-interface \
-        ros-${ROS2_DISTRO}-moveit-runtime \
-        ros-${ROS2_DISTRO}-moveit-servo \
-        ros-${ROS2_DISTRO}-moveit-simple-controller-manager && \
-    rm -rf /var/lib/apt/lists/*
+# ### Install MoveIt 2
+# RUN apt update && \
+#     apt install -yq --no-install-recommends \
+#     ros-${ROS2_DISTRO}-moveit-common \
+#     ros-${ROS2_DISTRO}-moveit-core \
+#     ros-${ROS2_DISTRO}-moveit-kinematics \
+#     ros-${ROS2_DISTRO}-moveit-msgs \
+#     ros-${ROS2_DISTRO}-moveit-planners \
+#     ros-${ROS2_DISTRO}-moveit-planners-ompl \
+#     ros-${ROS2_DISTRO}-moveit-plugins \
+#     ros-${ROS2_DISTRO}-moveit-resources \
+#     ros-${ROS2_DISTRO}-moveit-ros \
+#     ros-${ROS2_DISTRO}-moveit-ros-occupancy-map-monitor \
+#     ros-${ROS2_DISTRO}-moveit-ros-perception \
+#     ros-${ROS2_DISTRO}-moveit-ros-planning \
+#     ros-${ROS2_DISTRO}-moveit-ros-planning-interface \
+#     ros-${ROS2_DISTRO}-moveit-runtime \
+#     ros-${ROS2_DISTRO}-moveit-servo \
+#     ros-${ROS2_DISTRO}-moveit-simple-controller-manager && \
+#     rm -rf /var/lib/apt/lists/*
+
+### Build ros2_control, ros2_controllers and moveit2
+# TODO: Use upstream once patches are merged in (and released)
+RUN mkdir -p ros2_control/src && \
+    cd ros2_control && \
+    git clone https://github.com/ros-controls/ros2_control.git --depth 1 -b 1.3.0 src && \
+    apt update && \
+    rosdep update && \
+    rosdep install -r --from-paths . -yi --rosdistro ${ROS2_DISTRO} && \
+    rm -rf /var/lib/apt/lists/* && \
+    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+    colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release && \
+    source install/local_setup.bash
+WORKDIR ${DRL_GRASPING_DIR}
+RUN mkdir -p ros2_controllers/src && \
+    cd ros2_controllers && \
+    git clone https://github.com/AndrejOrsula/ros2_controllers.git --depth 1 -b jtc_effort src && \
+    apt update && \
+    rosdep update && \
+    rosdep install -r --from-paths . -yi --rosdistro ${ROS2_DISTRO} && \
+    rm -rf /var/lib/apt/lists/* && \
+    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+    colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release && \
+    source install/local_setup.bash
+WORKDIR ${DRL_GRASPING_DIR}
+RUN mkdir -p moveit2/src && \
+    cd moveit2 && \
+    git clone https://github.com/AndrejOrsula/moveit2.git --depth 1 -b ign_sim_time src && \
+    apt update && \
+    rosdep update && \
+    rosdep install -r --from-paths . -yi --rosdistro ${ROS2_DISTRO} && \
+    rm -rf /var/lib/apt/lists/* && \
+    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+    colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release && \
+    source install/local_setup.bash
+WORKDIR ${DRL_GRASPING_DIR}
+
 
 ### Install Ignition
 ARG IGNITION_VERSION=fortress
@@ -110,6 +145,20 @@ RUN mkdir -p ros_ign/src && \
     source install/local_setup.bash
 WORKDIR ${DRL_GRASPING_DIR}
 
+### Build ign_ros2_control
+RUN mkdir -p ign_ros2_control/src && \
+    cd ign_ros2_control && \
+    git clone https://github.com/AndrejOrsula/ign_ros2_control.git --depth 1 -b fortress_rolling src && \
+    apt update && \
+    rosdep update && \
+    rosdep install -r --from-paths . -yi --rosdistro ${ROS2_DISTRO} && \
+    rm -rf /var/lib/apt/lists/* && \
+    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+    colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release && \
+    source install/local_setup.bash
+# git clone https://github.com/ignitionrobotics/ign_ros2_control.git --depth 1 -b ahcorde/galactic/ign_ros2_control src && \
+WORKDIR ${DRL_GRASPING_DIR}
+
 ### Install Python requirements (Torch, SB3, ...)
 COPY ./python_requirements.txt ./python_requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
@@ -127,30 +176,30 @@ WORKDIR ${DRL_GRASPING_DIR}
 ### Build iDynTree
 RUN apt update && \
     apt install -yq --no-install-recommends \
-        coinor-libipopt-dev \
-        libxml2-dev \
-        qml-module-qt-labs-folderlistmodel \
-        qml-module-qt-labs-settings \
-        qml-module-qtmultimedia \
-        qml-module-qtquick-controls \
-        qml-module-qtquick-dialogs \
-        qml-module-qtquick-window2 \
-        qml-module-qtquick2 \
-        qtbase5-dev \
-        qtdeclarative5-dev \
-        qtmultimedia5-dev \
-        swig \
-        libeigen3-dev && \
+    coinor-libipopt-dev \
+    libxml2-dev \
+    qml-module-qt-labs-folderlistmodel \
+    qml-module-qt-labs-settings \
+    qml-module-qtmultimedia \
+    qml-module-qtquick-controls \
+    qml-module-qtquick-dialogs \
+    qml-module-qtquick-window2 \
+    qml-module-qtquick2 \
+    qtbase5-dev \
+    qtdeclarative5-dev \
+    qtmultimedia5-dev \
+    swig \
+    libeigen3-dev && \
     rm -rf /var/lib/apt/lists/* && \
     git clone https://github.com/robotology/idyntree --depth 1 && \
     mkdir idyntree/build && \
     cd idyntree/build && \
     cmake .. \
-        -GNinja \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DBUILD_SHARED_LIBS:BOOL=OFF \
-        -DIDYNTREE_USES_PYTHON=True \
-        -DIDYNTREE_USES_IPOPT:BOOL=ON && \
+    -GNinja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS:BOOL=OFF \
+    -DIDYNTREE_USES_PYTHON=True \
+    -DIDYNTREE_USES_IPOPT:BOOL=ON && \
     cmake --build . --target install
 WORKDIR ${DRL_GRASPING_DIR}
 
@@ -189,19 +238,19 @@ WORKDIR ${DRL_GRASPING_DIR}
 ### Download and process default datasets (if desired)
 ARG DISABLE_DEFAULT_DATASETS
 RUN if [[ -z "${DISABLE_DEFAULT_DATASETS}" ]] ; then \
-        echo "Downloading default datasets..." && \
-        source /opt/ros/${ROS2_DISTRO}/setup.bash && \
-        source ${DRL_GRASPING_DIR}/drl_grasping/install/local_setup.bash && \
-        export PATH=${DRL_GRASPING_DIR}/O-CNN/octree/build:${PATH} && \
-        export PYTHONPATH=${DRL_GRASPING_DIR}/O-CNN/octree/build/python:${PYTHONPATH} && \
-        ign fuel download -t model -u https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/panda && \
-        ign fuel download -t model -u https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/ur5_rg2 && \
-        ign fuel download -t model -u https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/kinova_j2s7s300 && \
-        ros2 run drl_grasping dataset_download_test.bash && \
-        ros2 run drl_grasping process_collection.py && \
-        git clone https://github.com/AndrejOrsula/pbr_textures.git --depth 1 -b 1k_test default_pbr_textures \
+    echo "Downloading default datasets..." && \
+    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+    source ${DRL_GRASPING_DIR}/drl_grasping/install/local_setup.bash && \
+    export PATH=${DRL_GRASPING_DIR}/O-CNN/octree/build:${PATH} && \
+    export PYTHONPATH=${DRL_GRASPING_DIR}/O-CNN/octree/build/python:${PYTHONPATH} && \
+    ign fuel download -t model -u https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/panda && \
+    ign fuel download -t model -u https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/ur5_rg2 && \
+    ign fuel download -t model -u https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/kinova_j2s7s300 && \
+    ros2 run drl_grasping dataset_download_test.bash && \
+    ros2 run drl_grasping process_collection.py && \
+    git clone https://github.com/AndrejOrsula/pbr_textures.git --depth 1 -b 1k_test default_pbr_textures \
     ; else \
-        echo "Default datasets are disabled. Downloading skipped." \
+    echo "Default datasets are disabled. Downloading skipped." \
     ; fi
 
 ### Communicate within localhost only

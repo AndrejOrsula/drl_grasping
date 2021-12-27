@@ -1,18 +1,30 @@
 ## ROS 2
-source /opt/ros/${ROS2_DISTRO}/setup.bash
+source "/opt/ros/${ROS2_DISTRO}/setup.bash"
+
+## ros2_control
+source "${DRL_GRASPING_DIR}/ros2_control/install/local_setup.bash"
+
+## ros2_controllers
+source "${DRL_GRASPING_DIR}/ros2_controllers/install/local_setup.bash"
+
+## moveit2
+source "${DRL_GRASPING_DIR}/moveit2/install/local_setup.bash"
 
 ## ROS 2 <-> IGN
-source ${DRL_GRASPING_DIR}/ros_ign/install/local_setup.bash
+source "${DRL_GRASPING_DIR}/ros_ign/install/local_setup.bash"
+
+## ign_ros2_control
+source "${DRL_GRASPING_DIR}/ign_ros2_control/install/local_setup.bash"
 
 ## Main repository
-source ${DRL_GRASPING_DIR}/drl_grasping/install/local_setup.bash
+source "${DRL_GRASPING_DIR}/drl_grasping/install/local_setup.bash"
 
 ## O-CNN Octree
-export PATH=${DRL_GRASPING_DIR}/O-CNN/octree/build:${PATH}
-export PYTHONPATH=${DRL_GRASPING_DIR}/O-CNN/octree/build/python:${PYTHONPATH}
+export PATH="${DRL_GRASPING_DIR}/O-CNN/octree/build${PATH:+:${PATH}}"
+export PYTHONPATH="${DRL_GRASPING_DIR}/O-CNN/octree/build/python${PYTHONPATH:+:${PYTHONPATH}}"
 
 ## Robot model
-export IGN_GAZEBO_RESOURCE_PATH=${DRL_GRASPING_DIR}/drl_grasping/src/lunalab_summit_xl_gen/lunalab_summit_xl_gen_description${IGN_GAZEBO_RESOURCE_PATH:+:${IGN_GAZEBO_RESOURCE_PATH}}
+export IGN_GAZEBO_RESOURCE_PATH="${DRL_GRASPING_DIR}/drl_grasping/src/lunalab_summit_xl_gen/lunalab_summit_xl_gen_description${IGN_GAZEBO_RESOURCE_PATH:+:${IGN_GAZEBO_RESOURCE_PATH}}"
 
 ## Path to PBR textures
 if [ -d "${DRL_GRASPING_DIR}/pbr_textures" ]; then
@@ -36,4 +48,4 @@ alias cfg_ex_enjoy_pretrained_agent='nano ${DRL_GRASPING_DIR}/drl_grasping/src/d
 alias cfg_ex_preload_replay_buffer='nano ${DRL_GRASPING_DIR}/drl_grasping/src/drl_grasping/examples/ex_preload_replay_buffer.bash'
 
 ## Appending source command to ~/.bashrc enables autocompletion (ENTRYPOINT alone does not support that)
-grep -qxF '. "${DRL_GRASPING_DIR}/entrypoint.bash"' ${HOME}/.bashrc || echo '. "${DRL_GRASPING_DIR}/entrypoint.bash"' >>${HOME}/.bashrc
+grep -qxF ". ${DRL_GRASPING_DIR}/entrypoint.bash" "${HOME}/.bashrc" || echo ". ${DRL_GRASPING_DIR}/entrypoint.bash" >>"${HOME}/.bashrc"

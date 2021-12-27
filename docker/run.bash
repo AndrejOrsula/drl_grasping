@@ -7,13 +7,14 @@ if [ ${#} -lt 1 ]; then
 fi
 
 IMG=${1}
-CMD=${@:2}
+CMD=${*:2}
 
 # Make sure processes in the container can connect to the x server
 # Necessary so gazebo can create a context for OpenGL rendering (even headless)
 XAUTH=/tmp/.docker.xauth
 if [ ! -f ${XAUTH} ]; then
-    xauth_list=$(xauth nlist ${DISPLAY})
+    xauth_list=$(xauth nlist "${DISPLAY}")
+    # shellcheck disable=SC2001
     xauth_list=$(sed -e 's/^..../ffff/' <<<"$xauth_list")
     if [ ! -z "$xauth_list" ]; then
         echo "$xauth_list" | xauth -f ${XAUTH} nmerge -
@@ -43,31 +44,45 @@ if [ ! -f ${XAUTH} ]; then
     echo "[${XAUTH}] was not properly created. Exiting..."
     exit 1
 fi
+GUI_ENVS=(
+    --env XAUTHORITY="${XAUTH}"
+    --env DISPLAY="${DISPLAY}"
+    --env QT_X11_NO_MITSHM=1
+)
+GUI_VOLUMES=(
+    --volume "${XAUTH}:${XAUTH}"
+    --volume "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+    --volume "/dev/input:/dev/input"
+)
 
-ADDITIONAL_VOLUMES=""
-if [[ ! -z ${DRL_GRASPING_PBR_TEXTURES_DIR} ]]; then
-    ADDITIONAL_VOLUMES="${ADDITIONAL_VOLUMES} -v ${DRL_GRASPING_PBR_TEXTURES_DIR}:/root/drl_grasping/pbr_textures"
+VOLUMES=""
+if [[ -n ${DRL_GRASPING_PBR_TEXTURES_DIR} ]]; then
+    VOLUMES="${VOLUMES} --volume ${DRL_GRASPING_PBR_TEXTURES_DIR}:/root/drl_grasping/pbr_textures"
 fi
+VOLUMES="${VOLUMES} --volume ${PWD}/training:/root/drl_grasping/training"
+## Use this volume for custom config and models that are stored locally on your machine
+# VOLUMES="${VOLUMES} --volume ${HOME}/.ignition:/root/.ignition"
 
-docker run -it \
-    -e DISPLAY=${DISPLAY} \
-    -e QT_X11_NO_MITSHM=1 \
-    -e XAUTHORITY=${XAUTH} \
-    -v "${XAUTH}:${XAUTH}" \
-    -v "/tmp/.X11-unix:/tmp/.X11-unix:rw" \
-    -v "/etc/localtime:/etc/localtime:ro" \
-    -v "/dev/input:/dev/input" \
-    -v "${PWD}/training:/root/drl_grasping/training" \
-    ${ADDITIONAL_VOLUMES} \
-    --network host \
-    --ipc host \
-    --rm \
-    -it \
-    --privileged \
-    --security-opt seccomp=unconfined \
-    ${DOCKER_OPTS} \
-    ${IMG} \
-    ${CMD}
+DOCKER_RUN_CMD=(
+    docker run
+    --interactive
+    --tty
+    --rm
+    --network host
+    --ipc host
+    --privileged
+    --security-opt "seccomp=unconfined"
+    "${DOCKER_OPTS}"
+    --volume "/etc/localtime:/etc/localtime:ro"
+    "${GUI_VOLUMES[@]}"
+    "${GUI_ENVS[@]}"
+    "${VOLUMES}"
+    "${ENVS}"
+    "${IMG}"
+    "${CMD}"
+)
 
-# Use this volume for custom config and models that are stored locally on your machine
-# -v "${HOME}/.ignition:/root/.ignition"
+echo -e "\033[1;30m${DOCKER_RUN_CMD[*]}\033[0m" | xargs
+
+# shellcheck disable=SC2048
+exec ${DOCKER_RUN_CMD[*]}
