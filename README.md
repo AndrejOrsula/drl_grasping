@@ -35,41 +35,44 @@ Example of Sim2Real transfer on UR5 can be seen below (trained inside simulation
 These are the primary dependencies required to use this project.
 
 - [Python 3.8](https://www.python.org/downloads)
-- ROS 2 [Foxy](https://docs.ros.org/en/foxy/Installation.html) OR [Rolling (recommended)](https://docs.ros.org/en/rolling/Installation.html)
-- Ignition [Dome](https://ignitionrobotics.org/docs/dome/install) OR [Fortress (recommended)](https://ignitionrobotics.org/docs/fortress)
+- ROS 2 [Rolling](https://docs.ros.org/en/rolling/Installation.html)
+  - [Foxy](https://docs.ros.org/en/foxy/Installation.html) and [Galactic](https://docs.ros.org/en/galactic/Installation.html) should also work without any issues (not tested)
+- Ignition [Fortress](https://ignitionrobotics.org/docs/fortress)
+  - [Citadel](https://ignitionrobotics.org/docs/citadel) and [Edifice](https://ignitionrobotics.org/docs/edifice) should also work (not tested)
 - [MoveIt 2](https://moveit.ros.org/install-moveit2/binary)
   - Install/build a version based on the selected ROS 2 release
 - [ros_ign](https://github.com/ignitionrobotics/ros_ign/tree/ros2)
   - Install/build a version based on the selected combination of ROS 2 release and Ignition version
+- [ign_ros2_control](https://github.com/ignitionrobotics/ign_ros2_control)
+  - Build a version based on the selected combination of ROS 2 release and Ignition version
 - [gym-ignition](https://github.com/robotology/gym-ignition)
   - [AndrejOrsula/gym-ignition](https://github.com/AndrejOrsula/gym-ignition) fork is currently required
 - [O-CNN](https://github.com/microsoft/O-CNN)
   - [AndrejOrsula/O-CNN](https://github.com/AndrejOrsula/O-CNN) fork is currently required
 - [PyTorch](https://pytorch.org/get-started/locally) (last tested on 1.9.1)
-- [Stable-Baselines3](https://stable-baselines3.readthedocs.io/en/master/guide/install.html) (last tested on 1.2.0) and [sb3-contrib](https://stable-baselines3.readthedocs.io/en/master/guide/sb3_contrib.html#installation)
+- [Stable-Baselines3](https://stable-baselines3.readthedocs.io/en/master/guide/install.html) (last tested on 1.3.0) and [sb3-contrib](https://stable-baselines3.readthedocs.io/en/master/guide/sb3_contrib.html#installation)
 
-Python dependencies are listed under [python_requirements.txt](./docker/python_requirements.txt). All of these (including Pytorch and Stable-Baselines3) can be installed via `pip`.
+Additional Python dependencies are listed under [python_requirements.txt](./docker/python_requirements.txt). All of these (including Pytorch and Stable-Baselines3) can be installed via `pip`.
 
 ```bash
 pip3 install -r python_requirements.txt
 ```
 
-Dependencies for robot models (e.g. [panda_ign](https://github.com/AndrejOrsula/panda_ign)/[panda_moveit2_config](https://github.com/AndrejOrsula/panda_moveit2_config)) and interaction between MoveIt 2 and Ignition ([ign_moveit2](https://github.com/AndrejOrsula/ign_moveit2)) are pulled from git and built together with this repository, see [drl_grasping.repos](drl_grasping.repos) for more details.
+Additional dependencies for `pymoveit2` and robot models are listed under [drl_grasping.repos](./drl_grasping.repos) and pulled via git during installation. Please, see instructions below.
 
 > In case you run into any problems with dependencies along the way, please check [Dockerfile](docker/Dockerfile) that includes the full instructions.
 
 ### Building
 
-Clone this repository and import VCS dependencies. Then build with [colcon](https://colcon.readthedocs.io).
+Clone this repository and import VCS dependencies. Then install dependencies and build with [colcon](https://colcon.readthedocs.io).
 
 ```bash
-# Create workspace for the project
-mkdir -p drl_grasping/src && cd drl_grasping/src
-# Clone this repository
-git clone https://github.com/AndrejOrsula/drl_grasping.git
-# Import and install dependencies
-vcs import < drl_grasping/drl_grasping.repos && cd ..
-rosdep install -r --from-paths src -i --rosdistro ${ROS_DISTRO}
+# Clone this repository into your favourite ROS 2 workspace
+git clone https://github.com/AndrejOrsula/ign_moveit2_examples.git
+# Import additional git dependencies
+vcs import < ign_moveit2_examples/ign_moveit2_examples.repos
+# Install external dependencies via rosdep
+rosdep install -r --from-paths src --ignore-src --rosdistro ${ROS_DISTRO}
 # Build with colcon
 colcon build --merge-install --symlink-install --cmake-args "-DCMAKE_BUILD_TYPE=Release"
 ```
@@ -145,6 +148,7 @@ This enables:
 - Use of `drl_grasping` Python module
 - Execution of scripts and examples via `ros2 run drl_grasping <executable>`
 - Launching of setup scripts via `ros2 launch drl_grasping <launch_script>`
+- Discoverability of shared resources
 
 ### Environment variables
 
