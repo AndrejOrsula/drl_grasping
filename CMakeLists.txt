@@ -57,14 +57,6 @@ install(PROGRAMS
     DESTINATION lib/${PROJECT_NAME}
 )
 
-# Install tests
-set(TESTS_DIR tests)
-install(PROGRAMS
-    ${TESTS_DIR}/test_env.py
-    ${TESTS_DIR}/test_octree_conv.py
-    DESTINATION lib/${PROJECT_NAME}
-)
-
 # Install directories
 install(DIRECTORY launch drl_grasping/envs/worlds rviz pretrained_agents DESTINATION share/${PROJECT_NAME})
 
