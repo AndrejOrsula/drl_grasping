@@ -41,6 +41,7 @@ install(PROGRAMS
     ${SCRIPTS_DIR}/utils/dataset/dataset_unset_train.bash
     ${SCRIPTS_DIR}/utils/process_collection.py
     ${SCRIPTS_DIR}/enjoy.py
+    ${SCRIPTS_DIR}/random_agent.py
     ${SCRIPTS_DIR}/train.py
     ${SCRIPTS_DIR}/preload_replay_buffer.py
     DESTINATION lib/${PROJECT_NAME}

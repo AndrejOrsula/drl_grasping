@@ -1,5 +1,5 @@
 #!/usr/bin/env -S ros2 launch
-"""Configure and setup interface with simulated robots inside Ignition Gazebo"""
+"""Configure and setup interface with a simulated robot inside Ignition Gazebo"""
 
 from os import path
 from typing import List
