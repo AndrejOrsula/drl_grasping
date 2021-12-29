@@ -11,7 +11,7 @@ class RandomSun(model_wrapper.ModelWrapper):
         self,
         world: scenario.World,
         name: str = "sun",
-        direction_minmax_elevation: Tuple[float, float] = (-0.15, -0.65),
+        minmax_elevation: Tuple[float, float] = (-0.15, -0.65),
         distance: float = 800.0,
         visual: bool = True,
         radius: float = 20.0,
@@ -41,9 +41,7 @@ class RandomSun(model_wrapper.ModelWrapper):
         # Get random elevation
         direction = np.append(
             direction,
-            np_random.uniform(
-                direction_minmax_elevation[0], direction_minmax_elevation[1]
-            ),
+            np_random.uniform(minmax_elevation[0], minmax_elevation[1]),
         )
         # Normalize again
         direction = direction / np.linalg.norm(direction)

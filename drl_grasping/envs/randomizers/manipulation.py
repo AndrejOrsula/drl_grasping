@@ -94,6 +94,7 @@ class ManipulationGazeboEnvRandomizer(
         light_enable: bool = True,
         light_type: str = "sun",
         light_direction: Tuple[float, float, float] = (0.5, -0.25, -0.75),
+        light_random_minmax_elevation: Tuple[float, float] = (-0.15, -0.65),
         light_color: Tuple[float, float, float, float] = (1.0, 1.0, 1.0, 1.0),
         light_distance: float = 1000.0,
         light_visual: bool = True,
@@ -192,6 +193,7 @@ class ManipulationGazeboEnvRandomizer(
         # Light
         self._light_enable = light_enable
         self._light_direction = light_direction
+        self._light_random_minmax_elevation = light_random_minmax_elevation
         self._light_color = light_color
         self._light_distance = light_distance
         self._light_visual = light_visual
@@ -574,6 +576,7 @@ class ManipulationGazeboEnvRandomizer(
             world=task.world,
             name="sun",
             direction=self._light_direction,
+            minmax_elevation=self._light_random_minmax_elevation,
             color=self._light_color,
             distance=self._light_distance,
             visual=self._light_visual,
@@ -904,6 +907,7 @@ class ManipulationGazeboEnvRandomizer(
             world=task.world,
             name="sun",
             direction=self._light_direction,
+            minmax_elevation=self._light_random_minmax_elevation,
             color=self._light_color,
             distance=self._light_distance,
             visual=self._light_visual,
