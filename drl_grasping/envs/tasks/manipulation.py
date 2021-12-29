@@ -1,26 +1,32 @@
-from drl_grasping.envs.control import MoveIt2, MoveIt2Servo, MoveIt2Gripper
+import abc
+import multiprocessing
+import sys
+from itertools import count
+from os import environ
+from threading import Thread
+from typing import Tuple, Union
+
+import numpy as np
+import rclpy
+from drl_grasping.envs.control import MoveIt2, MoveIt2Gripper, MoveIt2Servo
 from drl_grasping.envs.models.robots import get_robot_model_class
 from drl_grasping.envs.utils import Tf2Broadcaster, Tf2Listener
 from drl_grasping.envs.utils.conversions import orientation_6d_to_quat, quat_to_wxyz
 from drl_grasping.envs.utils.math import quat_mul
 from gym_ignition.base import task
-from gym_ignition.utils.typing import Action, Reward, Observation
-from gym_ignition.utils.typing import ActionSpace, ObservationSpace
-from itertools import count
-from os import environ
+from gym_ignition.utils.typing import (
+    Action,
+    ActionSpace,
+    Observation,
+    ObservationSpace,
+    Reward,
+)
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.executors import SingleThreadedExecutor, MultiThreadedExecutor
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.logging import LoggingSeverity
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from scipy.spatial.transform import Rotation
-from threading import Thread
-from typing import Tuple, Union
-import abc
-import multiprocessing
-import numpy as np
-import rclpy
-import sys
 
 
 class Manipulation(task.Task, Node, abc.ABC):
@@ -68,6 +74,26 @@ class Manipulation(task.Task, Node, abc.ABC):
                 environ.get("DRL_GRASPING_DEBUG_LEVEL", default="ERROR").upper(),
             )
         )
+
+        # Create callback group that allows execution of callbacks in parallel without restrictions
+        self._callback_group = ReentrantCallbackGroup()
+
+        # Create executor
+        if num_threads == 1:
+            executor = SingleThreadedExecutor()
+        elif num_threads > 1:
+            executor = MultiThreadedExecutor(
+                num_threads=num_threads,
+            )
+        else:
+            executor = MultiThreadedExecutor(num_threads=multiprocessing.cpu_count())
+
+        # Add this node to the executor
+        executor.add_node(self)
+
+        # Spin this node in background thread(s)
+        self._executor_thread = Thread(target=executor.spin, daemon=True, args=())
+        self._executor_thread.start()
 
         # Store passed arguments for later use
         self.workspace_centre = workspace_centre
@@ -135,22 +161,6 @@ class Manipulation(task.Task, Node, abc.ABC):
         self.terrain_name = "terrain"
         self.object_names = []
 
-        # Create executor
-        if num_threads == 1:
-            executor = SingleThreadedExecutor()
-        elif num_threads > 1:
-            executor = MultiThreadedExecutor(
-                num_threads=num_threads,
-            )
-        else:
-            executor = MultiThreadedExecutor(num_threads=multiprocessing.cpu_count())
-
-        # Create callback group that allows execution of callbacks in parallel without restrictions
-        self._callback_group = ReentrantCallbackGroup()
-
-        # Add this node to the executor
-        executor.add_node(self)
-
         # Setup listener and broadcaster of transforms via tf2
         self.tf2_listener = Tf2Listener(node=self)
         self.tf2_broadcaster = Tf2Broadcaster(node=self)
@@ -183,10 +193,6 @@ class Manipulation(task.Task, Node, abc.ABC):
                 ignore_new_calls_while_executing=ignore_new_actions_while_executing,
                 callback_group=self._callback_group,
             )
-
-        # Spin this node in background thread(s)
-        self._executor_thread = Thread(target=executor.spin, daemon=True, args=())
-        self._executor_thread.start()
 
     def create_spaces(self) -> Tuple[ActionSpace, ObservationSpace]:
 
