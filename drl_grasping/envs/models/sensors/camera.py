@@ -1,9 +1,10 @@
+import os
+from threading import Thread
+from typing import List, Union
+
 from gym_ignition.scenario import model_wrapper
 from gym_ignition.utils.scenario import get_unique_model_name
 from scenario import core as scenario
-from threading import Thread
-from typing import List, Union
-import os
 
 
 class Camera(model_wrapper.ModelWrapper):
@@ -47,7 +48,7 @@ class Camera(model_wrapper.ModelWrapper):
                 <link name="{model_name}_link">
                     <sensor name="camera" type="{camera_type}">
                         <topic>{model_name}</topic>
-                        <always_on>1</always_on>
+                        <always_on>true</always_on>
                         <update_rate>{update_rate}</update_rate>
                         <camera name="{model_name}_camera">
                             <image>
@@ -75,8 +76,9 @@ class Camera(model_wrapper.ModelWrapper):
                                 <stddev>{noise_stddev}</stddev>
                             </noise>""" if noise_mean is not None and noise_stddev is not None else ""
                             }
-                        <visibility_mask>{visibility_mask}</visibility_mask>
+                            <visibility_mask>{visibility_mask}</visibility_mask>
                         </camera>
+                        <visualize>true</visualize>
                     </sensor>
                     {
                         f"""
