@@ -1,17 +1,18 @@
-from drl_grasping.envs import tasks, models
+import abc
+from os import environ
+from typing import List, Tuple, Union
+
+import numpy as np
+from drl_grasping.envs import models, tasks
 from drl_grasping.envs.utils.conversions import quat_to_wxyz
 from drl_grasping.envs.utils.gazebo import get_model_pose
 from drl_grasping.envs.utils.math import quat_mul
 from gym_ignition import randomizers
 from gym_ignition.randomizers import gazebo_env_randomizer
 from gym_ignition.randomizers.gazebo_env_randomizer import MakeEnvCallable
-from os import environ
 from scenario import gazebo as scenario
 from scipy.spatial import distance
 from scipy.spatial.transform import Rotation
-from typing import Union, Tuple, List
-import abc
-import numpy as np
 
 # Tasks that are supported by this randomizer (used primarily for type hinting)
 SupportedTasks = Union[
@@ -680,24 +681,20 @@ class ManipulationGazeboEnvRandomizer(
 
         # Randomize robot model pose if needed
         if self._robot_random_pose and self.robot.is_mobile:
-            self.randomize_robot_pose(task=task)
+            self.randomize_robot_pose(task=task, gazebo=gazebo)
 
         # Reset/randomize robot joint positions
         self.reset_robot_joint_positions(
-            task=task, randomize=self._robot_random_joint_positions
+            task=task, gazebo=gazebo, randomize=self._robot_random_joint_positions
         )
 
         # Randomize terrain plane if needed
         if self._terrain_enable and self._terrain_model_expired():
-            self.randomize_terrain(task=task)
+            self.randomize_terrain(task=task, gazebo=gazebo)
 
         # Randomize light plane if needed
         if self._light_enable and self._light_model_expired():
-            self.randomize_light(task=task)
-
-        # Execute a paused run to process randomization of robot, terrain and light before randomizing camera and objects
-        if not gazebo.run(paused=True):
-            raise RuntimeError("Failed to execute a paused Gazebo run")
+            self.randomize_light(task=task, gazebo=gazebo)
 
         # Randomize camera if needed
         # TODO (medium): Implement camera pose randomization for cameras attached to robot
@@ -706,20 +703,22 @@ class ManipulationGazeboEnvRandomizer(
             and not self.__is_camera_attached
             and self._camera_pose_expired()
         ):
-            self.randomize_camera_pose(task=task)
+            self.randomize_camera_pose(task=task, gazebo=gazebo)
 
         # Randomize objects if needed
         # Note: No need to randomize pose of new models because they are already spawned randomly
         self.__object_positions.clear()
         if self._object_enable:
             if self._object_models_expired():
-                self.randomize_object_models(task=task)
+                self.randomize_object_models(task=task, gazebo=gazebo)
             elif self._object_random_pose:
-                self.object_random_pose(task=task)
+                self.object_random_pose(task=task, gazebo=gazebo)
             else:
-                self.reset_default_object_pose(task=task)
+                self.reset_default_object_pose(task=task, gazebo=gazebo)
 
-    def randomize_robot_pose(self, task: SupportedTasks):
+    def randomize_robot_pose(
+        self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
+    ):
 
         position = [
             self._robot_spawn_position[0]
@@ -746,8 +745,15 @@ class ManipulationGazeboEnvRandomizer(
         gazebo_robot.reset_base_pose(position, quat_to_wxyz(quat_xyzw))
         gazebo_robot.reset_base_world_velocity([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
 
+        # Execute a paused run to process model modification
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
+
     def reset_robot_joint_positions(
-        self, task: SupportedTasks, randomize: bool = False
+        self,
+        task: SupportedTasks,
+        gazebo: scenario.GazeboSimulator,
+        randomize: bool = False,
     ):
 
         gazebo_robot = self.robot.to_gazebo()
@@ -801,7 +807,13 @@ class ManipulationGazeboEnvRandomizer(
             ):
                 raise RuntimeError("Failed to reset passive joint velocities")
 
-    def randomize_camera_pose(self, task: SupportedTasks):
+        # Execute a paused run to process model modification
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
+
+    def randomize_camera_pose(
+        self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
+    ):
 
         # Get random camera pose, centred at object position (or centre of object spawn box)
         position, quat_xyzw = self.get_random_camera_pose(
@@ -823,6 +835,10 @@ class ManipulationGazeboEnvRandomizer(
             rotation=quat_xyzw,
             xyzw=True,
         )
+
+        # Execute a paused run to process model modification
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
 
     def get_random_camera_pose(
         self,
@@ -862,7 +878,7 @@ class ManipulationGazeboEnvRandomizer(
 
         return position, quat_xyzw
 
-    def randomize_terrain(self, task: SupportedTasks):
+    def randomize_terrain(self, task: SupportedTasks, gazebo: scenario.GazeboSimulator):
 
         # Remove existing terrain
         if hasattr(self, "terrain"):
@@ -895,7 +911,11 @@ class ManipulationGazeboEnvRandomizer(
         link = self.terrain.to_gazebo().get_link(link_name=self.terrain.link_names()[0])
         link.enable_contact_detection(True)
 
-    def randomize_light(self, task: SupportedTasks):
+        # Execute a paused run to process model removal and insertion
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
+
+    def randomize_light(self, task: SupportedTasks, gazebo: scenario.GazeboSimulator):
 
         # Remove existing light
         if hasattr(self, "light"):
@@ -915,7 +935,13 @@ class ManipulationGazeboEnvRandomizer(
             np_random=task.np_random,
         )
 
-    def reset_default_object_pose(self, task: SupportedTasks):
+        # Execute a paused run to process model removal and insertion
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
+
+    def reset_default_object_pose(
+        self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
+    ):
 
         assert len(task.object_names) == 1
 
@@ -923,7 +949,13 @@ class ManipulationGazeboEnvRandomizer(
         obj.reset_base_pose(self._object_spawn_position, (1.0, 0.0, 0.0, 0.0))
         obj.reset_base_world_velocity([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
 
-    def randomize_object_models(self, task: SupportedTasks):
+        # Execute a paused run to process model modification
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
+
+    def randomize_object_models(
+        self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
+    ):
 
         # Remove all existing models
         if len(self.task.object_names) > 0:
@@ -961,7 +993,13 @@ class ManipulationGazeboEnvRandomizer(
                     + str(ex)
                 )
 
-    def object_random_pose(self, task: SupportedTasks):
+        # Execute a paused run to process model removal and insertion
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
+
+    def object_random_pose(
+        self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
+    ):
 
         for object_name in self.task.object_names:
             position, quat_random = self.get_random_object_pose(
@@ -973,6 +1011,10 @@ class ManipulationGazeboEnvRandomizer(
             obj.reset_base_pose(position, quat_random)
             obj.reset_base_world_velocity([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
             self.__object_positions[object_name] = position
+
+        # Execute a paused run to process model modification
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
 
     def get_random_object_pose(
         self,
