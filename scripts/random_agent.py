@@ -1,46 +1,28 @@
-#!/usr/bin/env -S python3 -O
+#!/usr/bin/env python3
 
-from drl_grasping import envs as drl_grasping_envs
-from stable_baselines3.common.env_checker import check_env
-from gym_ignition.utils import logger
+import argparse
+from typing import Dict
+
 import gym
-from gym import logger as gym_logger
-from os import environ
+from drl_grasping.utils import import_envs
+from drl_grasping.utils.utils import StoreDict, str2bool
+from stable_baselines3.common.env_checker import check_env
 
 
-# env_id = "Reach-Gazebo-v0"
-# env_id = "Reach-ColorImage-Gazebo-v0"
-# env_id = "Reach-DepthImage-Gazebo-v0"
-# env_id = "Reach-Octree-Gazebo-v0"
-# env_id = "Reach-OctreeWithColor-Gazebo-v0"
+def main(args: Dict):
 
-# env_id = "Grasp-Octree-Gazebo-v0"
-# env_id = "Grasp-OctreeWithColor-Gazebo-v0"
-
-# env_id = "GraspPlanetary-Octree-Gazebo-v0"
-env_id = "GraspPlanetary-OctreeWithColor-Gazebo-v0"
-
-
-def main(args=None):
-
-    # Set verbosity
-    debug_level = environ.get("DRL_GRASPING_DEBUG_LEVEL", default="ERROR").upper()
-    logger.set_level(getattr(gym_logger, debug_level))
-
-    # Make environment
-    env = gym.make(env_id)
+    # Create the environment
+    env = gym.make(args.env, **args.env_kwargs)
 
     # Initialize random seed
-    env.seed(42)
+    env.seed(args.seed)
 
-    # Enable rendering
-    # env.render("human")
-
-    # Check it
-    check_env(env, warn=True, skip_render_check=True)
+    # Check the environment
+    if args.check_env:
+        check_env(env, warn=True, skip_render_check=True)
 
     # Step environment for bunch of episodes
-    for episode in range(100000):
+    for episode in range(args.n_timesteps):
 
         # Initialize returned values
         done = False
@@ -61,11 +43,48 @@ def main(args=None):
             # Accumulate the reward
             total_reward += reward
 
-        print(f"Episode #{episode} reward: {total_reward}")
+        print(f"Episode #{episode}\n\treward: {total_reward}")
 
     # Cleanup once done
     env.close()
 
 
 if __name__ == "__main__":
-    main()
+
+    parser = argparse.ArgumentParser()
+
+    # Environment and its parameters
+    parser.add_argument(
+        "--env", type=str, default="Reach-Gazebo-v0", help="Environment ID"
+    )
+    parser.add_argument(
+        "--env-kwargs",
+        type=str,
+        nargs="+",
+        action=StoreDict,
+        help="Optional keyword argument to pass to the env constructor",
+    )
+
+    # Number of timesteps to run
+    parser.add_argument(
+        "-n",
+        "--n-timesteps",
+        type=int,
+        default=10000,
+        help="Overwrite the number of timesteps",
+    )
+
+    # Random seed
+    parser.add_argument("--seed", type=int, default=69, help="Random generator seed")
+
+    # Flag to check environment
+    parser.add_argument(
+        "--check-env",
+        type=str2bool,
+        default=True,
+        help="Flag to check the environment before running the random agent",
+    )
+
+    args, unknown = parser.parse_known_args()
+
+    main(args=args)

@@ -1,5 +1,5 @@
 #!/usr/bin/env -S ros2 launch
-"""Train an RL agent"""
+"""Optimize hyperparameters for RL training with Optuna"""
 
 from os import path
 from typing import List
@@ -26,19 +26,22 @@ def generate_launch_description() -> LaunchDescription:
     env = LaunchConfiguration("env")
     env_kwargs = LaunchConfiguration("env_kwargs")
     algo = LaunchConfiguration("algo")
-    hyperparams = LaunchConfiguration("hyperparams")
     n_timesteps = LaunchConfiguration("n_timesteps")
     num_threads = LaunchConfiguration("num_threads")
     seed = LaunchConfiguration("seed")
-    trained_agent = LaunchConfiguration("trained_agent")
-    save_freq = LaunchConfiguration("save_freq")
-    save_replay_buffer = LaunchConfiguration("save_replay_buffer")
     preload_replay_buffer = LaunchConfiguration("preload_replay_buffer")
     log_folder = LaunchConfiguration("log_folder")
     tensorboard_log = LaunchConfiguration("tensorboard_log")
     log_interval = LaunchConfiguration("log_interval")
     uuid = LaunchConfiguration("uuid")
-    eval_freq = LaunchConfiguration("eval_freq")
+    sampler = LaunchConfiguration("sampler")
+    pruner = LaunchConfiguration("pruner")
+    n_trials = LaunchConfiguration("n_trials")
+    n_startup_trials = LaunchConfiguration("n_startup_trials")
+    n_evaluations = LaunchConfiguration("n_evaluations")
+    n_jobs = LaunchConfiguration("n_jobs")
+    storage = LaunchConfiguration("storage")
+    study_name = LaunchConfiguration("study_name")
     eval_episodes = LaunchConfiguration("eval_episodes")
     verbose = LaunchConfiguration("verbose")
     truncate_last_trajectory = LaunchConfiguration("truncate_last_trajectory")
@@ -90,21 +93,13 @@ def generate_launch_description() -> LaunchDescription:
                 ['robot_model:"', robot_model, '"'],
                 "--algo",
                 algo,
-                "--hyperparams",
-                hyperparams,
-                "--n-timesteps",
+                "--seed",
                 n_timesteps,
                 "--num-threads",
                 num_threads,
-                "--seed",
-                seed,
-                "--trained-agent",
-                trained_agent,
-                "--save-freq",
-                save_freq,
-                "--save-replay-buffer",
-                save_replay_buffer,
                 "--preload-replay-buffer",
+                seed,
+                "--n-timesteps",
                 preload_replay_buffer,
                 "--log-folder",
                 log_folder,
@@ -114,8 +109,24 @@ def generate_launch_description() -> LaunchDescription:
                 log_interval,
                 "--uuid",
                 uuid,
-                "--eval-freq",
-                eval_freq,
+                "--optimize-hyperparameters",
+                "True",
+                "--sampler",
+                sampler,
+                "--pruner",
+                pruner,
+                "--n-trials",
+                n_trials,
+                "--n-startup-trials",
+                n_startup_trials,
+                "--n-evaluations",
+                n_evaluations,
+                "--n-jobs",
+                n_jobs,
+                "--storage",
+                storage,
+                "--study-name",
+                study_name,
                 "--eval-episodes",
                 eval_episodes,
                 "--verbose",
@@ -171,11 +182,11 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
             default_value="dummy",
             description="Type of VecEnv to use (dummy or subproc).",
         ),
-        # Algorithm and training
+        # Algorithm and optimization
         DeclareLaunchArgument(
             "algo",
             default_value="tqc",
-            description="RL algorithm to use during the training.",
+            description="RL algorithm to use during the optimization.",
         ),
         DeclareLaunchArgument(
             "n_timesteps",
@@ -183,20 +194,9 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
             description="Overwrite the number of timesteps.",
         ),
         DeclareLaunchArgument(
-            "hyperparams",
-            default_value="",
-            description="Optional RL hyperparameter overwrite (e.g. learning_rate:0.01 train_freq:10).",
-        ),
-        DeclareLaunchArgument(
             "num_threads",
             default_value="-1",
             description="Number of threads for PyTorch (-1 to use default).",
-        ),
-        # Continue training an already trained agent
-        DeclareLaunchArgument(
-            "trained_agent",
-            default_value="",
-            description="Path to a pretrained agent to continue training.",
         ),
         # Random seed
         DeclareLaunchArgument(
@@ -204,22 +204,11 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
             default_value="-1",
             description="Random generator seed.",
         ),
-        # Saving of model
-        DeclareLaunchArgument(
-            "save_freq",
-            default_value="10000",
-            description="Save the model every n steps (if negative, no checkpoint).",
-        ),
-        DeclareLaunchArgument(
-            "save_replay_buffer",
-            default_value="False",
-            description="Save the replay buffer too (when applicable).",
-        ),
-        # Pre-load a replay buffer and start training on it
+        # Pre-load a replay buffer and start optimization on it
         DeclareLaunchArgument(
             "preload_replay_buffer",
             default_value="",
-            description="Path to a replay buffer that should be preloaded before starting the training process.",
+            description="Path to a replay buffer that should be preloaded before starting the optimization process.",
         ),
         # Logging
         DeclareLaunchArgument(
@@ -242,12 +231,48 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
             default_value="False",
             description="Ensure that the run has a unique ID.",
         ),
-        # Evaluation
+        # Hyperparameter optimization
         DeclareLaunchArgument(
-            "eval_freq",
-            default_value="-1",
-            description="Evaluate the agent every n steps (if negative, no evaluation).",
+            "sampler",
+            default_value="tpe",
+            description="Sampler to use when optimizing hyperparameters (random, tpe or skopt).",
         ),
+        DeclareLaunchArgument(
+            "pruner",
+            default_value="median",
+            description="Pruner to use when optimizing hyperparameters (halving, median or none).",
+        ),
+        DeclareLaunchArgument(
+            "n_trials",
+            default_value="10",
+            description="Number of trials for optimizing hyperparameters.",
+        ),
+        DeclareLaunchArgument(
+            "n_startup_trials",
+            default_value="5",
+            description="Number of trials before using optuna sampler.",
+        ),
+        DeclareLaunchArgument(
+            "n_evaluations",
+            default_value="2",
+            description="Number of evaluations for hyperparameter optimization.",
+        ),
+        DeclareLaunchArgument(
+            "n_jobs",
+            default_value="1",
+            description="Number of parallel jobs when optimizing hyperparameters.",
+        ),
+        DeclareLaunchArgument(
+            "storage",
+            default_value="",
+            description="Database storage path if distributed optimization should be used.",
+        ),
+        DeclareLaunchArgument(
+            "study_name",
+            default_value="",
+            description="Study name for distributed optimization.",
+        ),
+        # Evaluation
         DeclareLaunchArgument(
             "eval_episodes",
             default_value="5",

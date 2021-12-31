@@ -256,7 +256,6 @@ GraspPlanetary-OctreeWithColor-Gazebo-v0:
     net_arch: [512, 512]
     separate_networks_for_stacks: True
     share_features_extractor: True
-  env_wrapper:
   n_timesteps: 500000
   buffer_size: 40000
   learning_starts: 0

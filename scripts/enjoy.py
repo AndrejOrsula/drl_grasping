@@ -1,25 +1,24 @@
-#!/usr/bin/env -S python3 -O
+#!/usr/bin/env python3
 
 import argparse
 import os
+from typing import Dict
 
 import numpy as np
 import torch as th
 import yaml
-from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, VecEnvWrapper
-
-from drl_grasping.utils import import_envs
 from drl_grasping.utils import (
-    ALGOS,
     create_test_env,
     get_latest_run_id,
     get_saved_hyperparams,
+    import_envs,
 )
-from drl_grasping.utils.utils import StoreDict
+from drl_grasping.utils.utils import ALGOS, StoreDict, str2bool
+from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, VecEnvWrapper
 
 
-def main(args=None):
+def main(args: Dict):
 
     if args.exp_id == 0:
         args.exp_id = get_latest_run_id(os.path.join(args.folder, args.algo), args.env)
@@ -195,7 +194,7 @@ if __name__ == "__main__":
 
     # Environment and its parameters
     parser.add_argument(
-        "--env", type=str, default="Reach-Gazebo-v0", help="environment ID"
+        "--env", type=str, default="Reach-Gazebo-v0", help="Environment ID"
     )
     parser.add_argument(
         "--env-kwargs",
@@ -204,7 +203,7 @@ if __name__ == "__main__":
         action=StoreDict,
         help="Optional keyword argument to pass to the env constructor",
     )
-    parser.add_argument("--n-envs", type=int, default=1, help="number of environments")
+    parser.add_argument("--n-envs", type=int, default=1, help="Number of environments")
 
     # Algorithm
     parser.add_argument(
@@ -213,7 +212,7 @@ if __name__ == "__main__":
         choices=list(ALGOS.keys()),
         required=False,
         default="sac",
-        help="RL Algorithm",
+        help="RL algorithm to use during the training",
     )
     parser.add_argument(
         "--num-threads",
@@ -228,14 +227,16 @@ if __name__ == "__main__":
         "--n-episodes",
         type=int,
         default=200,
-        help="Overwrite the number of episodes",
+        help="Number of evaluation episodes",
     )
 
     # Random seed
     parser.add_argument("--seed", type=int, default=0, help="Random generator seed")
 
     # Model to test
-    parser.add_argument("-f", "--folder", type=str, default="logs", help="Log folder")
+    parser.add_argument(
+        "-f", "--log-folder", type=str, default="logs", help="Path to the log directory"
+    )
     parser.add_argument(
         "--exp-id",
         type=int,
@@ -244,7 +245,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--load-best",
-        action="store_true",
+        type=str2bool,
         default=False,
         help="Load best model instead of last model if available",
     )
@@ -256,16 +257,10 @@ if __name__ == "__main__":
 
     # Deterministic/stochastic actions
     parser.add_argument(
-        "--deterministic",
-        action="store_true",
-        default=True,
-        help="Use deterministic actions",
-    )
-    parser.add_argument(
         "--stochastic",
-        action="store_true",
+        type=str2bool,
         default=False,
-        help="Use stochastic actions",
+        help="Use stochastic actions instead of deterministic",
     )
 
     # Logging
@@ -274,7 +269,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--norm-reward",
-        action="store_true",
+        type=str2bool,
         default=False,
         help="Normalize reward if applicable (trained with VecNormalize)",
     )
@@ -282,7 +277,7 @@ if __name__ == "__main__":
     # Disable render
     parser.add_argument(
         "--no-render",
-        action="store_true",
+        type=str2bool,
         default=False,
         help="Do not render the environment (useful for tests)",
     )

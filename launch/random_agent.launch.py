@@ -9,7 +9,7 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
@@ -20,10 +20,14 @@ def generate_launch_description() -> LaunchDescription:
     declared_arguments = generate_declared_arguments()
 
     # Get substitution for all arguments
-    world_name = LaunchConfiguration("world_name")
     robot_model = LaunchConfiguration("robot_model")
     robot_name = LaunchConfiguration("robot_name")
     prefix = LaunchConfiguration("prefix")
+    env = LaunchConfiguration("env")
+    env_kwargs = LaunchConfiguration("env_kwargs")
+    n_timesteps = LaunchConfiguration("n_timesteps")
+    seed = LaunchConfiguration("seed")
+    check_env = LaunchConfiguration("check_env")
     enable_rviz = LaunchConfiguration("enable_rviz")
     rviz_config = LaunchConfiguration("rviz_config")
     use_sim_time = LaunchConfiguration("use_sim_time")
@@ -44,7 +48,6 @@ def generate_launch_description() -> LaunchDescription:
                 )
             ),
             launch_arguments=[
-                ("world_name", world_name),
                 ("robot_model", robot_model),
                 ("robot_name", robot_name),
                 ("prefix", prefix),
@@ -58,31 +61,34 @@ def generate_launch_description() -> LaunchDescription:
 
     # List of nodes to be launched
     nodes = [
-        # Run the example node (Python)
+        # Train node
         Node(
             package="drl_grasping",
             executable="random_agent.py",
             output="log",
-            arguments=["--ros-args", "--log-level", log_level],
+            arguments=[
+                "--env",
+                env,
+                "--env-kwargs",
+                env_kwargs,
+                # Make sure `robot_model` is specified (with priority)
+                "--env-kwargs",
+                ['robot_model:"', robot_model, '"'],
+                "--n-timesteps",
+                n_timesteps,
+                "--seed",
+                seed,
+                "--check-env",
+                check_env,
+                "--ros-args",
+                "--log-level",
+                log_level,
+            ],
             parameters=[{"use_sim_time": use_sim_time}],
         ),
     ]
 
-    # List for logging
-    logs = [
-        LogInfo(
-            msg=[
-                "Launching test_env for Ignition Gazebo world ",
-                world_name,
-                "\n\tRobot model: ",
-                robot_name,
-                "\n\tPrefix: ",
-                prefix,
-            ],
-        )
-    ]
-
-    return LaunchDescription(declared_arguments + launch_descriptions + nodes + logs)
+    return LaunchDescription(declared_arguments + launch_descriptions + nodes)
 
 
 def generate_declared_arguments() -> List[DeclareLaunchArgument]:
@@ -91,12 +97,7 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
     """
 
     return [
-        # Naming of the world and robot
-        DeclareLaunchArgument(
-            "world_name",
-            default_value="drl_grasping_world",
-            description="Name of the Ignition Gazebo world, which affects some of the Ignition topic names.",
-        ),
+        # Robot model and its name
         DeclareLaunchArgument(
             "robot_model",
             default_value="lunalab_summit_xl_gen",
@@ -111,6 +112,34 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
             "prefix",
             default_value="robot_",
             description="Prefix for all robot entities. If modified, then joint names in the configuration of controllers must also be updated.",
+        ),
+        # Environment and its parameters
+        DeclareLaunchArgument(
+            "env",
+            default_value="GraspPlanetary-OctreeWithColor-Gazebo-v0",
+            description="Environment ID",
+        ),
+        DeclareLaunchArgument(
+            "env_kwargs",
+            default_value=['robot_model:"', LaunchConfiguration("robot_model"), '"'],
+            description="Optional keyword argument to pass to the env constructor.",
+        ),
+        DeclareLaunchArgument(
+            "n_timesteps",
+            default_value="10000",
+            description="Overwrite the number of timesteps.",
+        ),
+        # Random seed
+        DeclareLaunchArgument(
+            "seed",
+            default_value="69",
+            description="Random generator seed.",
+        ),
+        # Flag to check environment
+        DeclareLaunchArgument(
+            "check_env",
+            default_value="True",
+            description="Flag to check the environment before running the random agent.",
         ),
         # Miscellaneous
         DeclareLaunchArgument(

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S python3 -O
+#!/usr/bin/env python3
 
 import argparse
 import difflib

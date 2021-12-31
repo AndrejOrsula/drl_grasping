@@ -378,10 +378,44 @@ class StoreDict(argparse.Action):
         super(StoreDict, self).__init__(option_strings, dest, nargs=nargs, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
+
         arg_dict = {}
+
+        if hasattr(namespace, self.dest):
+            current_arg = getattr(namespace, self.dest)
+            if isinstance(current_arg, Dict):
+                arg_dict = getattr(namespace, self.dest)
+
         for arguments in values:
+            if not arguments:
+                continue
             key = arguments.split(":")[0]
             value = ":".join(arguments.split(":")[1:])
             # Evaluate the string as python code
             arg_dict[key] = eval(value)
         setattr(namespace, self.dest, arg_dict)
+
+
+def str2bool(value: Union[str, bool]) -> bool:
+    """
+    Convert logical string to boolean. Can be used as argparse type.
+    """
+
+    if isinstance(value, bool):
+        return value
+    if value.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif value.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
+
+
+def empty_str2none(value: Optional[str]) -> Optional[str]:
+    """
+    If string is empty, convert to None. Can be used as argparse type.
+    """
+
+    if not value:
+        return None
+    return value
