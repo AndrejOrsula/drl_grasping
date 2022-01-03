@@ -4,21 +4,18 @@ import argparse
 import difflib
 import os
 import uuid
+from typing import Dict
 
 import gym
 import numpy as np
-import seaborn
 import torch as th
-from stable_baselines3.common.utils import set_random_seed
-
 from drl_grasping.utils import import_envs
 from drl_grasping.utils.exp_manager import ExperimentManager
-from drl_grasping.utils.utils import ALGOS, StoreDict
+from drl_grasping.utils.utils import ALGOS, StoreDict, empty_str2none, str2bool
+from stable_baselines3.common.utils import set_random_seed
 
-seaborn.set()
 
-
-def main(args=None):
+def main(args: Dict):
 
     # Check if the selected environment is valid
     # If it could not be found, suggest the closest match
@@ -54,7 +51,11 @@ def main(args=None):
     # If enabled, ensure that the run has a unique ID
     uuid_str = f"_{uuid.uuid4()}" if args.uuid else ""
 
-    print("=" * 10, "Preloading buffer for ", args.env, "=" * 10)
+    # Enable preloading of replay buffer in the environment
+    env_kwargs = args.env_kwargs
+    env_kwargs.update({"preload_replay_buffer": True})
+
+    print("=" * 10, args.env, "=" * 10)
     print(f"Seed: {args.seed}")
 
     exp_manager = ExperimentManager(
@@ -70,15 +71,6 @@ def main(args=None):
         args.hyperparams,
         args.env_kwargs,
         args.trained_agent,
-        args.optimize_hyperparameters,
-        args.storage,
-        args.study_name,
-        args.n_trials,
-        args.n_jobs,
-        args.sampler,
-        args.pruner,
-        n_startup_trials=args.n_startup_trials,
-        n_evaluations=args.n_evaluations,
         truncate_last_trajectory=args.truncate_last_trajectory,
         uuid_str=uuid_str,
         seed=args.seed,
@@ -88,8 +80,9 @@ def main(args=None):
         vec_env_type=args.vec_env,
     )
 
-    # Prepare experiment and launch hyperparameter optimization if needed
+    # Prepare experiment
     model = exp_manager.setup_experiment()
+
     # Collect transitions for demonstration
     exp_manager.collect_demonstration(model)
 
@@ -100,7 +93,7 @@ if __name__ == "__main__":
 
     # Environment and its parameters
     parser.add_argument(
-        "--env", type=str, default="Reach-Gazebo-v0", help="environment ID"
+        "--env", type=str, default="Reach-Gazebo-v0", help="Environment ID"
     )
     parser.add_argument(
         "--env-kwargs",
@@ -114,17 +107,17 @@ if __name__ == "__main__":
         type=str,
         choices=["dummy", "subproc"],
         default="dummy",
-        help="VecEnv type",
+        help="Type of VecEnv to use",
     )
 
-    # Algorithm
+    # Algorithm and training
     parser.add_argument(
         "--algo",
         type=str,
         choices=list(ALGOS.keys()),
         required=False,
         default="sac",
-        help="RL Algorithm",
+        help="RL algorithm to use during the training",
     )
     parser.add_argument(
         "-params",
@@ -132,22 +125,20 @@ if __name__ == "__main__":
         type=str,
         nargs="+",
         action=StoreDict,
-        help="Overwrite hyperparameter (e.g. learning_rate:0.01 train_freq:10)",
+        help="Optional RL hyperparameter overwrite (e.g. learning_rate:0.01 train_freq:10)",
     )
-    parser.add_argument(
-        "--num-threads",
-        type=int,
-        default=-1,
-        help="Number of threads for PyTorch (-1 to use default)",
-    )
-
-    # Training duration
     parser.add_argument(
         "-n",
         "--n-timesteps",
         type=int,
         default=-1,
         help="Overwrite the number of timesteps",
+    )
+    parser.add_argument(
+        "--num-threads",
+        type=int,
+        default=-1,
+        help="Number of threads for PyTorch (-1 to use default)",
     )
 
     # Continue training an already trained agent
@@ -171,19 +162,19 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--save-replay-buffer",
-        action="store_true",
-        default=True,
+        type=str2bool,
+        default=False,
         help="Save the replay buffer too (when applicable)",
     )
 
     # Logging
     parser.add_argument(
-        "-f", "--log-folder", type=str, default="logs", help="Log folder"
+        "-f", "--log-folder", type=str, default="logs", help="Path to the log directory"
     )
     parser.add_argument(
         "-tb",
         "--tensorboard-log",
-        type=str,
+        type=empty_str2none,
         default="tensorboard_logs",
         help="Tensorboard log dir",
     )
@@ -196,68 +187,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-uuid",
         "--uuid",
-        action="store_true",
+        type=str2bool,
         default=False,
         help="Ensure that the run has a unique ID",
-    )
-
-    # Hyperparameter optimization
-    parser.add_argument(
-        "-optimize",
-        "--optimize-hyperparameters",
-        action="store_true",
-        default=False,
-        help="Run hyperparameters search",
-    )
-    parser.add_argument(
-        "--sampler",
-        type=str,
-        choices=["random", "tpe", "skopt"],
-        default="tpe",
-        help="Sampler to use when optimizing hyperparameters",
-    )
-    parser.add_argument(
-        "--pruner",
-        type=str,
-        choices=["halving", "median", "none"],
-        default="median",
-        help="Pruner to use when optimizing hyperparameters",
-    )
-    parser.add_argument(
-        "--n-trials",
-        type=int,
-        default=10,
-        help="Number of trials for optimizing hyperparameters",
-    )
-    parser.add_argument(
-        "--n-startup-trials",
-        type=int,
-        default=5,
-        help="Number of trials before using optuna sampler",
-    )
-    parser.add_argument(
-        "--n-evaluations",
-        type=int,
-        default=2,
-        help="Number of evaluations for hyperparameter optimization",
-    )
-    parser.add_argument(
-        "--n-jobs",
-        type=int,
-        default=1,
-        help="Number of parallel jobs when optimizing hyperparameters",
-    )
-    parser.add_argument(
-        "--storage",
-        type=str,
-        default=None,
-        help="Database storage path if distributed optimization should be used",
-    )
-    parser.add_argument(
-        "--study-name",
-        type=str,
-        default=None,
-        help="Study name for distributed optimization",
     )
 
     # Evaluation
@@ -282,12 +214,11 @@ if __name__ == "__main__":
     # HER specifics
     parser.add_argument(
         "--truncate-last-trajectory",
-        help="When using HER with online sampling the last trajectory "
-        "in the replay buffer will be truncated after reloading the replay buffer.",
+        type=str2bool,
         default=True,
-        type=bool,
+        help="When using HER with online sampling the last trajectory in the replay buffer will be truncated after reloading the replay buffer.",
     )
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
 
     main(args=args)
