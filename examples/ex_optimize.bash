@@ -1,91 +1,71 @@
 #!/usr/bin/env bash
+#### This script serves as an example of utilising `ros2 launch drl_grasping optimize.launch.py` and configuring some of its most common arguments.
+#### When this script is called, the corresponding launch string is printed to STDOUT. Therefore, feel free to modify and use such command directly.
+#### To view all arguments, run `ros2 launch drl_grasping optimize.launch.py --show-args`.
 
+### Arguments
 ## Random seed to use for both the environment and agent (-1 for random)
 SEED="69"
 
-## ID of the environment
-# ENV_ID="Reach-Gazebo-v0"
-# ENV_ID="Reach-ColorImage-Gazebo-v0"
-# ENV_ID="Reach-DepthImage-Gazebo-v0"
-# ENV_ID="Reach-Octree-Gazebo-v0"
-# ENV_ID="Reach-OctreeWithColor-Gazebo-v0"
-
-# ENV_ID="Grasp-Octree-Gazebo-v0"
-# ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
-
-# ENV_ID="GraspPlanetary-Octree-Gazebo-v0"
-ENV_ID="GraspPlanetary-OctreeWithColor-Gazebo-v0"
-
-## Robot model
+## Robot to use during optimization
 # ROBOT_MODEL="panda"
-# ROBOT_MODEL="ur5_rg2"
-# ROBOT_MODEL="kinova_j2s7s300"
 ROBOT_MODEL="lunalab_summit_xl_gen"
 
-## Algorithm to use
-# ALGO="sac"
+## ID of the environment
+# ENV="Reach-Gazebo-v0"
+# ENV="Reach-ColorImage-Gazebo-v0"
+# ENV="Reach-DepthImage-Gazebo-v0"
+# ENV="Reach-Octree-Gazebo-v0"
+# ENV="Reach-OctreeWithColor-Gazebo-v0"
+# ENV="Grasp-Octree-Gazebo-v0"
+# ENV="Grasp-OctreeWithColor-Gazebo-v0"
+# ENV="GraspPlanetary-Octree-Gazebo-v0"
+ENV="GraspPlanetary-OctreeWithColor-Gazebo-v0"
+
+## Selection of RL algorithm
 # ALGO="td3"
+# ALGO="sac"
 ALGO="tqc"
 
-## Args for optimization
-OPTIMIZE_SAMPLER="tpe"
-OPTIMIZE_PRUNER="median"
-OPTIMIZE_N_TIMESTAMPS=100000
-OPTIMIZE_N_STARTUP_TRIALS=5
-OPTIMIZE_N_TRIALS=20
-OPTIMIZE_N_EVALUATIONS=4
-OPTIMIZE_EVAL_EPISODES=20
+## Path to logs directory
+LOG_FOLDER="${PWD}/drl_grasping_optimize/${ENV}/logs"
 
-## Path to a replay buffer that should be preloaded before each trial begins
-# PRELOAD_REPLAY_BUFFER="training/preloaded_buffers/"${ENV_ID}"_1/replay_buffer.pkl"
+## Path to tensorboard logs directory
+TENSORBOARD_LOG="${PWD}/drl_grasping_optimize/${ENV}/tensorboard_logs"
 
-## Path to a replay buffer that should be preloaded before each trial begins
-# PRELOAD_REPLAY_BUFFER="training/preloaded_buffers/"${ENV_ID}"_1/replay_buffer.pkl"
+## Path to a replay buffer that should be loaded before each trial begins (`**/*.pkl`)
+# PRELOAD_REPLAY_BUFFER=""
 
-## Path the parent training directory
-TRAINING_DIR="training"
-## Path to logs
-LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/optimize/logs"
-## Path to tensorboard logs
-TENSORBOARD_LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/optimize/tensorboard_logs"
-
-## Arguments for the environment
-ENV_ARGS="robot_model:\"${ROBOT_MODEL}\""
-
-## Extra arguments to be passed into the script
-EXTRA_ARGS=""
-
-########################################################################################################################
-########################################################################################################################
-
-## Spawn ign_moveit2 subprocess in background, while making sure to forward termination signals
-IGN_MOVEIT2_CMD="ros2 launch drl_grasping sim.launch.py robot_model:=${ROBOT_MODEL} enable_rviz:=false"
-if [ "$ROBOT_MODEL" = "kinova_j2s7s300" ]; then
-    # Robot name for `kinova_j2s7s300` is different
-    IGN_MOVEIT2_CMD="${IGN_MOVEIT2_CMD} robot_name:=j2s7s300"
-fi
-echo "Launching ign_moveit2 in background:"
-echo "${IGN_MOVEIT2_CMD}"
-echo ""
-${IGN_MOVEIT2_CMD} &
-## Kill all subprocesses when SIGINT SIGTERM EXIT are received
-subprocess_pid_ign_moveit2="${!}"
-terminate_subprocesses() {
-    echo "INFO: Caught signal, killing all subprocesses..."
-    pkill -P "${subprocess_pid_ign_moveit2}"
-}
-trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
-
-## Arguments
-OPTIMIZE_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --optimize-hyperparameters --sampler "${OPTIMIZE_SAMPLER}" --pruner "${OPTIMIZE_PRUNER}" --n-timesteps "${OPTIMIZE_N_TIMESTAMPS}" --n-startup-trials "${OPTIMIZE_N_STARTUP_TRIALS}" --n-trials "${OPTIMIZE_N_TRIALS}" --n-evaluations "${OPTIMIZE_N_EVALUATIONS}" --eval-episodes "${OPTIMIZE_EVAL_EPISODES}" --env-kwargs "${ENV_ARGS}" "${EXTRA_ARGS}""
-## Add preload replay buffer to args in order to preload buffer with transitions that use custom heuristic (demonstration)
-if [ ! -z "${PRELOAD_REPLAY_BUFFER}" ]; then
-    OPTIMIZE_ARGS=""${OPTIMIZE_ARGS}" --preload-replay-buffer "${PRELOAD_REPLAY_BUFFER}""
+### Arguments
+LAUNCH_ARGS=(
+    "seed:=${SEED}"
+    "robot_model:=${ROBOT_MODEL}"
+    "env:=${ENV}"
+    "algo:=${ALGO}"
+    "log_folder:=${LOG_FOLDER}"
+    "tensorboard_log:=${TENSORBOARD_LOG}"
+    "n_timesteps:=1000000"
+    "sampler:=tpe"
+    "pruner:=median"
+    "n_trials:=20"
+    "n_startup_trials:=5"
+    "n_evaluations:=4"
+    "eval_episodes:=20"
+    "log_interval:=-1"
+    "enable_rviz:=true"
+)
+if [[ -n ${PRELOAD_REPLAY_BUFFER} ]]; then
+    LAUNCH_ARGS+=("preload_replay_buffer:=${PRELOAD_REPLAY_BUFFER}")
 fi
 
-## Execute optimize script
-OPTIMIZE_CMD="ros2 run drl_grasping train.py "${OPTIMIZE_ARGS}""
-echo "Executing optimization command:"
-echo "${OPTIMIZE_CMD}"
-echo ""
-${OPTIMIZE_CMD}
+### Launch script
+LAUNCH_CMD=(
+    ros2 launch
+    drl_grasping optimize.launch.py
+    "${LAUNCH_ARGS[*]}"
+)
+
+echo -e "\033[1;30m${LAUNCH_CMD[*]}\033[0m" | xargs
+
+# shellcheck disable=SC2048
+exec ${LAUNCH_CMD[*]}
