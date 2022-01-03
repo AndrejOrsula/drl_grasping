@@ -2,7 +2,7 @@
 
 if [ ${#} -lt 1 ]; then
     echo "Usage: ${0} <docker image> <cmd (optional)>"
-    echo "Example: ${0} andrejorsula/drl_grasping:latest ros2 run drl_grasping ex_enjoy_pretrained_agent.bash"
+    echo "Example: ${0} andrejorsula/drl_grasping:latest ros2 run drl_grasping ex_evaluate_pretrained_agent.bash"
     exit 1
 fi
 

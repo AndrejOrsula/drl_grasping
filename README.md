@@ -119,10 +119,10 @@ For running of the container, please use the included [docker/run.bash](docker/r
 <drl_grasping dir>/docker/run.bash andrejorsula/drl_grasping:latest /bin/bash
 ```
 
-If desired, you can also run examples and scripts directly with this setup, e.g. enjoying of pre-trained agents discussed below.
+If desired, you can also run examples and scripts directly with this setup, e.g. evaluation of pre-trained agents discussed below.
 
 ```bash
-<drl_grasping dir>/docker/run.bash andrejorsula/drl_grasping:latest ros2 run drl_grasping ex_enjoy_pretrained_agent.bash
+<drl_grasping dir>/docker/run.bash andrejorsula/drl_grasping:latest ros2 run drl_grasping ex_evaluate_pretrained_agent.bash
 ```
 
 > If you are struggling to get CUDA working on your system with Nvidia GPU (no `nvidia-smi` output), you might need to use a different version of CUDA base image that supports the version of your driver. If that is the case, you need to build yourself a new Docker image.
@@ -174,17 +174,17 @@ Defaults to `"ERROR"`.
 
 <details><summary>Using Pre-trained Agents (click to expand)</summary>
 
-### Enjoy Pre-trained Agents
+### Evaluate Pre-trained Agents
 
-The [pretrained_agents](https://github.com/AndrejOrsula/drl_grasping_pretrained_agents) submodule contains a selection of few agents that are already trained and ready to be enjoyed (remember to `git clone --recursive`/`git submodule update --init` if you wish to use these). To use them, you can use [`ex_enjoy_pretrained_agent.bash`](examples/ex_enjoy_pretrained_agent.bash). You should see RViZ 2 and Ignition Gazebo GUI client with an agent trying to grasp one of four objects in a fully randomised novel environment, while the performance of the agent is logged in your terminal.
+The [pretrained_agents](https://github.com/AndrejOrsula/drl_grasping_pretrained_agents) submodule contains a selection of few agents that are already trained and ready to be evaluated (remember to `git clone --recursive`/`git submodule update --init` if you wish to use these). To use them, you can use [`ex_evaluate_pretrained_agent.bash`](examples/ex_evaluate_pretrained_agent.bash). You should see RViZ 2 and Ignition Gazebo GUI client with an agent trying to grasp one of four objects in a fully randomised novel environment, while the performance of the agent is logged in your terminal.
 
 ```bash
-ros2 run drl_grasping ex_enjoy_pretrained_agent.bash
+ros2 run drl_grasping ex_evaluate_pretrained_agent.bash
 ```
 
 The default agent is for `Grasp-OctreeWithColor-Gazebo-v0` environment with Panda robot and TQC. You can modify these to any of the other pre-trained agent directly in the example script according to the support matrix from [AndrejOrsula/drl_grasping_pretrained_agents](https://github.com/AndrejOrsula/drl_grasping_pretrained_agents).
 
-> Under the hood, all examples launch a setup ROS 2 script for interfacing MoveIt 2 and Ignition, and a corresponding Python script for enjoying or training. All examples print these commands out if you are interested in running the commands separately.
+> Under the hood, all examples launch a setup ROS 2 script for interfacing Ignition, MoveIt 2 and a corresponding Python script for training or evaluation. All examples print these commands out if you are interested in running the commands separately.
 
 </details>
 
@@ -200,12 +200,12 @@ ros2 run drl_grasping ex_train.bash
 
 Depending on your hardware and hyperparameter configuration, the training can be a very lengthy process. It takes nearly three days to train an agent for 500k steps on a 130W laptop with a dedicated GPU.
 
-### Enjoying of Trained Agents
+### Evaluation of Trained Agents
 
-To enjoy an agent that you have trained yourself, look into [`ex_enjoy.bash`](examples/ex_enjoy.bash) example. Similar to training, change the environment ID, algorithm and robot model. Furthermore, select a specific checkpoint that you want to run. RViZ 2 and Ignition Gazebo GUI client are enabled by default.
+To evaluate an agent that you have trained yourself, look into [`ex_evaluate.bash`](examples/ex_evaluate.bash) example. Similar to training, change the environment ID, algorithm and robot model. Furthermore, select a specific checkpoint that you want to run. RViZ 2 and Ignition Gazebo GUI client are enabled by default.
 
 ```bash
-ros2 run drl_grasping ex_enjoy.bash
+ros2 run drl_grasping ex_evaluate.bash
 ```
 
 </details>
@@ -321,7 +321,7 @@ Hyperparameters for training of RL agents can be found in [hyperparams](hyperpar
     ├── control         # Control for the agent
     ├── perception      # Perception for the agent
     └── utils           # Other utilities, used across the module
-├── examples            # Examples for training and enjoying RL agents
+├── examples            # Examples for training and evaluating RL agents
 ├── hyperparams         # Hyperparameters for training RL agents
 ├── scripts             # Helpful scripts for training, evaluating, ...
 ├── launch              # ROS 2 launch scripts that can be used to help with setup

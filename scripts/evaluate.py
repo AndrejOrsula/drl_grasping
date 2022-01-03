@@ -99,7 +99,7 @@ def main(args: Dict):
 
     kwargs = dict(seed=args.seed)
     if args.algo in off_policy_algos:
-        # Dummy buffer size as we don't need memory to enjoy the trained agent
+        # Dummy buffer size as we don't need memory to evaluate the trained agent
         kwargs.update(dict(buffer_size=1))
 
     model = ALGOS[args.algo].load(model_path, env=env, **kwargs)

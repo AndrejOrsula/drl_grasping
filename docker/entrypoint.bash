@@ -42,9 +42,9 @@ alias cfg_hyperparams_td3='nano ${DRL_GRASPING_DIR}/drl_grasping/src/drl_graspin
 alias cfg_hyperparams_sac='nano ${DRL_GRASPING_DIR}/drl_grasping/src/drl_grasping/hyperparams/sac.yml'
 alias cfg_hyperparams_tqc='nano ${DRL_GRASPING_DIR}/drl_grasping/src/drl_grasping/hyperparams/tqc.yml'
 alias cfg_ex_train='nano ${DRL_GRASPING_DIR}/drl_grasping/src/drl_grasping/examples/ex_train.bash'
-alias cfg_ex_enjoy='nano ${DRL_GRASPING_DIR}/drl_grasping/src/drl_grasping/examples/ex_enjoy.bash'
+alias cfg_ex_evaluate='nano ${DRL_GRASPING_DIR}/drl_grasping/src/drl_grasping/examples/ex_evaluate.bash'
 alias cfg_ex_optimize='nano ${DRL_GRASPING_DIR}/drl_grasping/src/drl_grasping/examples/ex_optimize.bash'
-alias cfg_ex_enjoy_pretrained_agent='nano ${DRL_GRASPING_DIR}/drl_grasping/src/drl_grasping/examples/ex_enjoy_pretrained_agent.bash'
+alias cfg_ex_evaluate_pretrained_agent='nano ${DRL_GRASPING_DIR}/drl_grasping/src/drl_grasping/examples/ex_evaluate_pretrained_agent.bash'
 alias cfg_ex_preload_replay_buffer='nano ${DRL_GRASPING_DIR}/drl_grasping/src/drl_grasping/examples/ex_preload_replay_buffer.bash'
 
 ## Appending source command to ~/.bashrc enables autocompletion (ENTRYPOINT alone does not support that)

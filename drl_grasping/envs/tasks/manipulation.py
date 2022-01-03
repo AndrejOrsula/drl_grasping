@@ -56,12 +56,14 @@ class Manipulation(task.Task, Node, abc.ABC):
         # Initialize the Task base class
         task.Task.__init__(self, agent_rate=agent_rate)
 
-        # Initialize ROS 2 Node base class
+        # Initialize ROS 2 context (if not done before)
         try:
             rclpy.init()
         except:
             if not rclpy.ok():
-                sys.exit("ROS 2 could not be initialised")
+                sys.exit("ROS 2 context could not be initialised")
+
+        # Initialize ROS 2 Node base class
         Node.__init__(self, f"drl_grasping_{self.id}")
         self.set_parameters(
             [Parameter("use_sim_time", type_=Parameter.Type.BOOL, value=use_sim_time)]
