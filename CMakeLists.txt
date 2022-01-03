@@ -40,7 +40,7 @@ install(PROGRAMS
     ${SCRIPTS_DIR}/utils/dataset/dataset_unset_test.bash
     ${SCRIPTS_DIR}/utils/dataset/dataset_unset_train.bash
     ${SCRIPTS_DIR}/utils/process_collection.py
-    ${SCRIPTS_DIR}/enjoy.py
+    ${SCRIPTS_DIR}/evaluate.py
     ${SCRIPTS_DIR}/random_agent.py
     ${SCRIPTS_DIR}/train.py
     ${SCRIPTS_DIR}/preload_replay_buffer.py
@@ -50,8 +50,8 @@ install(PROGRAMS
 # Install examples
 set(EXAMPLES_DIR examples)
 install(PROGRAMS
-    ${EXAMPLES_DIR}/ex_enjoy.bash
-    ${EXAMPLES_DIR}/ex_enjoy_pretrained_agent.bash
+    ${EXAMPLES_DIR}/ex_evaluate.bash
+    ${EXAMPLES_DIR}/ex_evaluate_pretrained_agent.bash
     ${EXAMPLES_DIR}/ex_optimize.bash
     ${EXAMPLES_DIR}/ex_train.bash
     ${EXAMPLES_DIR}/ex_preload_replay_buffer.bash
