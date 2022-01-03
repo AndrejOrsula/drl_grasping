@@ -28,10 +28,10 @@ ENV="GraspPlanetary-OctreeWithColor-Gazebo-v0"
 ALGO="tqc"
 
 ## Path to logs directory
-LOG_FOLDER="${PWD}/drl_grasping_optimize/${ENV}/logs"
+LOG_FOLDER="${PWD}/drl_grasping_training/optimize/${ENV}/logs"
 
 ## Path to tensorboard logs directory
-TENSORBOARD_LOG="${PWD}/drl_grasping_optimize/${ENV}/tensorboard_logs"
+TENSORBOARD_LOG="${PWD}/drl_grasping_training/optimize/${ENV}/tensorboard_logs"
 
 ## Path to a replay buffer that should be loaded before each trial begins (`**/*.pkl`)
 # PRELOAD_REPLAY_BUFFER=""

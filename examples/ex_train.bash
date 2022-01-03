@@ -28,10 +28,10 @@ ENV="GraspPlanetary-OctreeWithColor-Gazebo-v0"
 ALGO="tqc"
 
 ## Path to logs directory
-LOG_FOLDER="${PWD}/drl_grasping_train/${ENV}/logs"
+LOG_FOLDER="${PWD}/drl_grasping_training/train/${ENV}/logs"
 
 ## Path to tensorboard logs directory
-TENSORBOARD_LOG="${PWD}/drl_grasping_train/${ENV}/tensorboard_logs"
+TENSORBOARD_LOG="${PWD}/drl_grasping_training/train/${ENV}/tensorboard_logs"
 
 ## Path to a trained agent to continue training (`**.zip`)
 # TRAINED_AGENT_SESSION="1"

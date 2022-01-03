@@ -30,7 +30,7 @@ ALGO="tqc"
 LOG_FOLDER="$(ros2 pkg prefix --share drl_grasping)/pretrained_agents"
 
 ## Path to reward log directory
-REWARD_LOG="${PWD}/drl_grasping_evaluate/${ENV}"
+REWARD_LOG="${PWD}/drl_grasping_training/evaluate/${ENV}"
 
 ## Load checkpoint instead of last model (# steps)
 # LOAD_CHECKPOINT="0"
