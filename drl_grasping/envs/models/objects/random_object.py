@@ -1,9 +1,11 @@
-from drl_grasping.envs.models.utils import ModelCollectionRandomizer
+from typing import List, Optional
+
 from gym_ignition.scenario import model_wrapper
 from gym_ignition.utils.scenario import get_unique_model_name
 from numpy.random import RandomState
 from scenario import core as scenario
-from typing import List, Optional
+
+from drl_grasping.envs.models.utils import ModelCollectionRandomizer
 
 
 class RandomObject(model_wrapper.ModelWrapper):

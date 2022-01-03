@@ -1,21 +1,22 @@
+import os
+import tempfile
+import time
 from copy import deepcopy
 from functools import wraps
+from threading import Thread
+from typing import Optional
+
+import numpy as np
+import optuna
 from matplotlib import pyplot as plt
 from sb3_contrib import TQC
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import (
     BaseCallback,
-    EvalCallback,
     CheckpointCallback,
+    EvalCallback,
 )
 from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv
-from threading import Thread
-from typing import Optional
-import numpy as np
-import optuna
-import os
-import tempfile
-import time
 
 
 class TrialEvalCallback(EvalCallback):

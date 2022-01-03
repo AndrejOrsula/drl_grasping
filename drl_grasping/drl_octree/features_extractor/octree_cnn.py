@@ -1,8 +1,9 @@
-from drl_grasping.drl_octree.features_extractor.modules import *
-from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 import gym
 import ocnn
 import torch
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+
+from drl_grasping.drl_octree.features_extractor.modules import *
 
 # TODO: Once it is clear whether separating networks for stacks or not makes a difference (e.g. better stability), refactor this mess and use only the better solution. Same applies to other args... there are too many of them right now
 

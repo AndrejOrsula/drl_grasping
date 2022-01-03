@@ -1,8 +1,10 @@
 from __future__ import annotations
-from stable_baselines3.common import logger
-from typing import Union, Type, Dict
+
 import enum
 import math
+from typing import Dict, Type, Union
+
+from stable_baselines3.common import logger
 
 
 @enum.unique

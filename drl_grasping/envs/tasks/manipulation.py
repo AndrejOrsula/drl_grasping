@@ -8,11 +8,6 @@ from typing import Tuple, Union
 
 import numpy as np
 import rclpy
-from drl_grasping.envs.control import MoveIt2, MoveIt2Gripper, MoveIt2Servo
-from drl_grasping.envs.models.robots import get_robot_model_class
-from drl_grasping.envs.utils import Tf2Broadcaster, Tf2Listener
-from drl_grasping.envs.utils.conversions import orientation_6d_to_quat, quat_to_wxyz
-from drl_grasping.envs.utils.math import quat_mul
 from gym_ignition.base import task
 from gym_ignition.utils.typing import (
     Action,
@@ -27,6 +22,12 @@ from rclpy.logging import LoggingSeverity
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from scipy.spatial.transform import Rotation
+
+from drl_grasping.envs.control import MoveIt2, MoveIt2Gripper, MoveIt2Servo
+from drl_grasping.envs.models.robots import get_robot_model_class
+from drl_grasping.envs.utils import Tf2Broadcaster, Tf2Listener
+from drl_grasping.envs.utils.conversions import orientation_6d_to_quat, quat_to_wxyz
+from drl_grasping.envs.utils.math import quat_mul
 
 
 class Manipulation(task.Task, Node, abc.ABC):

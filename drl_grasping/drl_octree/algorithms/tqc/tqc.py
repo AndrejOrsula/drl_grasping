@@ -1,15 +1,15 @@
 # This module adds a monkey patch to TQC `_store_transition` function - The only difference is that if info contains 'curriculum.restart_exploration' key set to True, the ent_coef and its optimizer will be reset.
 # Note: needs to be included before `from sb3_contrib import TQC` in the module that uses this
 
-# Note: Import monkey patch of off_policy_algorithm before TQC
-from drl_grasping.drl_octree.algorithms import off_policy_algorithm
-from sb3_contrib import TQC
-
-from stable_baselines3.common.buffers import ReplayBuffer
 from typing import Any, Dict, List
+
 import numpy as np
 import torch as th
+from sb3_contrib import TQC
+from stable_baselines3.common.buffers import ReplayBuffer
 
+# Note: Import monkey patch of off_policy_algorithm before TQC
+from drl_grasping.drl_octree.algorithms import off_policy_algorithm  # isort:skip
 
 __old_store_transition__ = TQC._store_transition
 

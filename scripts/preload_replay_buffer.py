@@ -9,10 +9,11 @@ from typing import Dict
 import gym
 import numpy as np
 import torch as th
+from stable_baselines3.common.utils import set_random_seed
+
 from drl_grasping.utils import import_envs
 from drl_grasping.utils.exp_manager import ExperimentManager
 from drl_grasping.utils.utils import ALGOS, StoreDict, empty_str2none, str2bool
-from stable_baselines3.common.utils import set_random_seed
 
 
 def main(args: Dict):

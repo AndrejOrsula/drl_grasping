@@ -1,9 +1,10 @@
+from typing import Tuple
+
+import rclpy
 from geometry_msgs.msg import TransformStamped
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from tf2_ros import StaticTransformBroadcaster
-from typing import Tuple
-import rclpy
 
 
 class Tf2Broadcaster:

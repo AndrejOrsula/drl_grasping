@@ -1,9 +1,10 @@
+from typing import Optional
+
+import rclpy
 from geometry_msgs.msg import Transform
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from tf2_ros import TransformListener, Buffer
-from typing import Optional
-import rclpy
+from tf2_ros import Buffer, TransformListener
 
 
 class Tf2Listener:

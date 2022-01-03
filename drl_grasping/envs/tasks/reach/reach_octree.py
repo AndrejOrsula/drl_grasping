@@ -1,13 +1,14 @@
-from collections import deque
-from drl_grasping.envs.tasks.reach import Reach
-from drl_grasping.envs.perception import CameraSubscriber, OctreeCreator
-from gym_ignition.utils.typing import Observation
-from gym_ignition.utils.typing import ObservationSpace
-from typing import Tuple
-from drl_grasping.envs.models.sensors import Camera
 import abc
+from collections import deque
+from typing import Tuple
+
 import gym
 import numpy as np
+from gym_ignition.utils.typing import Observation, ObservationSpace
+
+from drl_grasping.envs.models.sensors import Camera
+from drl_grasping.envs.perception import CameraSubscriber, OctreeCreator
+from drl_grasping.envs.tasks.reach import Reach
 
 
 class ReachOctree(Reach, abc.ABC):

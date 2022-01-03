@@ -1,6 +1,7 @@
-from typing import Tuple, Dict, Optional
 import subprocess
 import tempfile
+from typing import Dict, Optional, Tuple
+
 import xacro
 
 

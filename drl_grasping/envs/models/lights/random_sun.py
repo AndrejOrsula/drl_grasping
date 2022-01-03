@@ -1,9 +1,10 @@
+from typing import Optional, Tuple
+
+import numpy as np
 from gym_ignition.scenario import model_wrapper
 from gym_ignition.utils.scenario import get_unique_model_name
 from numpy.random import RandomState
 from scenario import core as scenario
-from typing import Tuple, Optional
-import numpy as np
 
 
 class RandomSun(model_wrapper.ModelWrapper):

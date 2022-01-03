@@ -1,4 +1,5 @@
 from gym_ignition.scenario.model_wrapper import ModelWrapper
+
 from .random_sun import RandomSun
 from .sun import Sun
 

@@ -1,9 +1,20 @@
+import argparse
+import os
+import pickle as pkl
+import time
+import warnings
 from collections import OrderedDict
+from pprint import pprint
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+import gym
+import numpy as np
+import optuna
+import yaml
 from optuna.integration.skopt import SkoptSampler
-from optuna.pruners import BasePruner, MedianPruner, SuccessiveHalvingPruner, NopPruner
+from optuna.pruners import BasePruner, MedianPruner, NopPruner, SuccessiveHalvingPruner
 from optuna.samplers import BaseSampler, RandomSampler, TPESampler
 from optuna.visualization import plot_optimization_history, plot_param_importances
-from pprint import pprint
 from stable_baselines3 import HerReplayBuffer
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
@@ -28,21 +39,11 @@ from stable_baselines3.common.vec_env import (
     is_vecenv_wrapped,
 )
 from torch import nn as nn
-from typing import Any, Callable, Dict, List, Optional, Tuple
-import argparse
-import gym
-import numpy as np
-import optuna
-import os
-import pickle as pkl
-import time
-import warnings
-import yaml
 
 from drl_grasping.utils.callbacks import (
+    CheckpointCallbackWithReplayBuffer,
     SaveVecNormalizeCallback,
     TrialEvalCallback,
-    CheckpointCallbackWithReplayBuffer,
 )
 from drl_grasping.utils.hyperparams_opt import HYPERPARAMS_SAMPLER
 from drl_grasping.utils.utils import (

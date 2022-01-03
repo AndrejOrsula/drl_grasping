@@ -3,16 +3,17 @@ from os import environ
 from typing import List, Tuple, Union
 
 import numpy as np
-from drl_grasping.envs import models, tasks
-from drl_grasping.envs.utils.conversions import quat_to_wxyz
-from drl_grasping.envs.utils.gazebo import get_model_pose
-from drl_grasping.envs.utils.math import quat_mul
 from gym_ignition import randomizers
 from gym_ignition.randomizers import gazebo_env_randomizer
 from gym_ignition.randomizers.gazebo_env_randomizer import MakeEnvCallable
 from scenario import gazebo as scenario
 from scipy.spatial import distance
 from scipy.spatial.transform import Rotation
+
+from drl_grasping.envs import models, tasks
+from drl_grasping.envs.utils.conversions import quat_to_wxyz
+from drl_grasping.envs.utils.gazebo import get_model_pose
+from drl_grasping.envs.utils.math import quat_mul
 
 # Tasks that are supported by this randomizer (used primarily for type hinting)
 SupportedTasks = Union[

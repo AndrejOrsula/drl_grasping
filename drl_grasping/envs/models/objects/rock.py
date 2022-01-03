@@ -1,8 +1,9 @@
-from gym_ignition.scenario import model_wrapper, model_with_file
+from typing import List
+
+from gym_ignition.scenario import model_with_file, model_wrapper
 from gym_ignition.utils.scenario import get_unique_model_name
 from scenario import core as scenario
 from scenario import gazebo as scenario_gazebo
-from typing import List
 
 
 class Rock(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):

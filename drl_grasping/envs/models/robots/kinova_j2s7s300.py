@@ -2,11 +2,12 @@ from os import path
 from typing import Dict, List, Optional, Tuple
 
 from ament_index_python.packages import get_package_share_directory
-from drl_grasping.envs.models.utils import xacro2sdf
 from gym_ignition.scenario import model_with_file, model_wrapper
 from gym_ignition.utils.scenario import get_unique_model_name
 from scenario import core as scenario
 from scenario import gazebo as scenario_gazebo
+
+from drl_grasping.envs.models.utils import xacro2sdf
 
 # TODO: Use description package for j2s7s300 with xacro support
 

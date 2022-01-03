@@ -1,16 +1,17 @@
 # Note: These two modules must be imported prior to gym_ignition (open3d and stable_baselines3)
-import open3d
-import stable_baselines3
+import open3d  # isort:skip
+import stable_baselines3  # isort:skip
 
-from . import randomizers, tasks
+from os import environ, path
+from typing import Dict, Tuple
+
 from ament_index_python.packages import get_package_share_directory
 from gym import logger as gym_logger
 from gym.envs.registration import register
 from gym_ignition.utils import logger as gym_ign_logger
 from numpy import pi
-from os import environ, path
-from typing import Dict, Tuple
 
+from . import randomizers, tasks
 
 # Set debug level for Ignition
 __debug_level = getattr(

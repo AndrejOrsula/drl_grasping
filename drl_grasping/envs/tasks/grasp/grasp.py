@@ -1,15 +1,22 @@
+import abc
+import itertools
+import sys
+from typing import Dict, List, Tuple, Union
+
+import gym
+import numpy as np
+from gym_ignition.utils.typing import (
+    Action,
+    ActionSpace,
+    Observation,
+    ObservationSpace,
+    Reward,
+)
+from scipy.spatial.transform import Rotation
+
 from drl_grasping.envs.tasks.grasp.curriculum import GraspCurriculum
 from drl_grasping.envs.tasks.manipulation import Manipulation
 from drl_grasping.envs.utils.conversions import quat_to_xyzw
-from gym_ignition.utils.typing import Action, Reward, Observation
-from gym_ignition.utils.typing import ActionSpace, ObservationSpace
-from scipy.spatial.transform import Rotation
-from typing import Tuple, List, Union, Dict
-import abc
-import gym
-import itertools
-import numpy as np
-import sys
 
 
 class Grasp(Manipulation, abc.ABC):

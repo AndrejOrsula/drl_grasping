@@ -1,13 +1,14 @@
+import glob
+import os
+from typing import List, Optional, Tuple
+
+import numpy as np
+import trimesh
 from gym_ignition.utils import logger
+from numpy.random import RandomState
 from pcg_gazebo.parsers import parse_sdf
 from pcg_gazebo.parsers.sdf import create_sdf_element
 from scenario import gazebo as scenario_gazebo
-from typing import List, Tuple, Optional
-import glob
-import numpy as np
-import os
-from numpy.random import RandomState
-import trimesh
 
 # Note: only models with mesh geometry are supported
 

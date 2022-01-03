@@ -1,4 +1,5 @@
 from gym_ignition.scenario.model_wrapper import ModelWrapper
+
 from .ground import Ground
 from .lunar_heightmap import LunarHeightmap
 from .lunar_surface import LunarSurface

@@ -3,15 +3,16 @@
 
 # Note: needs to be included before `from stable_baselines3.common.buffers import ReplayBuffer` in the module that uses this
 
-from .utils import preprocess_stacked_octree_batch
+from typing import Optional, Union
+
+import numpy as np
+import torch as th
 from gym import spaces
 from stable_baselines3.common.buffers import ReplayBuffer
 from stable_baselines3.common.type_aliases import ReplayBufferSamples
 from stable_baselines3.common.vec_env import VecNormalize
-from typing import Optional, Union
-import numpy as np
-import torch as th
 
+from .utils import preprocess_stacked_octree_batch
 
 __old__init__ = ReplayBuffer.__init__
 __old_get_samples__ = ReplayBuffer._get_samples

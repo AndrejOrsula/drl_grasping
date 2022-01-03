@@ -1,11 +1,12 @@
+import os
+from typing import List, Optional
+
+import numpy as np
 from gym_ignition.scenario import model_wrapper
 from gym_ignition.utils import misc
 from gym_ignition.utils.scenario import get_unique_model_name
 from numpy.random import RandomState
 from scenario import core as scenario
-from typing import List, Optional
-import numpy as np
-import os
 
 
 class RandomGround(model_wrapper.ModelWrapper):

@@ -1,11 +1,12 @@
-from drl_grasping.envs.tasks.reach import Reach
-from drl_grasping.envs.perception import CameraSubscriber
-from drl_grasping.envs.models.sensors import Camera
-from gym_ignition.utils.typing import Observation
-from gym_ignition.utils.typing import ObservationSpace
 import abc
+
 import gym
 import numpy as np
+from gym_ignition.utils.typing import Observation, ObservationSpace
+
+from drl_grasping.envs.models.sensors import Camera
+from drl_grasping.envs.perception import CameraSubscriber
+from drl_grasping.envs.tasks.reach import Reach
 
 # TODO: ReachDepthImage environment currently does not currently have a working CnnPolicy
 

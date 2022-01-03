@@ -1,10 +1,17 @@
-from drl_grasping.envs.tasks.manipulation import Manipulation
-from gym_ignition.utils.typing import Action, Reward, Observation
-from gym_ignition.utils.typing import ActionSpace, ObservationSpace
-from typing import Tuple
 import abc
+from typing import Tuple
+
 import gym
 import numpy as np
+from gym_ignition.utils.typing import (
+    Action,
+    ActionSpace,
+    Observation,
+    ObservationSpace,
+    Reward,
+)
+
+from drl_grasping.envs.tasks.manipulation import Manipulation
 
 
 class Reach(Manipulation, abc.ABC):

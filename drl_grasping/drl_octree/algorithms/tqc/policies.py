@@ -1,16 +1,17 @@
-from drl_grasping.drl_octree.features_extractor import OctreeCnnFeaturesExtractor
-from drl_grasping.drl_octree.replay_buffer import preprocess_stacked_octree_batch
-from sb3_contrib.tqc.policies import Actor, Critic
-from sb3_contrib.tqc.policies import TQCPolicy
-from stable_baselines3.common.policies import register_policy
-from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.common.utils import is_vectorized_observation
-from torch import nn
 from typing import Any, Dict, List, Optional, Tuple, Type
+
 import gym
 import numpy as np
 import ocnn
 import torch as th
+from sb3_contrib.tqc.policies import Actor, Critic, TQCPolicy
+from stable_baselines3.common.policies import register_policy
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+from stable_baselines3.common.utils import is_vectorized_observation
+from torch import nn
+
+from drl_grasping.drl_octree.features_extractor import OctreeCnnFeaturesExtractor
+from drl_grasping.drl_octree.replay_buffer import preprocess_stacked_octree_batch
 
 
 class ActorOctreeCnn(Actor):

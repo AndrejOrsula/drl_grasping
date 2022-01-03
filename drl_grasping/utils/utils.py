@@ -1,29 +1,23 @@
-from torch import nn as nn
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import argparse
 import glob
-import gym
 import importlib
 import os
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import gym
+
+# For custom activation fn
+import stable_baselines3 as sb3  # noqa: F401
+import torch as th  # noqa: F401
 import yaml
-
-# Note: Import monkey patch of OffPolicyAlgorithm before stable_baselines3 OffPolicyAlgorithm
-from drl_grasping.drl_octree.algorithms import off_policy_algorithm
-
-# Note: Import monkey patch of SAC before stable_baselines3 SAC
-from drl_grasping.drl_octree.algorithms import sac
-
-# Note: Import monkey patch of TQC before stable_baselines3 TQC
-from drl_grasping.drl_octree.algorithms import tqc
-
-from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
 from sb3_contrib import QRDQN, TQC
+from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
 from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.sb2_compat.rmsprop_tf_like import (
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.sb2_compat.rmsprop_tf_like import (  # noqa: F401
     RMSpropTFLike,
-)  # noqa: F401
+)
 from stable_baselines3.common.vec_env import (
     DummyVecEnv,
     SubprocVecEnv,
@@ -31,11 +25,16 @@ from stable_baselines3.common.vec_env import (
     VecFrameStack,
     VecNormalize,
 )
-
-# For custom activation fn
-import stable_baselines3 as sb3  # noqa: F401
-import torch as th  # noqa: F401
 from torch import nn as nn  # noqa: F401 pylint: disable=unused-import
+
+# Note: Import monkey patch of TQC before stable_baselines3 TQC
+# Note: Import monkey patch of SAC before stable_baselines3 SAC
+# Note: Import monkey patch of OffPolicyAlgorithm before stable_baselines3 OffPolicyAlgorithm
+from drl_grasping.drl_octree.algorithms import (  # isort:skip
+    off_policy_algorithm,
+    sac,
+    tqc,
+)
 
 ALGOS = {
     "a2c": A2C,

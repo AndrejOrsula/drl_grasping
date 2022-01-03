@@ -7,6 +7,9 @@ from typing import Dict
 import numpy as np
 import torch as th
 import yaml
+from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, VecEnvWrapper
+
 from drl_grasping.utils import (
     create_test_env,
     get_latest_run_id,
@@ -14,8 +17,6 @@ from drl_grasping.utils import (
     import_envs,
 )
 from drl_grasping.utils.utils import ALGOS, StoreDict, str2bool
-from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, VecEnvWrapper
 
 
 def main(args: Dict):

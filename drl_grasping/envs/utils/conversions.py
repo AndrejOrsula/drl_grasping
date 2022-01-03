@@ -1,10 +1,11 @@
 from typing import Tuple, Union
-from scipy.spatial.transform import Rotation
-import sensor_msgs
+
 import geometry_msgs
 import numpy
 import open3d
 import pyoctree
+import sensor_msgs
+from scipy.spatial.transform import Rotation
 
 
 def pointcloud2_to_open3d(

@@ -33,6 +33,10 @@ ament_python_install_module(
 # Install scripts
 set(SCRIPTS_DIR scripts)
 install(PROGRAMS
+    ${SCRIPTS_DIR}/evaluate.py
+    ${SCRIPTS_DIR}/preload_replay_buffer.py
+    ${SCRIPTS_DIR}/random_agent.py
+    ${SCRIPTS_DIR}/train.py
     ${SCRIPTS_DIR}/utils/dataset/dataset_download_test.bash
     ${SCRIPTS_DIR}/utils/dataset/dataset_download_train.bash
     ${SCRIPTS_DIR}/utils/dataset/dataset_set_test.bash
@@ -40,10 +44,6 @@ install(PROGRAMS
     ${SCRIPTS_DIR}/utils/dataset/dataset_unset_test.bash
     ${SCRIPTS_DIR}/utils/dataset/dataset_unset_train.bash
     ${SCRIPTS_DIR}/utils/process_collection.py
-    ${SCRIPTS_DIR}/evaluate.py
-    ${SCRIPTS_DIR}/random_agent.py
-    ${SCRIPTS_DIR}/train.py
-    ${SCRIPTS_DIR}/preload_replay_buffer.py
     DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -54,12 +54,11 @@ install(PROGRAMS
     ${EXAMPLES_DIR}/ex_evaluate_pretrained_agent.bash
     ${EXAMPLES_DIR}/ex_optimize.bash
     ${EXAMPLES_DIR}/ex_train.bash
-    ${EXAMPLES_DIR}/ex_preload_replay_buffer.bash
     DESTINATION lib/${PROJECT_NAME}
 )
 
 # Install directories
-install(DIRECTORY launch drl_grasping/envs/worlds rviz pretrained_agents DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY drl_grasping/envs/worlds launch pretrained_agents rviz DESTINATION share/${PROJECT_NAME})
 
 # Setup the project
 ament_package()

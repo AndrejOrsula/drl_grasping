@@ -1,17 +1,18 @@
+from threading import Lock, Thread
+from typing import Optional, Union
+
+import rclpy
 from rclpy.callback_groups import CallbackGroup
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import (
-    QoSProfile,
     QoSDurabilityPolicy,
-    QoSReliabilityPolicy,
     QoSHistoryPolicy,
+    QoSProfile,
+    QoSReliabilityPolicy,
 )
-from sensor_msgs.msg import PointCloud2, Image
-from threading import Thread, Lock
-from typing import Optional, Union
-import rclpy
+from sensor_msgs.msg import Image, PointCloud2
 
 
 class CameraSubscriber:

@@ -1,7 +1,7 @@
-from matplotlib import pyplot as plt
-from scipy.signal import iirfilter, sosfilt, zpk2sos
 import gym
 import numpy as np
+from matplotlib import pyplot as plt
+from scipy.signal import iirfilter, sosfilt, zpk2sos
 
 
 class DoneOnSuccessWrapper(gym.Wrapper):

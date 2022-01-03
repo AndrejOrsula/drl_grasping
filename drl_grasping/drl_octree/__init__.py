@@ -1,3 +1,1 @@
-from . import algorithms
-from . import features_extractor
-from . import replay_buffer
+from . import algorithms, features_extractor, replay_buffer
