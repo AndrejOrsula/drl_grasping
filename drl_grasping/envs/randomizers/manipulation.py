@@ -757,6 +757,10 @@ class ManipulationGazeboEnvRandomizer(
         randomize: bool = False,
     ):
 
+        # Stop servoing
+        if task._use_servo:
+            task.servo(linear=(0, 0, 0), angular=(0, 0, 0))
+
         gazebo_robot = self.robot.to_gazebo()
 
         # Get initial arm joint positions from the task (each task might need something different)
@@ -777,8 +781,6 @@ class ManipulationGazeboEnvRandomizer(
             self.robot.arm_joint_names,
         ):
             raise RuntimeError("Failed to reset robot joint velocities")
-        # Reset also in the controller
-        task.moveit2.reset_controller(joint_state=arm_joint_positions)
 
         # Gripper joints - apply positions and 0 velocities
         if task._enable_gripper and self.robot.gripper_joint_names:
@@ -791,14 +793,6 @@ class ManipulationGazeboEnvRandomizer(
                 self.robot.gripper_joint_names,
             ):
                 raise RuntimeError("Failed to reset gripper joint velocities")
-            # Reset also in the controller
-            if (
-                self.robot.CLOSED_GRIPPER_JOINT_POSITIONS
-                == task.initial_gripper_joint_positions
-            ):
-                task.gripper.reset_closed()
-            else:
-                task.gripper.reset_open()
 
         # Passive joints - apply 0 velocities to all
         if self.robot.passive_joint_names:
@@ -811,6 +805,17 @@ class ManipulationGazeboEnvRandomizer(
         # Execute a paused run to process model modification
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
+
+        # Reset also the controllers
+        task.moveit2.reset_controller(joint_state=arm_joint_positions)
+        if task._enable_gripper and self.robot.gripper_joint_names:
+            if (
+                self.robot.CLOSED_GRIPPER_JOINT_POSITIONS
+                == task.initial_gripper_joint_positions
+            ):
+                task.gripper.reset_closed()
+            else:
+                task.gripper.reset_open()
 
     def randomize_camera_pose(
         self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
