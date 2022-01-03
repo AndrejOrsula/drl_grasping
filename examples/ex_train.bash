@@ -1,91 +1,76 @@
 #!/usr/bin/env bash
+#### This script serves as an example of utilising `ros2 launch drl_grasping train.launch.py` and configuring some of its most common arguments.
+#### When this script is called, the corresponding launch string is printed to STDOUT. Therefore, feel free to modify and use such command directly.
+#### To view all arguments, run `ros2 launch drl_grasping train.launch.py --show-args`.
 
+### Arguments
 ## Random seed to use for both the environment and agent (-1 for random)
 SEED="42"
 
-## ID of the environment
-# ENV_ID="Reach-Gazebo-v0"
-# ENV_ID="Reach-ColorImage-Gazebo-v0"
-# ENV_ID="Reach-DepthImage-Gazebo-v0"
-# ENV_ID="Reach-Octree-Gazebo-v0"
-# ENV_ID="Reach-OctreeWithColor-Gazebo-v0"
-
-# ENV_ID="Grasp-Octree-Gazebo-v0"
-# ENV_ID="Grasp-OctreeWithColor-Gazebo-v0"
-
-# ENV_ID="GraspPlanetary-Octree-Gazebo-v0"
-ENV_ID="GraspPlanetary-OctreeWithColor-Gazebo-v0"
-
-## Robot model
+## Robot to use during training
 # ROBOT_MODEL="panda"
-# ROBOT_MODEL="ur5_rg2"
-# ROBOT_MODEL="kinova_j2s7s300"
 ROBOT_MODEL="lunalab_summit_xl_gen"
 
-## Algorithm to use
-# ALGO="sac"
+## ID of the environment
+# ENV="Reach-Gazebo-v0"
+# ENV="Reach-ColorImage-Gazebo-v0"
+# ENV="Reach-DepthImage-Gazebo-v0"
+# ENV="Reach-Octree-Gazebo-v0"
+# ENV="Reach-OctreeWithColor-Gazebo-v0"
+# ENV="Grasp-Octree-Gazebo-v0"
+# ENV="Grasp-OctreeWithColor-Gazebo-v0"
+# ENV="GraspPlanetary-Octree-Gazebo-v0"
+ENV="GraspPlanetary-OctreeWithColor-Gazebo-v0"
+
+## Selection of RL algorithm
 # ALGO="td3"
+# ALGO="sac"
 ALGO="tqc"
 
-## Path to trained agent (to continue training)
-# TRAINED_AGENT=""${ENV_ID}"_1/rl_model_0000_steps.zip"
+## Path to logs directory
+LOG_FOLDER="${PWD}/drl_grasping_train/${ENV}/logs"
 
-## Path to a replay buffer that should be preloaded before training begins
-# PRELOAD_REPLAY_BUFFER="training/preloaded_buffers/"${ENV_ID}"_1/replay_buffer.pkl"
+## Path to tensorboard logs directory
+TENSORBOARD_LOG="${PWD}/drl_grasping_train/${ENV}/tensorboard_logs"
 
-## Continuous evaluation (-1 to disable)
-EVAL_FREQUENCY=-1
-EVAL_EPISODES=10
+## Path to a trained agent to continue training (`**.zip`)
+# TRAINED_AGENT_SESSION="1"
+# TRAINED_AGENT_STEPS="0"
+# TRAINED_AGENT="${LOG_FOLDER}/${ALGO}/${ENV}_${TRAINED_AGENT_SESSION}/rl_model_${TRAINED_AGENT_STEPS}_steps.zip"
 
-## Path the parent training directory
-TRAINING_DIR="training"
-## Path to logs
-LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/logs"
-## Path to tensorboard logs
-TENSORBOARD_LOG_DIR=""${TRAINING_DIR}"/"${ENV_ID}"/tensorboard_logs"
+## Path to a replay buffer that should be loaded before the training begins (`**.pkl`)
+# PRELOAD_REPLAY_BUFFER=""
 
-## Arguments for the environment
-ENV_ARGS="robot_model:\"${ROBOT_MODEL}\""
-
-## Extra arguments to be passed into the script
-EXTRA_ARGS=""
-# EXTRA_ARGS="--save-replay-buffer"
-
-########################################################################################################################
-########################################################################################################################
-
-## Spawn ign_moveit2 subprocess in background, while making sure to forward termination signals
-IGN_MOVEIT2_CMD="ros2 launch drl_grasping sim.launch.py robot_model:=${ROBOT_MODEL} enable_rviz:=false"
-if [ "$ROBOT_MODEL" = "kinova_j2s7s300" ]; then
-    # Robot name for `kinova_j2s7s300` is different
-    IGN_MOVEIT2_CMD="${IGN_MOVEIT2_CMD} robot_name:=j2s7s300"
+### Arguments
+LAUNCH_ARGS=(
+    "seed:=${SEED}"
+    "robot_model:=${ROBOT_MODEL}"
+    "env:=${ENV}"
+    "algo:=${ALGO}"
+    "log_folder:=${LOG_FOLDER}"
+    "tensorboard_log:=${TENSORBOARD_LOG}"
+    "save_freq:=10000"
+    "save_replay_buffer:=true"
+    "log_interval:=-1"
+    "eval_freq:=-1"
+    "eval_episodes:=5"
+    "enable_rviz:=true"
+)
+if [[ -n ${TRAINED_AGENT} ]]; then
+    LAUNCH_ARGS+=("trained_agent:=${TRAINED_AGENT}")
 fi
-echo "Launching ign_moveit2 in background:"
-echo "${IGN_MOVEIT2_CMD}"
-echo ""
-${IGN_MOVEIT2_CMD} &
-## Kill all subprocesses when SIGINT SIGTERM EXIT are received
-subprocess_pid_ign_moveit2="${!}"
-terminate_subprocesses() {
-    echo "INFO: Caught signal, killing all subprocesses..."
-    pkill -P "${subprocess_pid_ign_moveit2}"
-}
-trap 'terminate_subprocesses' SIGINT SIGTERM EXIT ERR
-
-## Arguments
-TRAIN_ARGS="--env "${ENV_ID}" --algo "${ALGO}" --seed "${SEED}" --log-folder "${LOG_DIR}" --tensorboard-log "${TENSORBOARD_LOG_DIR}" --eval-freq "${EVAL_FREQUENCY}" --eval-episodes "${EVAL_EPISODES}" --env-kwargs "${ENV_ARGS}" "${EXTRA_ARGS}""
-## Add trained agent to args in order to continue training
-if [ ! -z "${TRAINED_AGENT}" ]; then
-    TRAIN_ARGS=""${TRAIN_ARGS}" --trained-agent "${LOG_DIR}"/"${ALGO}"/"${TRAINED_AGENT}""
-fi
-## Add preload replay buffer to args in order to preload buffer with transitions that use custom heuristic (demonstration)
-if [ ! -z "${PRELOAD_REPLAY_BUFFER}" ]; then
-    TRAIN_ARGS=""${TRAIN_ARGS}" --preload-replay-buffer "${PRELOAD_REPLAY_BUFFER}""
+if [[ -n ${PRELOAD_REPLAY_BUFFER} ]]; then
+    LAUNCH_ARGS+=("preload_replay_buffer:=${PRELOAD_REPLAY_BUFFER}")
 fi
 
-## Execute train script
-TRAIN_CMD="ros2 run drl_grasping train.py "${TRAIN_ARGS}""
-echo "Executing train command:"
-echo "${TRAIN_CMD}"
-echo ""
-${TRAIN_CMD}
+### Launch script
+LAUNCH_CMD=(
+    ros2 launch
+    drl_grasping train.launch.py
+    "${LAUNCH_ARGS[*]}"
+)
+
+echo -e "\033[1;30m${LAUNCH_CMD[*]}\033[0m" | xargs
+
+# shellcheck disable=SC2048
+exec ${LAUNCH_CMD[*]}

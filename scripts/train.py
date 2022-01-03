@@ -67,15 +67,6 @@ def main(args: Dict):
         args.hyperparams,
         args.env_kwargs,
         args.trained_agent,
-        args.optimize_hyperparameters,
-        args.storage,
-        args.study_name,
-        args.n_trials,
-        args.n_jobs,
-        args.sampler,
-        args.pruner,
-        n_startup_trials=args.n_startup_trials,
-        n_evaluations=args.n_evaluations,
         truncate_last_trajectory=args.truncate_last_trajectory,
         uuid_str=uuid_str,
         seed=args.seed,
@@ -86,14 +77,11 @@ def main(args: Dict):
         vec_env_type=args.vec_env,
     )
 
-    # Prepare experiment and launch hyperparameter optimization if needed
+    # Prepare experiment
     model = exp_manager.setup_experiment()
 
-    if args.optimize_hyperparameters:
-        exp_manager.hyperparameters_optimization()
-    else:
-        exp_manager.learn(model)
-        exp_manager.save_trained_model(model)
+    exp_manager.learn(model)
+    exp_manager.save_trained_model(model)
 
 
 if __name__ == "__main__":
@@ -207,65 +195,6 @@ if __name__ == "__main__":
         type=str2bool,
         default=False,
         help="Ensure that the run has a unique ID",
-    )
-
-    # Hyperparameter optimization
-    parser.add_argument(
-        "-optimize",
-        "--optimize-hyperparameters",
-        type=str2bool,
-        default=False,
-        help="Flag to enable hyperparameters search with Optuna instead of training",
-    )
-    parser.add_argument(
-        "--sampler",
-        type=str,
-        choices=["random", "tpe", "skopt"],
-        default="tpe",
-        help="Sampler to use when optimizing hyperparameters",
-    )
-    parser.add_argument(
-        "--pruner",
-        type=str,
-        choices=["halving", "median", "none"],
-        default="median",
-        help="Pruner to use when optimizing hyperparameters",
-    )
-    parser.add_argument(
-        "--n-trials",
-        type=int,
-        default=10,
-        help="Number of trials for optimizing hyperparameters",
-    )
-    parser.add_argument(
-        "--n-startup-trials",
-        type=int,
-        default=5,
-        help="Number of trials before using optuna sampler",
-    )
-    parser.add_argument(
-        "--n-evaluations",
-        type=int,
-        default=2,
-        help="Number of evaluations for hyperparameter optimization",
-    )
-    parser.add_argument(
-        "--n-jobs",
-        type=int,
-        default=1,
-        help="Number of parallel jobs when optimizing hyperparameters",
-    )
-    parser.add_argument(
-        "--storage",
-        type=empty_str2none,
-        default=None,
-        help="Database storage path if distributed optimization should be used",
-    )
-    parser.add_argument(
-        "--study-name",
-        type=empty_str2none,
-        default=None,
-        help="Study name for distributed optimization",
     )
 
     # Evaluation
