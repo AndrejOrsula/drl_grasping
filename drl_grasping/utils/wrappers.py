@@ -381,3 +381,15 @@ class PlotActionWrapper(gym.Wrapper):
             start = end
 
         plt.show()
+
+
+class FeatureExtractorFreezeParammetersWrapper(gym.Wrapper):
+    """
+    Freezes parameters of the feature extractor.
+    """
+
+    def __init__(self, env: gym.Env):
+
+        super(FeatureExtractorFreezeParammetersWrapper, self).__init__(env)
+        for param in self.feature_extractor.parameters():
+            param.requires_grad = False
