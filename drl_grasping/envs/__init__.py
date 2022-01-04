@@ -2,36 +2,22 @@
 import open3d  # isort:skip
 import stable_baselines3  # isort:skip
 
-from os import environ, path
+from os import path
 from typing import Dict, Tuple
 
 from ament_index_python.packages import get_package_share_directory
-from gym import logger as gym_logger
 from gym.envs.registration import register
-from gym_ignition.utils import logger as gym_ign_logger
 from numpy import pi
 
 from . import randomizers, tasks
-
-# Set debug level for Ignition
-__debug_level = getattr(
-    gym_logger, environ.get("DRL_GRASPING_DEBUG_LEVEL", default="ERROR").upper()
-)
-gym_ign_logger.set_level(
-    level=__debug_level,
-    scenario_level=__debug_level,
-)
-
 
 ######################
 # Generic padameters #
 ######################
 # Entrypoint for tasks (can be simulated or real)
 DRL_GRASPING_TASK_ENTRYPOINT: str = "gym_ignition.runtimes.gazebo_runtime:GazeboRuntime"
-# A flag to enable use of simulated clock
-DRL_GRASPING_USE_SIM_TIME: bool = True
 # Robot model to use in the tasks where robot can be static
-DRL_GRASPING_ROBOT_MODEL: str = "lunalab_summit_xl_gen"
+DRL_GRASPING_ROBOT_MODEL: str = "panda"
 # Robot model to use in the tasks where robot needs to be mobile
 DRL_GRASPING_ROBOT_MODEL_MOBILE: str = "lunalab_summit_xl_gen"
 
@@ -80,7 +66,6 @@ REACH_KWARGS: Dict = {
     "act_quick_reward": -0.01,
     "required_accuracy": 0.05,
     "num_threads": 3,
-    "use_sim_time": DRL_GRASPING_USE_SIM_TIME,
 }
 REACH_KWARGS_OCTREE: Dict = {
     "octree_reference_frame_id": "world",
@@ -98,9 +83,14 @@ REACH_RANDOMIZER: str = "drl_grasping.envs.randomizers:ManipulationGazeboEnvRand
 REACH_KWARGS_RANDOMIZER: Dict = {
     "gravity": GRAVITY_EARTH,
     "gravity_std": GRAVITY_EARTH_STD,
+    "plugin_scene_broadcaster": True,
+    "plugin_user_commands": True,
+    "plugin_sensors_render_engine": "ogre2",
     "robot_random_pose": False,
     "robot_random_joint_positions": True,
     "robot_random_joint_positions_std": 0.1,
+    "robot_random_joint_positions_above_object_spawn": False,
+    "robot_random_joint_positions_above_object_spawn_elevation": 0.2,
     "terrain_enable": True,
     "object_enable": True,
     "object_type": "sphere",
@@ -271,7 +261,6 @@ GRASP_KWARGS: Dict = {
     "gripper_dead_zone": 0.0,
     "full_3d_orientation": False,
     "num_threads": 4,
-    "use_sim_time": DRL_GRASPING_USE_SIM_TIME,
 }
 GRASP_KWARGS_CURRICULUM: Dict = {
     "sparse_reward": True,
@@ -316,9 +305,14 @@ GRASP_RANDOMIZER: str = "drl_grasping.envs.randomizers:ManipulationGazeboEnvRand
 GRASP_KWARGS_RANDOMIZER: Dict = {
     "gravity": GRAVITY_EARTH,
     "gravity_std": GRAVITY_EARTH_STD,
+    "plugin_scene_broadcaster": True,
+    "plugin_user_commands": True,
+    "plugin_sensors_render_engine": "ogre2",
     "robot_random_pose": False,
     "robot_random_joint_positions": True,
     "robot_random_joint_positions_std": 0.1,
+    "robot_random_joint_positions_above_object_spawn": False,
+    "robot_random_joint_positions_above_object_spawn_elevation": 0.2,
     "terrain_enable": True,
     "terrain_spawn_position": (0.25, 0, 0),
     "terrain_spawn_quat_xyzw": (0, 0, 0, 1),
@@ -414,8 +408,8 @@ register(
 ##################
 # GraspPlanetary #
 ##################
-GRASP_PLANETARY_MAX_EPISODE_STEPS: int = 200
-GRASP_PLANETARY_AGENT_RATE: float = 5.0
+GRASP_PLANETARY_MAX_EPISODE_STEPS: int = 50
+GRASP_PLANETARY_AGENT_RATE: float = 4.0
 GRASP_PLANETARY_KWARGS: Dict = {
     "agent_rate": GRASP_PLANETARY_AGENT_RATE,
     "robot_model": DRL_GRASPING_ROBOT_MODEL_MOBILE,
@@ -424,14 +418,13 @@ GRASP_PLANETARY_KWARGS: Dict = {
     "workspace_volume": (200.0, 200.0, 200.0),
     "ignore_new_actions_while_executing": True,
     "use_servo": True,
-    "scaling_factor_translation": 0.2,
-    "scaling_factor_rotation": pi / 4.0,
+    "scaling_factor_translation": 0.5,
+    "scaling_factor_rotation": pi / 3,
     "restrict_position_goal_to_workspace": False,
     "enable_gripper": True,
     "gripper_dead_zone": 0.0,
-    "full_3d_orientation": True,
+    "full_3d_orientation": False,
     "num_threads": 4,
-    "use_sim_time": DRL_GRASPING_USE_SIM_TIME,
 }
 GRASP_PLANETARY_KWARGS_CURRICULUM: Dict = {
     "sparse_reward": True,
@@ -478,12 +471,17 @@ GRASP_PLANETARY_RANDOMIZER: str = (
 GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict = {
     "gravity": GRAVITY_MOON,
     "gravity_std": GRAVITY_MOON_STD,
-    "robot_spawn_position": (-2.0, 0, 0.5),
+    "plugin_scene_broadcaster": True,
+    "plugin_user_commands": True,
+    "plugin_sensors_render_engine": "ogre2",
+    "robot_spawn_position": (0, 0, 1.0),
     "robot_spawn_quat_xyzw": (0, 0, 0, 1),
     "robot_random_pose": True,
-    "robot_random_spawn_volume": (10.0, 10.0, 1.0),
+    "robot_random_spawn_volume": (30.0, 30.0, 0.0),
     "robot_random_joint_positions": True,
     "robot_random_joint_positions_std": 0.1,
+    "robot_random_joint_positions_above_object_spawn": False,
+    "robot_random_joint_positions_above_object_spawn_elevation": 0.1,
     "terrain_enable": True,
     "terrain_type": "lunar_surface",
     # "terrain_type": "lunar_heightmap",
@@ -492,6 +490,7 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict = {
     "terrain_size": (1.25, 1.25),
     "terrain_model_rollouts_num": 1,
     "light_type": "random_sun",
+    "light_random_minmax_elevation": (-0.1, -0.5),
     "light_distance": 1000.0,
     "light_visual": True,
     "light_radius": 25.0,
@@ -501,7 +500,7 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict = {
     "objects_relative_to": "base_link",
     "object_model_count": 4,
     "object_random_pose": True,
-    "object_spawn_position": (1.0, 0.0, 0.2),
+    "object_spawn_position": (1.2, 0.0, 0.2),
     "object_random_spawn_volume": (0.5, 0.5, 0.1),
     "object_models_rollouts_num": 1,
     "underworld_collision_plane": True,
@@ -543,7 +542,7 @@ register(
     entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
     max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
     kwargs={
-        "task_cls": tasks.GraspOctree,
+        "task_cls": tasks.GraspPlanetaryOctree,
         **GRASP_PLANETARY_KWARGS,
         **GRASP_PLANETARY_KWARGS_CURRICULUM,
         **GRASP_PLANETARY_KWARGS_OCTREE,
@@ -556,7 +555,7 @@ register(
     entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
     max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
     kwargs={
-        "task_cls": tasks.GraspOctree,
+        "task_cls": tasks.GraspPlanetaryOctree,
         **GRASP_PLANETARY_KWARGS,
         **GRASP_PLANETARY_KWARGS_CURRICULUM,
         **GRASP_PLANETARY_KWARGS_OCTREE,

@@ -13,6 +13,7 @@ from scipy.spatial.transform import Rotation
 from drl_grasping.envs import models, tasks
 from drl_grasping.envs.utils.conversions import quat_to_wxyz
 from drl_grasping.envs.utils.gazebo import get_model_pose
+from drl_grasping.envs.utils.logging import set_log_level
 from drl_grasping.envs.utils.math import quat_mul
 
 # Tasks that are supported by this randomizer (used primarily for type hinting)
@@ -48,6 +49,10 @@ class ManipulationGazeboEnvRandomizer(
         physics_rollouts_num: int = 0,
         gravity: Tuple[float, float, float] = (0.0, 0.0, -9.80665),
         gravity_std: Tuple[float, float, float] = (0.0, 0.0, 0.0232),
+        # World plugins
+        plugin_scene_broadcaster: bool = False,
+        plugin_user_commands: bool = False,
+        plugin_sensors_render_engine: str = "ogre2",
         # Robot
         robot_spawn_position: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         robot_spawn_quat_xyzw: Tuple[float, float, float, float] = (
@@ -158,6 +163,11 @@ class ManipulationGazeboEnvRandomizer(
         # Physics
         self._gravity = gravity
         self._gravity_std = gravity_std
+
+        # World plugins
+        self._plugin_scene_broadcaster = plugin_scene_broadcaster
+        self._plugin_user_commands = plugin_user_commands
+        self._plugin_sensors_render_engine = plugin_sensors_render_engine
 
         # Robot
         self._robot_spawn_position = robot_spawn_position
@@ -329,11 +339,14 @@ class ManipulationGazeboEnvRandomizer(
         Initialise an instance of the environment before the very first iteration
         """
 
+        # Set log level for (Gym) Ignition
+        set_log_level(log_level=task.get_logger().get_effective_level().name)
+
         # Substitute frame names if needed
-        self._camera_relative_to = task.substitute_special_frames(
+        self._camera_relative_to = task.substitute_special_frame(
             self._camera_relative_to
         )
-        self._objects_relative_to = task.substitute_special_frames(
+        self._objects_relative_to = task.substitute_special_frame(
             self._objects_relative_to
         )
 
@@ -355,33 +368,39 @@ class ManipulationGazeboEnvRandomizer(
     def init_world_plugins(
         self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
     ):
-        # SceneBroadcaster and UcerCommands
-        if environ.get(
-            "DRL_GRASPING_BROADCAST_INTERACTIVE_GUI", default="false"
-        ).lower() in ("true", "1"):
-            # TODO (medium): Do not open GUI client when DRL_GRASPING_BROADCAST_INTERACTIVE_GUI is set, only enable the broadcaster plugin
+        # SceneBroadcaster
+        if self._plugin_scene_broadcaster:
+            if not gazebo.scene_broadcaster_active(
+                task.substitute_special_frame("world")
+            ):
+                task.get_logger().info(
+                    "Inserting world plugins for broadcasting GUI with enabled user commands..."
+                )
+                task.world.to_gazebo().insert_world_plugin(
+                    "ignition-gazebo-user-commands-system",
+                    "ignition::gazebo::systems::UserCommands",
+                )
+
+        # UserCommands
+        if self._plugin_user_commands:
             task.get_logger().info(
                 "Inserting world plugins for broadcasting GUI with enabled user commands..."
             )
-            gazebo.gui()
             task.world.to_gazebo().insert_world_plugin(
-                "ignition-gazebo-user-commands-system",
-                "ignition::gazebo::systems::UserCommands",
+                "ignition-gazebo-scene-broadcaster-system",
+                "ignition::gazebo::systems::SceneBroadcaster",
             )
 
         # Sensors
         if self._camera_enable:
-            camera_render_engine = environ.get(
-                "DRL_GRASPING_SENSORS_RENDER_ENGINE", default="ogre2"
-            )
             task.get_logger().info(
-                f"Inserting world plugins for sensors with {camera_render_engine} rendering engine..."
+                f"Inserting world plugins for sensors with {self._plugin_sensors_render_engine} rendering engine..."
             )
             task.world.to_gazebo().insert_world_plugin(
                 "libignition-gazebo-sensors-system.so",
                 "ignition::gazebo::systems::Sensors",
                 "<sdf version='1.9'>"
-                f"<render_engine>{camera_render_engine}</render_engine>"
+                f"<render_engine>{self._plugin_sensors_render_engine}</render_engine>"
                 "</sdf>",
             )
 

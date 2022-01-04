@@ -9,8 +9,6 @@
 - Support for mobile manipulators.
 - `lunalab_summit_xl_gen` is now added to the supported robot models.
 - Configuration of pre-commit git hooks.
-- Support for `DRL_GRASPING_BROADCAST_INTERACTIVE_GUI` environment variable.
-- Support for `DRL_GRASPING_SENSORS_RENDER_ENGINE` environment variable
 - Models for `Sun` and `RandomSun`, replacing the default light contained in SDF worlds.
 - Camera can now be mounted relative to robot frame (configurable) via DetachableJoint.
 
@@ -28,13 +26,16 @@
 - Instead of all fingers, more than half (`n//2 + 1`) are now needed to be in contact for a grasp to be successful
 - Changed PEP 8 python formatting for black to improve consistency.
 - Changed bash formatter to beautysh (minor changes).
-- Custom SDF world `default_interactive` is no longer used in favour of enabling/disabling interactive mode through `DRL_GRASPING_BROADCAST_INTERACTIVE_GUI` environment variable.
 - Custom environment logging is now performed via ROS 2 loggers.
 - Local classes for interfacing with MoveIt 2.
 
 ### Fixed
 
 - Fix grasp checking for grippers with more than 2 fingers.
+
+### Removed
+
+- `DRL_GRASPING_DEBUG_LEVEL` environment variable is now replaced by `log-level` ROS 2 argument.
 
 ## [\[1.1.0\] - 2021-10-13](https://github.com/AndrejOrsula/drl_grasping/releases/tag/1.1.0)
 

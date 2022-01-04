@@ -2,7 +2,6 @@ import abc
 import multiprocessing
 import sys
 from itertools import count
-from os import environ
 from threading import Thread
 from typing import Tuple, Union
 
@@ -47,7 +46,6 @@ class Manipulation(task.Task, Node, abc.ABC):
         restrict_position_goal_to_workspace: bool,
         enable_gripper: bool,
         num_threads: int,
-        use_sim_time: bool = True,
         **kwargs,
     ):
 
@@ -66,17 +64,6 @@ class Manipulation(task.Task, Node, abc.ABC):
 
         # Initialize ROS 2 Node base class
         Node.__init__(self, f"drl_grasping_{self.id}")
-        self.set_parameters(
-            [Parameter("use_sim_time", type_=Parameter.Type.BOOL, value=use_sim_time)]
-        )
-
-        # Set logging level for ROS 2 Node based on environment variable
-        self.get_logger().set_level(
-            getattr(
-                LoggingSeverity,
-                environ.get("DRL_GRASPING_DEBUG_LEVEL", default="ERROR").upper(),
-            )
-        )
 
         # Create callback group that allows execution of callbacks in parallel without restrictions
         self._callback_group = ReentrantCallbackGroup()
@@ -106,7 +93,6 @@ class Manipulation(task.Task, Node, abc.ABC):
         self.__scaling_factor_translation = scaling_factor_translation
         self.__scaling_factor_rotation = scaling_factor_rotation
         self._enable_gripper = enable_gripper
-        self._use_sim_time = use_sim_time
 
         # Get half of the workspace volume, useful is many computations
         self.workspace_volume_half = (
@@ -150,7 +136,7 @@ class Manipulation(task.Task, Node, abc.ABC):
         )
 
         # Get exact name substitution of the frame for workspace
-        self.workspace_frame_id = self.substitute_special_frames(workspace_frame_id)
+        self.workspace_frame_id = self.substitute_special_frame(workspace_frame_id)
 
         # Specify initial positions (default configuration is used here)
         self.initial_arm_joint_positions = (
@@ -443,7 +429,7 @@ class Manipulation(task.Task, Node, abc.ABC):
             except:
                 return (0.0, 0.0, 0.0, 1.0)
 
-    def substitute_special_frames(self, frame_id: str) -> str:
+    def substitute_special_frame(self, frame_id: str) -> str:
 
         if "world" == frame_id:
             try:

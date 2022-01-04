@@ -42,7 +42,7 @@ class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
         )
 
         # Get exact name substitution of the frame for octree
-        octree_reference_frame_id = self.substitute_special_frames(
+        octree_reference_frame_id = self.substitute_special_frame(
             octree_reference_frame_id
         )
 
