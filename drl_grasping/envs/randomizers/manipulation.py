@@ -39,6 +39,8 @@ class ManipulationGazeboEnvRandomizer(
     also populates the simulated world with robot, terrain, lighting and other entities.
     """
 
+    POST_RANDOMIZATION_MAX_STEPS = 50
+
     def __init__(
         self,
         env: MakeEnvCallable,
@@ -58,6 +60,8 @@ class ManipulationGazeboEnvRandomizer(
         robot_random_spawn_volume: Tuple[float, float, float] = (1.0, 1.0, 0.0),
         robot_random_joint_positions: bool = False,
         robot_random_joint_positions_std: float = 0.1,
+        robot_random_joint_positions_above_object_spawn: bool = False,
+        robot_random_joint_positions_above_object_spawn_elevation: float = 0.2,
         # Camera #
         camera_enable: bool = True,
         camera_type: str = "rgbd_camera",
@@ -162,6 +166,12 @@ class ManipulationGazeboEnvRandomizer(
         self._robot_random_spawn_volume = robot_random_spawn_volume
         self._robot_random_joint_positions = robot_random_joint_positions
         self._robot_random_joint_positions_std = robot_random_joint_positions_std
+        self._robot_random_joint_positions_above_object_spawn = (
+            robot_random_joint_positions_above_object_spawn
+        )
+        self._robot_random_joint_positions_above_object_spawn_elevation = (
+            robot_random_joint_positions_above_object_spawn_elevation
+        )
 
         # Camera
         self._camera_enable = camera_enable
@@ -686,7 +696,10 @@ class ManipulationGazeboEnvRandomizer(
 
         # Reset/randomize robot joint positions
         self.reset_robot_joint_positions(
-            task=task, gazebo=gazebo, randomize=self._robot_random_joint_positions
+            task=task,
+            gazebo=gazebo,
+            above_object_spawn=self._robot_random_joint_positions_above_object_spawn,
+            randomize=self._robot_random_joint_positions,
         )
 
         # Randomize terrain plane if needed
@@ -739,7 +752,7 @@ class ManipulationGazeboEnvRandomizer(
             ),
         ]
         quat_xyzw = Rotation.from_euler(
-            "xyz", [0, 0, task.np_random.uniform(-np.pi, np.pi)]
+            "xyz", (0, 0, task.np_random.uniform(-np.pi, np.pi))
         ).as_quat()
 
         gazebo_robot = self.robot.to_gazebo()
@@ -754,24 +767,74 @@ class ManipulationGazeboEnvRandomizer(
         self,
         task: SupportedTasks,
         gazebo: scenario.GazeboSimulator,
+        above_object_spawn: bool = False,
         randomize: bool = False,
     ):
 
         # Stop servoing
         if task._use_servo:
-            task.servo(linear=(0, 0, 0), angular=(0, 0, 0))
+            task.servo()
+            if task.servo.is_enabled:
+                task.servo.disable(sync=True)
 
         gazebo_robot = self.robot.to_gazebo()
 
-        # Get initial arm joint positions from the task (each task might need something different)
-        arm_joint_positions = task.initial_arm_joint_positions
+        if above_object_spawn:
+            # If desired, compute IK above object spawn
+            if randomize:
+                rnd_displacement = 0.5 * task.np_random.uniform(
+                    (
+                        -self._object_random_spawn_volume[0],
+                        -self._object_random_spawn_volume[1],
+                        -self._object_random_spawn_volume[2],
+                    ),
+                    self._object_random_spawn_volume,
+                )
+                position = (
+                    self._object_spawn_position[0] + rnd_displacement[0],
+                    self._object_spawn_position[1] + rnd_displacement[1],
+                    self._object_spawn_position[2]
+                    + rnd_displacement[2]
+                    + self._robot_random_joint_positions_above_object_spawn_elevation,
+                )
+                quat_xyzw = Rotation.from_euler(
+                    "xyz", (0, np.pi, task.np_random.uniform(-np.pi, np.pi))
+                ).as_quat()
+            else:
+                position = (
+                    self._object_spawn_position[0],
+                    self._object_spawn_position[1],
+                    self._object_spawn_position[2]
+                    + self._robot_random_joint_positions_above_object_spawn_elevation,
+                )
+                quat_xyzw = (1.0, 0.0, 0.0, 0.0)
+
+            joint_configuration = task.moveit2.compute_ik(
+                position=position,
+                quat_xyzw=quat_xyzw,
+                start_joint_state=task.initial_arm_joint_positions,
+            )
+            if joint_configuration is not None:
+                arm_joint_positions = joint_configuration.position[
+                    : len(task.initial_arm_joint_positions)
+                ]
+            else:
+                task.get_logger().warn(
+                    "Robot configuration could not be reset above the object spawn. Using initial arm joint positions instead."
+                )
+                arm_joint_positions = task.initial_arm_joint_positions
+        else:
+            # Otherwise get initial arm joint positions from the task (each task might need something different)
+            arm_joint_positions = task.initial_arm_joint_positions
+
         # Add normal noise if desired
         if randomize:
             for joint_position in arm_joint_positions:
                 joint_position += task.np_random.normal(
                     loc=0.0, scale=self._robot_random_joint_positions_std
                 )
-        # Arm joints - apply positions and 0 velocities to
+
+        # Arm joints - apply joint positions zero out velocities
         if not gazebo_robot.reset_joint_positions(
             arm_joint_positions, self.robot.arm_joint_names
         ):
@@ -782,7 +845,7 @@ class ManipulationGazeboEnvRandomizer(
         ):
             raise RuntimeError("Failed to reset robot joint velocities")
 
-        # Gripper joints - apply positions and 0 velocities
+        # Gripper joints - apply joint positions zero out velocities
         if task._enable_gripper and self.robot.gripper_joint_names:
             if not gazebo_robot.reset_joint_positions(
                 task.initial_gripper_joint_positions, self.robot.gripper_joint_names
@@ -794,7 +857,7 @@ class ManipulationGazeboEnvRandomizer(
             ):
                 raise RuntimeError("Failed to reset gripper joint velocities")
 
-        # Passive joints - apply 0 velocities to all
+        # Passive joints - zero out velocities
         if self.robot.passive_joint_names:
             if not gazebo_robot.reset_joint_velocities(
                 [0.0] * len(self.robot.passive_joint_names),
@@ -802,20 +865,20 @@ class ManipulationGazeboEnvRandomizer(
             ):
                 raise RuntimeError("Failed to reset passive joint velocities")
 
-        # Execute a paused run to process model modification
-        if not gazebo.run(paused=True):
-            raise RuntimeError("Failed to execute a paused Gazebo run")
+        # Start servoing again
+        if task._use_servo:
+            task.servo.enable(sync=False)
+
+        # Execute an unpaused run to process model modification and get new JointStates
+        if not gazebo.step():
+            raise RuntimeError("Failed to execute an unpaused Gazebo step")
 
         # Reset also the controllers
         task.moveit2.reset_controller(joint_state=arm_joint_positions)
         if task._enable_gripper and self.robot.gripper_joint_names:
-            if (
-                self.robot.CLOSED_GRIPPER_JOINT_POSITIONS
-                == task.initial_gripper_joint_positions
-            ):
-                task.gripper.reset_closed()
-            else:
-                task.gripper.reset_open()
+            task.gripper.reset_controller(
+                joint_state=task.initial_gripper_joint_positions
+            )
 
     def randomize_camera_pose(
         self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
@@ -1090,39 +1153,49 @@ class ManipulationGazeboEnvRandomizer(
         Perform steps that are required once randomization is complete and the simulation can be stepped a few times unpaused.
         """
 
-        POST_RANDOMIZATION_MAX_ATTEMPTS = 5
-
+        attempts = 0
         object_overlapping_ok = False
+
+        # Execute steps until new observations are available
+        observations_ready = False
+        task.moveit2.reset_new_joint_state_checker()
+        if task._enable_gripper:
+            task.gripper.reset_new_joint_state_checker()
         if hasattr(task, "camera_sub"):
-            # Execute steps until observation after reset is available
             task.camera_sub.reset_new_observation_checker()
-            attempts = 0
-            while not task.camera_sub.new_observation_available():
-                attempts += 1
-                if attempts < POST_RANDOMIZATION_MAX_ATTEMPTS:
-                    task.get_logger().info("Waiting for new observation after reset.")
-                else:
-                    task.get_logger().warn(
-                        f"Waiting for new observation after reset. Interation #{attempts}..."
-                    )
-                if not gazebo.run(paused=False):
-                    raise RuntimeError("Failed to execute a running Gazebo run")
-                object_overlapping_ok = self.check_object_overlapping(task=task)
-        else:
-            # Otherwise execute exactly one unpaused steps to update JointStatePublisher (and potentially others)
-            if not gazebo.run(paused=False):
-                raise RuntimeError("Failed to execute a running Gazebo run")
+        while observations_ready:
+            attempts += 1
+            if 0 == attempts % self.POST_RANDOMIZATION_MAX_STEPS:
+                task.get_logger().warn(
+                    f"Waiting for new joint state after reset. Iteration #{attempts}..."
+                )
+            else:
+                task.get_logger().debug("Waiting for new joint state after reset.")
+            if not gazebo.step():
+                raise RuntimeError("Failed to execute an unpaused Gazebo step")
             object_overlapping_ok = self.check_object_overlapping(task=task)
+
+            # Break once all observaions are available
+            if not task.moveit2.new_joint_state_available:
+                continue
+            if task._enable_gripper:
+                if not task.gripper.new_joint_state_available:
+                    continue
+            if hasattr(task, "camera_sub"):
+                if not task.camera_sub.new_observation_available:
+                    continue
+            observations_ready = True
 
         # Make sure no objects are overlapping (intersections between collision geometry)
-        attemps = 0
-        while not object_overlapping_ok and attemps < POST_RANDOMIZATION_MAX_ATTEMPTS:
-            attemps += 1
+        while (
+            not object_overlapping_ok and attempts < self.POST_RANDOMIZATION_MAX_STEPS
+        ):
+            attempts += 1
             task.get_logger().info("Objects overlapping, trying new positions")
-            if not gazebo.run(paused=False):
-                raise RuntimeError("Failed to execute a running Gazebo run")
+            if not gazebo.step():
+                raise RuntimeError("Failed to execute an unpaused Gazebo step")
             object_overlapping_ok = self.check_object_overlapping(task=task)
-        if POST_RANDOMIZATION_MAX_ATTEMPTS == attemps:
+        if self.POST_RANDOMIZATION_MAX_STEPS == attempts:
             task.get_logger().warn(
                 "Objects could not be spawned overlapping. The workspace might be too crowded!"
             )

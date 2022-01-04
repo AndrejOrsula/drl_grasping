@@ -68,13 +68,6 @@ class CameraSubscriber:
         self.__observation_mutex.release()
         return observation
 
-    def new_observation_available(self):
-        """
-        Check if new observation is available since `self.reset_new_observation_checker()` was called
-        """
-
-        return self.__new_observation_available
-
     def reset_new_observation_checker(self):
         """
         Reset checker of new observations, i.e. `self.new_observation_available()`
@@ -83,6 +76,14 @@ class CameraSubscriber:
         self.__observation_mutex.acquire()
         self.__new_observation_available = False
         self.__observation_mutex.release()
+
+    @property
+    def new_observation_available(self):
+        """
+        Check if new observation is available since `self.reset_new_observation_checker()` was called
+        """
+
+        return self.__new_observation_available
 
 
 class CameraSubscriberStandalone(Node, CameraSubscriber):
