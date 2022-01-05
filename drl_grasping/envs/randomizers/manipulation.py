@@ -124,6 +124,7 @@ class ManipulationGazeboEnvRandomizer(
         object_model_count: int = 1,
         object_spawn_position: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         object_random_pose: bool = True,
+        object_random_spawn_position_segments: List[Tuple[float, float, float]] = [],
         object_random_spawn_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5),
         object_models_rollouts_num: int = 1,
         # Collision plane below terrain
@@ -234,6 +235,9 @@ class ManipulationGazeboEnvRandomizer(
         self._object_model_count = object_model_count
         self._object_spawn_position = object_spawn_position
         self._object_random_pose = object_random_pose
+        self._object_random_spawn_position_segments = (
+            object_random_spawn_position_segments
+        )
         self._object_random_spawn_volume = object_random_spawn_volume
         self._object_models_rollouts_num = object_models_rollouts_num
 
@@ -316,12 +320,15 @@ class ManipulationGazeboEnvRandomizer(
         gazebo = kwargs["gazebo"]
 
         # Perform external overrides (e.g. from curriculum)
-        self.external_overrides(task)
+        self.external_overrides(task=task)
 
         # Initialise the environment on the first iteration
         if not self.__env_initialised:
             self.init_env(task=task, gazebo=gazebo)
             self.__env_initialised = True
+
+        # Perform pre-randomization steps
+        self.pre_randomization(task=task)
 
         # Randomize models if needed
         self.randomize_models(task=task, gazebo=gazebo)
@@ -1163,6 +1170,36 @@ class ManipulationGazeboEnvRandomizer(
         # Override number of objects in the scene if task requires it (e.g. if curriculum has this functionality)
         if hasattr(task, "object_count_override"):
             self._object_model_count = task.object_count_override
+
+    # Pre-randomization #
+    def pre_randomization(self, task: SupportedTasks):
+        """
+        Perform steps that are required before randomization is performed.
+        """
+
+        # If desired, select random spawn position from the segments
+        # It is performed here because object spawn position might be of interest also for robot and camera randomization
+        segments_len = len(self._object_random_spawn_position_segments)
+        if segments_len > 1:
+            # Randomly select a segment between two points
+            start_index = task.np_random.randint(low=0, high=segments_len - 1)
+            segment = (
+                self._object_random_spawn_position_segments[start_index],
+                self._object_random_spawn_position_segments[start_index + 1],
+            )
+
+            # Randomly select a point on the segment and use it as the new object spawn position
+            intersect = task.np_random.random()
+            direction = (
+                segment[1][0] - segment[0][0],
+                segment[1][1] - segment[0][1],
+                segment[1][2] - segment[0][2],
+            )
+            self._object_spawn_position = (
+                segment[0][0] + intersect * direction[0],
+                segment[0][1] + intersect * direction[1],
+                segment[0][2] + intersect * direction[2],
+            )
 
     # Post-randomization #
     def post_randomization(
