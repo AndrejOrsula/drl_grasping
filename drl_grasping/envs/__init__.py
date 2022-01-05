@@ -121,8 +121,10 @@ REACH_KWARGS_RANDOMIZER_CAMERA: Dict = {
     "camera_spawn_position": (1.1, -0.75, 0.45),
     "camera_spawn_quat_xyzw": (-0.0402991, -0.0166924, 0.9230002, 0.3823192),
     "camera_random_pose_rollouts_num": 1,
-    "camera_random_pose_distance": 1.0,
-    "camera_random_pose_height_range": (0.1, 0.7),
+    "camera_random_pose_mode": "orbit",
+    "camera_random_pose_orbit_distance": 1.0,
+    "camera_random_pose_orbit_height_range": (0.1, 0.7),
+    "camera_random_pose_select_position_options": [],
 }
 # Task
 register(
@@ -343,8 +345,10 @@ GRASP_KWARGS_RANDOMIZER_CAMERA: Dict = {
     "camera_spawn_position": (0.95, -0.55, 0.25),
     "camera_spawn_quat_xyzw": (-0.0402991, -0.0166924, 0.9230002, 0.3823192),
     "camera_random_pose_rollouts_num": 1,
-    "camera_random_pose_distance": 1.0,
-    "camera_random_pose_height_range": (0.1, 0.7),
+    "camera_random_pose_mode": "orbit",
+    "camera_random_pose_orbit_distance": 1.0,
+    "camera_random_pose_orbit_height_range": (0.1, 0.7),
+    "camera_random_pose_select_position_options": [],
 }
 
 # Task
@@ -540,8 +544,15 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA: Dict = {
     # "camera_spawn_position": (0, 0.07, -0.05),
     # "camera_spawn_quat_xyzw": (0, -0.707107, 0, 0.707107),
     "camera_random_pose_rollouts_num": 1,
-    # "camera_random_pose_distance": 1.0,
-    # "camera_random_pose_height_range": (0.1, 0.7),
+    "camera_random_pose_mode": "select_nearest",
+    "camera_random_pose_orbit_distance": 1.0,
+    "camera_random_pose_orbit_height_range": (0.1, 0.7),
+    "camera_random_pose_select_position_options": [
+        (-0.2, 0, 0.75),
+        (0.37, 0, 0.25),
+        (0.1, 0.25, 0.3),
+        (0.1, -0.25, 0.3),
+    ],
 }
 
 # Task

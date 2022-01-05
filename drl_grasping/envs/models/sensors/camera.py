@@ -14,6 +14,7 @@ class Camera(model_wrapper.ModelWrapper):
         name: Union[str, None] = None,
         position: List[float] = (0, 0, 0),
         orientation: List[float] = (1, 0, 0, 0),
+        static: bool = True,
         camera_type: str = "rgbd_camera",
         width: int = 212,
         height: int = 120,
@@ -44,8 +45,8 @@ class Camera(model_wrapper.ModelWrapper):
         # Create SDF string for the model
         sdf = f'''<sdf version="1.9">
             <model name="{model_name}">
-                <static>true</static>
-                <link name="{model_name}_link">
+                <static>{static}</static>
+                <link name="{self.link_name}">
                     <sensor name="camera" type="{camera_type}">
                         <topic>{model_name}</topic>
                         <always_on>true</always_on>

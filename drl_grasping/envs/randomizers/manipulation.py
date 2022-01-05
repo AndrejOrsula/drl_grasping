@@ -92,8 +92,12 @@ class ManipulationGazeboEnvRandomizer(
             0.70710678118,
         ),
         camera_random_pose_rollouts_num: int = 1,
-        camera_random_pose_distance: float = 1.0,
-        camera_random_pose_height_range: Tuple[float, float] = (0.1, 0.7),
+        camera_random_pose_mode: str = "orbit",
+        camera_random_pose_orbit_distance: float = 1.0,
+        camera_random_pose_orbit_height_range: Tuple[float, float] = (0.1, 0.7),
+        camera_random_pose_select_position_options: List[
+            Tuple[float, float, float]
+        ] = [],
         # Terrain
         terrain_enable: bool = True,
         terrain_type: str = "flat",
@@ -203,8 +207,14 @@ class ManipulationGazeboEnvRandomizer(
         self._camera_spawn_position = camera_spawn_position
         self._camera_spawn_quat_xyzw = camera_spawn_quat_xyzw
         self._camera_random_pose_rollouts_num = camera_random_pose_rollouts_num
-        self._camera_random_pose_distance = camera_random_pose_distance
-        self._camera_random_pose_height_range = camera_random_pose_height_range
+        self._camera_random_pose_mode = camera_random_pose_mode
+        self._camera_random_pose_orbit_distance = camera_random_pose_orbit_distance
+        self._camera_random_pose_orbit_height_range = (
+            camera_random_pose_orbit_height_range
+        )
+        self._camera_random_pose_select_position_options = (
+            camera_random_pose_select_position_options
+        )
 
         # Terrain
         self._terrain_enable = terrain_enable
@@ -270,6 +280,9 @@ class ManipulationGazeboEnvRandomizer(
         self.__terrain_model_rollout_counter = terrain_model_rollouts_num
         self.__light_model_rollout_counter = light_model_rollouts_num
         self.__object_models_rollout_counter = object_models_rollouts_num
+
+        # Flag that determines whether the camera is attached to the robot via detachable joint
+        self.__is_camera_attached = False
 
         # Flag that determines whether environment has already been initialised
         self.__env_initialised = False
@@ -348,6 +361,10 @@ class ManipulationGazeboEnvRandomizer(
 
         # Set log level for (Gym) Ignition
         set_log_level(log_level=task.get_logger().get_effective_level().name)
+
+        # Execute a paused run on the empty environment for the first time
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
 
         # Substitute frame names if needed
         self._camera_relative_to = task.substitute_special_frame(
@@ -541,25 +558,20 @@ class ManipulationGazeboEnvRandomizer(
             ros2_bridge_points=self._camera_publish_points,
         )
 
-        # Attach to robot
-        if (
-            self.robot.is_mobile
-            and task.world.to_gazebo().name() != self._camera_relative_to
-        ):
-            detach_camera_topic = f"{self.robot.name()}/detach_{self.camera.name()}"
-            self.robot.to_gazebo().insert_model_plugin(
-                "libignition-gazebo-detachable-joint-system.so",
-                "ignition::gazebo::systems::DetachableJoint",
-                "<sdf version='1.9'>"
-                f"<parent_link>{self._camera_relative_to}</parent_link>"
-                f"<child_model>{self.camera.name()}</child_model>"
-                f"<child_link>{self.camera.link_name}</child_link>"
-                f"<topic>/{detach_camera_topic}</topic>"
-                "</sdf>",
-            )
+        # Execute a paused run to process model insertion
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
+
+        # Attach to robot if needed
+        if task.world.to_gazebo().name() != self._camera_relative_to:
+            if not self.robot.to_gazebo().attach_link(
+                self._camera_relative_to, self.camera.name(), self.camera.link_name
+            ):
+                raise Exception("Cannot attach camera link to robot")
             self.__is_camera_attached = True
-        else:
-            self.__is_camera_attached = False
+            # Execute a paused run to process link attachment
+            if not gazebo.run(paused=True):
+                raise RuntimeError("Failed to execute a paused Gazebo run")
 
         # Broadcast tf
         task.tf2_broadcaster.broadcast_tf(
@@ -569,10 +581,6 @@ class ManipulationGazeboEnvRandomizer(
             rotation=self._camera_spawn_quat_xyzw,
             xyzw=True,
         )
-
-        # Execute a paused run to process model insertion
-        if not gazebo.run(paused=True):
-            raise RuntimeError("Failed to execute a paused Gazebo run")
 
     def add_default_terrain(
         self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
@@ -737,13 +745,10 @@ class ManipulationGazeboEnvRandomizer(
             self.randomize_light(task=task, gazebo=gazebo)
 
         # Randomize camera if needed
-        # TODO (medium): Implement camera pose randomization for cameras attached to robot
-        if (
-            self._camera_enable
-            and not self.__is_camera_attached
-            and self._camera_pose_expired()
-        ):
-            self.randomize_camera_pose(task=task, gazebo=gazebo)
+        if self._camera_enable and self._camera_pose_expired():
+            self.randomize_camera_pose(
+                task=task, gazebo=gazebo, mode=self._camera_random_pose_mode
+            )
 
         # Randomize objects if needed
         # Note: No need to randomize pose of new models because they are already spawned randomly
@@ -907,20 +912,75 @@ class ManipulationGazeboEnvRandomizer(
             )
 
     def randomize_camera_pose(
-        self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
+        self, task: SupportedTasks, gazebo: scenario.GazeboSimulator, mode: str
     ):
 
         # Get random camera pose, centred at object position (or centre of object spawn box)
-        position, quat_xyzw = self.get_random_camera_pose(
-            task,
-            centre=self._object_spawn_position,
-            distance=self._camera_random_pose_distance,
-            height=self._camera_random_pose_height_range,
-        )
+        if "orbit" == mode:
+            position, quat_xyzw = self.get_random_camera_pose_orbit(
+                task=task,
+                centre=self._object_spawn_position,
+                distance=self._camera_random_pose_orbit_distance,
+                height=self._camera_random_pose_orbit_height_range,
+            )
+        elif "select_random" == mode:
+            position, quat_xyzw = self.get_random_camera_pose_sample_random(
+                task=task,
+                centre=self._object_spawn_position,
+                options=self._camera_random_pose_select_position_options,
+            )
+        elif "select_nearest" == mode:
+            position, quat_xyzw = self.get_random_camera_pose_sample_nearest(
+                centre=self._object_spawn_position,
+                options=self._camera_random_pose_select_position_options,
+            )
+
+        # If needed, transform the pose of camera to be with respect to robot - but represented in world reference frame for insertion into the world
+        if task.world.to_gazebo().name() != self._camera_relative_to:
+            target_frame_position, target_frame_quat_xyzw = get_model_pose(
+                task.world,
+                model=self.robot,
+                link=self._camera_relative_to,
+                xyzw=True,
+            )
+            transformed_position = (
+                Rotation.from_quat(target_frame_quat_xyzw).apply(position)
+                + target_frame_position
+            )
+            transformed_quat_wxyz = quat_to_wxyz(
+                quat_mul(quat_xyzw, target_frame_quat_xyzw, xyzw=True)
+            )
+        else:
+            transformed_position = position
+            transformed_quat_wxyz = quat_to_wxyz(quat_xyzw)
+
+        # Detach camera if needed
+        if self.__is_camera_attached:
+            if not self.robot.to_gazebo().detach_link(
+                self._camera_relative_to, self.camera.name(), self.camera.link_name
+            ):
+                raise Exception("Cannot detach camera link from robot")
+            # Execute a paused run to process link detachment
+            if not gazebo.run(paused=True):
+                raise RuntimeError("Failed to execute a paused Gazebo run")
 
         # Move pose of the camera
         camera_gazebo = self.camera.to_gazebo()
-        camera_gazebo.reset_base_pose(position, quat_to_wxyz(quat_xyzw))
+        camera_gazebo.reset_base_pose(transformed_position, transformed_quat_wxyz)
+
+        # Execute a paused run to process model modification
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
+
+        # Attach to robot again if needed
+        if self.__is_camera_attached:
+            if not self.robot.to_gazebo().attach_link(
+                self._camera_relative_to, self.camera.name(), self.camera.link_name
+            ):
+                raise Exception("Cannot attach camera link to robot")
+            # Execute a paused run to process link attachment
+            if not gazebo.run(paused=True):
+                raise RuntimeError("Failed to execute a paused Gazebo run")
 
         # Broadcast tf
         task.tf2_broadcaster.broadcast_tf(
@@ -931,17 +991,13 @@ class ManipulationGazeboEnvRandomizer(
             xyzw=True,
         )
 
-        # Execute a paused run to process model modification
-        if not gazebo.run(paused=True):
-            raise RuntimeError("Failed to execute a paused Gazebo run")
-
-    def get_random_camera_pose(
+    def get_random_camera_pose_orbit(
         self,
         task: SupportedTasks,
         centre: Tuple[float, float, float],
         distance: float,
         height: Tuple[float, float],
-    ):
+    ) -> Tuple[float, float]:
 
         # Select a random 3D position (with restricted min height)
         while True:
@@ -969,7 +1025,56 @@ class ManipulationGazeboEnvRandomizer(
 
         # Scale normal vector by distance and translate camera to point at the workspace centre
         position *= distance
-        position += centre
+        position[:2] += centre[:2]
+
+        return position, quat_xyzw
+
+    def get_random_camera_pose_sample_random(
+        self,
+        task: SupportedTasks,
+        centre: Tuple[float, float, float],
+        options: List[Tuple[float, float, float]],
+    ) -> Tuple[float, float]:
+
+        # Select a random entry from the options
+        selection = options[task.np_random.randint(len(options))]
+
+        # Process it and return
+        return self.get_random_camera_pose_sample_process(
+            centre=centre, position=selection
+        )
+
+    def get_random_camera_pose_sample_nearest(
+        self,
+        centre: Tuple[float, float, float],
+        options: List[Tuple[float, float, float]],
+    ) -> Tuple[float, float]:
+
+        # Select the nearest entry
+        dist_sqr = np.sum((np.array(options) - np.array(centre)) ** 2, axis=1)
+        nearest = options[np.argmin(dist_sqr)]
+
+        # Process it and return
+        return self.get_random_camera_pose_sample_process(
+            centre=centre, position=nearest
+        )
+
+    def get_random_camera_pose_sample_process(
+        self,
+        centre: Tuple[float, float, float],
+        position: Tuple[float, float, float],
+    ) -> Tuple[float, float]:
+
+        # Determine orientation such that camera faces the centre
+        rpy = [
+            0.0,
+            np.arctan2(
+                position[2],
+                np.linalg.norm((position[0] - centre[0], position[1] - centre[1]), 2),
+            ),
+            np.arctan2(position[1] - centre[1], position[0] - centre[0]) + np.pi,
+        ]
+        quat_xyzw = Rotation.from_euler("xyz", rpy).as_quat()
 
         return position, quat_xyzw
 
@@ -1182,7 +1287,7 @@ class ManipulationGazeboEnvRandomizer(
         segments_len = len(self._object_random_spawn_position_segments)
         if segments_len > 1:
             # Randomly select a segment between two points
-            start_index = task.np_random.randint(low=0, high=segments_len - 1)
+            start_index = task.np_random.randint(segments_len - 1)
             segment = (
                 self._object_random_spawn_position_segments[start_index],
                 self._object_random_spawn_position_segments[start_index + 1],
