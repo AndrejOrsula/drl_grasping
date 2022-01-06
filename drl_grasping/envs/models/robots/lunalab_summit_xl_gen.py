@@ -36,7 +36,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         "high_quality_mesh": True,
         "mimic_gripper_joints": False,
         "ros2_control": True,
-        "ros2_control_plugin": "ignition",
+        "ros2_control_plugin": "ign",
         "ros2_control_command_interface": "effort",
         "gazebo_preserve_fixed_joint": False,
         "gazebo_diff_drive": True,

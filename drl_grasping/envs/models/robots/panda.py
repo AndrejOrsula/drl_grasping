@@ -27,7 +27,7 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
         "collision_arm": True,
         "collision_gripper": True,
         "ros2_control": True,
-        "ros2_control_plugin": "ignition",
+        "ros2_control_plugin": "ign",
         "ros2_control_command_interface": "effort",
         "gazebo_preserve_fixed_joint": False,
     }
