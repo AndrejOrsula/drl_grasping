@@ -38,7 +38,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         "ros2_control": True,
         "ros2_control_plugin": "ign",
         "ros2_control_command_interface": "effort",
-        "gazebo_preserve_fixed_joint": False,
+        "gazebo_preserve_fixed_joint": True,
         "gazebo_diff_drive": True,
         "gazebo_joint_trajectory_controller": False,
         "gazebo_joint_state_publisher": False,
