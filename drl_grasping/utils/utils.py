@@ -287,7 +287,7 @@ def linear_schedule(initial_value: Union[float, str]) -> Callable[[float], float
 def get_trained_models(log_folder: str) -> Dict[str, Tuple[str, str]]:
     """
     :param log_folder: Root log folder
-    :return: Dict representing the trained agents
+    :return: Dict[str, Tuple[str, str]] representing the trained agents
     """
     trained_models = {}
     for algo in os.listdir(log_folder):

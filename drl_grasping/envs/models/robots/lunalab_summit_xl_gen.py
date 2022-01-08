@@ -23,7 +23,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         "urdf",
         ROBOT_MODEL_NAME + ".urdf.xacro",
     )
-    __DEFAULT_XACRO_MAPPINGS: Dict = {
+    __DEFAULT_XACRO_MAPPINGS: Dict[str, any] = {
         "name": ROBOT_MODEL_NAME,
         "prefix": DEFAULT_PREFIX,
         "safety_limits": True,
@@ -81,7 +81,7 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
         use_fuel: bool = False,
         use_xacro: bool = True,
         xacro_file: str = __DEFAULT_XACRO_FILE,
-        xacro_mappings: Dict = __DEFAULT_XACRO_MAPPINGS,
+        xacro_mappings: Dict[str, any] = __DEFAULT_XACRO_MAPPINGS,
         initial_arm_joint_positions: List[float] = DEFAULT_ARM_JOINT_POSITIONS,
         initial_gripper_joint_positions: List[float] = OPEN_GRIPPER_JOINT_POSITIONS,
         **kwargs,
