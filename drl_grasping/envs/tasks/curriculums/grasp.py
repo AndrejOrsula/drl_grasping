@@ -17,6 +17,9 @@ class GraspStage(CurriculumStage):
     LIFT = 4
 
 
+# TODO: Add curriculum to increase the required lift distance as the success rate increases
+
+
 class GraspCurriculum(
     StageRewardCurriculum,
     SuccessRateImpl,

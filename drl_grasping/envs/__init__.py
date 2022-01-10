@@ -253,7 +253,7 @@ register(
 #########
 # Grasp #
 #########
-GRASP_MAX_EPISODE_STEPS: int = 100
+GRASP_MAX_EPISODE_STEPS: int = 150
 GRASP_AGENT_RATE: float = 4.0
 GRASP_KWARGS: Dict[str, any] = {
     "agent_rate": GRASP_AGENT_RATE,
@@ -356,7 +356,7 @@ GRASP_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
 GRASP_KWARGS_CURRICULUM: Dict[str, any] = {
     "stages_base_reward": 1.0,
     "reach_required_distance": 0.1,
-    "lift_required_height": 0.125,
+    "lift_required_height": LUNALAB_SUMMIT_XL_GEN_Z_OFFSET + 0.15,
     "persistent_reward_each_step": -0.005,
     "persistent_reward_terrain_collision": -1.0,
     "persistent_reward_all_objects_outside_workspace": 0.0,
@@ -441,7 +441,7 @@ register(
 ##################
 # GraspPlanetary #
 ##################
-GRASP_PLANETARY_MAX_EPISODE_STEPS: int = 100
+GRASP_PLANETARY_MAX_EPISODE_STEPS: int = 150
 GRASP_PLANETARY_AGENT_RATE: float = 4.0
 GRASP_PLANETARY_KWARGS: Dict[str, any] = {
     "agent_rate": GRASP_PLANETARY_AGENT_RATE,
@@ -518,7 +518,7 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict[str, any] = {
         (0.4, 0.45, -0.05),
         (-0.2, 0.45, -0.05),
     ],
-    "object_random_spawn_volume": (0.25, 0.25, 0.05),
+    "object_random_spawn_volume": (0.2, 0.2, 0.05),
     "object_models_rollouts_num": 1,
     "underworld_collision_plane": True,
 }
@@ -564,7 +564,7 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
 GRASP_PLANETARY_KWARGS_CURRICULUM: Dict[str, any] = {
     "stages_base_reward": 1.0,
     "reach_required_distance": 0.1,
-    "lift_required_height": 0.125,
+    "lift_required_height": LUNALAB_SUMMIT_XL_GEN_Z_OFFSET + 0.15,
     "persistent_reward_each_step": -0.005,
     "persistent_reward_terrain_collision": -1.0,
     "persistent_reward_all_objects_outside_workspace": 0.0,
