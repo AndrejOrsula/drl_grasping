@@ -55,8 +55,8 @@ class StageRewardCurriculum:
     def __init__(
         self,
         curriculum_stage: Type[CurriculumStage],
-        stage_reward_multiplier: float = 1.0,
-        dense_reward: bool = True,
+        stage_reward_multiplier: float,
+        dense_reward: bool = False,
         enable_logger_sb3: bool = True,
         **kwargs,
     ):
@@ -65,10 +65,14 @@ class StageRewardCurriculum:
             raise TypeException(f"{curriculum_stage} has length of 0")
 
         self.__use_dense_reward = dense_reward
+        if self.__use_dense_reward:
+            raise ValueError(
+                "Dense reward is currently not implemented for any curriculum"
+            )
 
         # Setup internals
         self._stage_type = curriculum_stage
-        self._stages_completed_this_episode: Dict[curriculum_stage, bool] = {
+        self.stages_completed_this_episode: Dict[curriculum_stage, bool] = {
             curriculum_stage(stage): False for stage in iter(curriculum_stage)
         }
         self._stage_reward_functions: Dict[curriculum_stage, Callable] = {
@@ -99,7 +103,7 @@ class StageRewardCurriculum:
 
         # Determine the stage at which to start computing reward [performance - done stages give no reward]
         for stage in iter(self._stage_type):
-            if not self._stages_completed_this_episode[stage]:
+            if not self.stages_completed_this_episode[stage]:
                 first_stage_to_process = stage
                 break
 
@@ -118,11 +122,11 @@ class StageRewardCurriculum:
                 self.__stages_rewards_this_episode[stage] = stage_reward
 
             # Break if stage is not yet completed [performance - next stages won't give any reward]
-            if not self._stages_completed_this_episode[stage]:
+            if not self.stages_completed_this_episode[stage]:
                 break
 
         # If the last stage is complete, the episode has succeeded
-        self.__episode_succeeded = self._stages_completed_this_episode[
+        self.__episode_succeeded = self.stages_completed_this_episode[
             self._stage_type.last()
         ]
 
@@ -170,8 +174,8 @@ class StageRewardCurriculum:
         self.__log_reset_task()
 
         # Reset internals
-        self._stage_reward_functions = dict.fromkeys(
-            self._stage_reward_functions, False
+        self.stages_completed_this_episode = dict.fromkeys(
+            self.stages_completed_this_episode, False
         )
         self.__episode_succeeded = False
         self.__episode_failed = False
@@ -196,7 +200,7 @@ class StageRewardCurriculum:
             # Reached stage
             for stage in iter(self._stage_type):
                 re_stageached = stage
-                if self._stages_completed_this_episode[stage]:
+                if self.stages_completed_this_episode[stage]:
                     break
             self.__logger_sb3.record(
                 f"{self.__logger_sb3_root_stage_reward}reached_stage_name",
