@@ -3,7 +3,7 @@ import multiprocessing
 import sys
 from itertools import count
 from threading import Thread
-from typing import Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 import rclpy
@@ -17,15 +17,14 @@ from gym_ignition.utils.typing import (
 )
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
-from rclpy.logging import LoggingSeverity
 from rclpy.node import Node
-from rclpy.parameter import Parameter
 from scipy.spatial.transform import Rotation
 
 from drl_grasping.envs.control import MoveIt2, MoveIt2Gripper, MoveIt2Servo
 from drl_grasping.envs.models.robots import get_robot_model_class
 from drl_grasping.envs.utils import Tf2Broadcaster, Tf2Listener
-from drl_grasping.envs.utils.conversions import orientation_6d_to_quat, quat_to_wxyz
+from drl_grasping.envs.utils.conversions import orientation_6d_to_quat
+from drl_grasping.envs.utils.gazebo import *
 from drl_grasping.envs.utils.math import quat_mul
 
 
@@ -94,11 +93,21 @@ class Manipulation(task.Task, Node, abc.ABC):
         self.__scaling_factor_rotation = scaling_factor_rotation
         self._enable_gripper = enable_gripper
 
-        # Get half of the workspace volume, useful is many computations
-        self.workspace_volume_half = (
+        # Get workspace bounds, useful is many computations
+        workspace_volume_half = (
             workspace_volume[0] / 2,
             workspace_volume[1] / 2,
             workspace_volume[2] / 2,
+        )
+        self.workspace_min_bound = (
+            self.workspace_centre[0] - workspace_volume_half[0],
+            self.workspace_centre[1] - workspace_volume_half[1],
+            self.workspace_centre[2] - workspace_volume_half[2],
+        )
+        self.workspace_max_bound = (
+            self.workspace_centre[0] + workspace_volume_half[0],
+            self.workspace_centre[1] + workspace_volume_half[1],
+            self.workspace_centre[2] + workspace_volume_half[2],
         )
 
         # Get class of the robot model based on passed argument
@@ -123,6 +132,9 @@ class Manipulation(task.Task, Node, abc.ABC):
             self.robot_prefix
         )
         self.robot_ee_link_name = self.robot_model_class.get_ee_link_name(
+            self.robot_prefix
+        )
+        self.robot_arm_link_names = self.robot_model_class.get_arm_link_names(
             self.robot_prefix
         )
         self.robot_gripper_link_names = self.robot_model_class.get_gripper_link_names(
@@ -183,6 +195,11 @@ class Manipulation(task.Task, Node, abc.ABC):
                 callback_group=self._callback_group,
             )
 
+        # Initialize task and randomizer overrides (e.g. from curriculum)
+        # Both of these are consumed at the beginning of reset
+        self.__task_parameter_overrides: Dict[str, any] = {}
+        self._randomizer_parameter_overrides: Dict[str, any] = {}
+
     def create_spaces(self) -> Tuple[ActionSpace, ObservationSpace]:
 
         action_space = self.create_action_space()
@@ -216,10 +233,10 @@ class Manipulation(task.Task, Node, abc.ABC):
 
     def reset_task(self):
 
-        raise NotImplementedError()
+        self.__consume_parameter_overrides()
 
     # Helper functions #
-    def get_relative_position(
+    def get_relative_ee_position(
         self, translation: Tuple[float, float, float]
     ) -> Tuple[float, float, float]:
 
@@ -240,7 +257,7 @@ class Manipulation(task.Task, Node, abc.ABC):
 
         return target_position
 
-    def get_relative_orientation(
+    def get_relative_ee_orientation(
         self,
         rotation: Union[
             float,
@@ -312,23 +329,23 @@ class Manipulation(task.Task, Node, abc.ABC):
 
         return (
             min(
-                self.workspace_centre[0] + self.workspace_volume_half[0],
+                self.workspace_max_bound[0],
                 max(
-                    self.workspace_centre[0] - self.workspace_volume_half[0],
+                    self.workspace_min_bound[0],
                     position[0],
                 ),
             ),
             min(
-                self.workspace_centre[1] + self.workspace_volume_half[1],
+                self.workspace_max_bound[1],
                 max(
-                    self.workspace_centre[1] - self.workspace_volume_half[1],
+                    self.workspace_min_bound[1],
                     position[1],
                 ),
             ),
             min(
-                self.workspace_centre[2] + self.workspace_volume_half[2],
+                self.workspace_max_bound[2],
                 max(
-                    self.workspace_centre[2] - self.workspace_volume_half[2],
+                    self.workspace_min_bound[2],
                     position[2],
                 ),
             ),
@@ -336,113 +353,234 @@ class Manipulation(task.Task, Node, abc.ABC):
 
     def get_ee_pose(
         self,
-    ) -> Tuple[Tuple[float, float, float], Tuple[float, float, float, float]]:
+    ) -> Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float, float]]]:
         """
-        Return the current pose of the end effector with respect to robot base link.
+        Return the current pose of the end effector with respect to arm base link.
         """
 
-        # TODO: Use `get_ee_pose()` at it would provide a slight performance as opposed to `get_ee_position()` + `get_ee_orientation()` [not relevant once moveit_servo is used]
-
-        transform = self.tf2_listener.lookup_transform_sync(
-            source_frame=self.robot_ee_link_name,
-            target_frame=self.robot_arm_base_link_name,
-            retry=False,
-        )
-        if transform is not None:
-            return (
-                (
-                    transform.translation.x,
-                    transform.translation.y,
-                    transform.translation.z,
-                ),
-                (
-                    transform.rotation.x,
-                    transform.rotation.y,
-                    transform.rotation.z,
-                    transform.rotation.w,
-                ),
+        try:
+            robot_model = self.world.to_gazebo().get_model(self.robot_name).to_gazebo()
+            ee_position, ee_quat_xyzw = get_model_pose(
+                world=self.world,
+                model=robot_model,
+                link=self.robot_ee_link_name,
+                xyzw=True,
             )
-        else:
-            try:
-                robot_model = self.world.get_model(self.robot_name).to_gazebo()
-                ee_link = robot_model.get_link(link_name=self.robot_ee_link_name)
-                return (ee_link.position(), quat_to_wxyz(ee_link.orientation()))
-            except:
+            return transform_change_reference_frame_pose(
+                world=self.world,
+                position=ee_position,
+                quat=ee_quat_xyzw,
+                target_model=robot_model,
+                target_link=self.robot_arm_base_link_name,
+                xyzw=True,
+            )
+        except Exception as e:
+            self.get_logger().warn(
+                f"Cannot get end effector pose from Gazebo ({e}), using tf2..."
+            )
+            transform = self.tf2_listener.lookup_transform_sync(
+                source_frame=self.robot_ee_link_name,
+                target_frame=self.robot_arm_base_link_name,
+                retry=False,
+            )
+            if transform is not None:
+                return (
+                    (
+                        transform.translation.x,
+                        transform.translation.y,
+                        transform.translation.z,
+                    ),
+                    (
+                        transform.rotation.x,
+                        transform.rotation.y,
+                        transform.rotation.z,
+                        transform.rotation.w,
+                    ),
+                )
+            else:
+                self.get_logger().error(
+                    "Cannot get pose of the end effector (default values are returned)"
+                )
                 return (
                     (0.0, 0.0, 0.0),
-                    (
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                    ),
+                    (0.0, 0.0, 0.0, 1.0),
                 )
 
     def get_ee_position(self) -> Tuple[float, float, float]:
         """
-        Return the current position of the end effector with respect to robot base link.
+        Return the current position of the end effector with respect to arm base link.
         """
 
-        transform = self.tf2_listener.lookup_transform_sync(
-            source_frame=self.robot_ee_link_name,
-            target_frame=self.robot_arm_base_link_name,
-            retry=False,
-        )
-        if transform is not None:
-            position = transform.translation
-            return (position.x, position.y, position.z)
-        else:
-            try:
-                robot_model = self.world.get_model(self.robot_name).to_gazebo()
-                return robot_model.get_link(
-                    link_name=self.robot_ee_link_name
-                ).position()
-            except:
+        try:
+            robot_model = self.world.to_gazebo().get_model(self.robot_name).to_gazebo()
+            ee_position = get_model_position(
+                world=self.world,
+                model=robot_model,
+                link=self.robot_ee_link_name,
+            )
+            return transform_change_reference_frame_position(
+                world=self.world,
+                position=ee_position,
+                target_model=robot_model,
+                target_link=self.robot_arm_base_link_name,
+            )
+        except Exception as e:
+            self.get_logger().warn(
+                f"Cannot get end effector position from Gazebo ({e}), using tf2..."
+            )
+            transform = self.tf2_listener.lookup_transform_sync(
+                source_frame=self.robot_ee_link_name,
+                target_frame=self.robot_arm_base_link_name,
+                retry=False,
+            )
+            if transform is not None:
+                return (
+                    transform.translation.x,
+                    transform.translation.y,
+                    transform.translation.z,
+                )
+            else:
+                self.get_logger().error(
+                    "Cannot get position of the end effector (default values are returned)"
+                )
                 return (0.0, 0.0, 0.0)
 
     def get_ee_orientation(self) -> Tuple[float, float, float, float]:
         """
-        Return the current xyzw quaternion of the end effector with respect to robot base link.
+        Return the current xyzw quaternion of the end effector with respect to arm base link.
         """
 
-        transform = self.tf2_listener.lookup_transform_sync(
-            source_frame=self.robot_ee_link_name,
-            target_frame=self.robot_arm_base_link_name,
-            retry=False,
-        )
-        if transform is not None:
-            orientation = transform.rotation
-            return (
-                orientation.x,
-                orientation.y,
-                orientation.z,
-                orientation.w,
+        try:
+            robot_model = self.world.to_gazebo().get_model(self.robot_name).to_gazebo()
+            ee_quat_xyzw = get_model_orientation(
+                world=self.world,
+                model=robot_model,
+                link=self.robot_ee_link_name,
+                xyzw=True,
             )
-        else:
-            try:
-                robot_model = self.world.get_model(self.robot_name).to_gazebo()
-                return quat_to_wxyz(
-                    robot_model.get_link(
-                        link_name=self.robot_ee_link_name
-                    ).orientation()
+            return transform_change_reference_frame_orientation(
+                world=self.world,
+                quat=ee_quat_xyzw,
+                target_model=robot_model,
+                target_link=self.robot_arm_base_link_name,
+                xyzw=True,
+            )
+        except Exception as e:
+            self.get_logger().warn(
+                f"Cannot get end effector orientation from Gazebo ({e}), using tf2..."
+            )
+            transform = self.tf2_listener.lookup_transform_sync(
+                source_frame=self.robot_ee_link_name,
+                target_frame=self.robot_arm_base_link_name,
+                retry=False,
+            )
+            if transform is not None:
+                return (
+                    transform.rotation.x,
+                    transform.rotation.y,
+                    transform.rotation.z,
+                    transform.rotation.w,
                 )
-            except:
+            else:
+                self.get_logger().error(
+                    "Cannot get orientation of the end effector (default values are returned)"
+                )
                 return (0.0, 0.0, 0.0, 1.0)
+
+    def get_object_position(
+        self, object_model: Union[ModelWrapper, str]
+    ) -> Tuple[float, float, float]:
+        """
+        Return the current position of an object with respect to arm base link.
+        Note: Only simulated objects are currently supported.
+        """
+
+        try:
+            object_position = get_model_position(
+                world=self.world,
+                model=object_model,
+            )
+            return transform_change_reference_frame_position(
+                world=self.world,
+                position=object_position,
+                target_model=self.robot_name,
+                target_link=self.robot_arm_base_link_name,
+            )
+        except Exception as e:
+            self.get_logger().error(
+                f"Cannot get position of {object_model} object (default values are returned): {e}"
+            )
+            return (0.0, 0.0, 0.0)
+
+    def get_object_positions(self) -> Dict[str, Tuple[float, float, float]]:
+        """
+        Return the current position of all objects with respect to arm base link.
+        Note: Only simulated objects are currently supported.
+        """
+
+        object_positions = {}
+
+        try:
+            robot_model = self.world.to_gazebo().get_model(self.robot_name).to_gazebo()
+            robot_arm_base_link = robot_model.get_link(
+                link_name=self.robot_arm_base_link_name
+            )
+            for object_name in self.object_names:
+                object_position = get_model_position(
+                    world=self.world,
+                    model=object_name,
+                )
+                object_positions[
+                    object_name
+                ] = transform_change_reference_frame_position(
+                    world=self.world,
+                    position=object_position,
+                    target_model=robot_model,
+                    target_link=robot_arm_base_link,
+                )
+        except Exception as e:
+            self.get_logger().error(
+                f"Cannot get positions of all objects (empty Dict is returned): {e}"
+            )
+
+        return object_positions
 
     def substitute_special_frame(self, frame_id: str) -> str:
 
-        if "world" == frame_id:
+        if "arm_base_link" == frame_id:
+            return self.robot_arm_base_link_name
+        elif "base_link" == frame_id:
+            return self.robot_base_link_name
+        elif "end_effector" == frame_id:
+            return self.robot_ee_link_name
+        elif "world" == frame_id:
             try:
                 # In Gazebo, where multiple worlds are allowed
                 return self.world.to_gazebo().name()
-            except:
+            except Exception as e:
+                self.get_logger().warn(f"")
                 # Otherwise (e.g. real world)
                 return "drl_grasping_world"
-        elif "base_link" == frame_id:
-            return self.robot_base_link_name
-        elif "arm_base_link" == frame_id:
-            return self.arm_base_link_name
-        elif "end_effector" == frame_id:
-            return self.ee_link_name
         else:
             return frame_id
+
+    def add_parameter_overrides(self, parameter_overrides: Dict[str, any]):
+
+        self.add_task_parameter_overrides(parameter_overrides)
+        self.add_randomizer_parameter_overrides(parameter_overrides)
+
+    def add_task_parameter_overrides(self, parameter_overrides: Dict[str, any]):
+
+        self.__task_parameter_overrides.update(parameter_overrides)
+
+    def add_randomizer_parameter_overrides(self, parameter_overrides: Dict[str, any]):
+
+        self._randomizer_parameter_overrides.update(parameter_overrides)
+
+    def __consume_parameter_overrides(self):
+
+        for key, value in self.__task_parameter_overrides.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+        self.__task_parameter_overrides.clear()
