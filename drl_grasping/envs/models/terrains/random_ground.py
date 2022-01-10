@@ -13,7 +13,7 @@ class RandomGround(model_wrapper.ModelWrapper):
     def __init__(
         self,
         world: scenario.World,
-        name: str = "ground",
+        name: str = "random_ground",
         position: List[float] = (0, 0, 0),
         orientation: List[float] = (1, 0, 0, 0),
         size: List[float] = (1.0, 1.0),
