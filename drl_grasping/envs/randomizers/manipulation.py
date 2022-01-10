@@ -532,6 +532,11 @@ class ManipulationGazeboEnvRandomizer(
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
+        # Reset robot joints to the defaults
+        self.reset_robot_joint_positions(
+            task=task, gazebo=gazebo, above_object_spawn=False, randomize=False
+        )
+
     def add_camera(
         self,
         task: SupportedTasks,
