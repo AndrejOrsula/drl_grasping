@@ -58,9 +58,9 @@ class Manipulation(task.Task, Node, abc.ABC):
         # Initialize ROS 2 context (if not done before)
         try:
             rclpy.init()
-        except:
+        except Exception as e:
             if not rclpy.ok():
-                sys.exit("ROS 2 context could not be initialised")
+                sys.exit(f"ROS 2 context could not be initialised: {e}")
 
         # Initialize ROS 2 Node base class
         Node.__init__(self, f"drl_grasping_{self.id}")

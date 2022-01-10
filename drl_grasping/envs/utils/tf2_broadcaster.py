@@ -1,3 +1,4 @@
+import sys
 from typing import Tuple
 
 import rclpy
@@ -61,11 +62,9 @@ class Tf2BroadcasterStandalone(Node, Tf2Broadcaster):
 
         try:
             rclpy.init()
-        except:
+        except Exception as e:
             if not rclpy.ok():
-                import sys
-
-                sys.exit("ROS 2 could not be initialised")
+                sys.exit(f"ROS 2 context could not be initialised: {e}")
 
         Node.__init__(self, node_name)
         self.set_parameters(
