@@ -120,6 +120,10 @@ Reach-OctreeWithColor-Gazebo-v0:
 
 # Grasp task - hyperparameters are semi-tuned
 Grasp-Octree-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.ParallelTrainCallback:
+        gradient_steps: 100
+        sleep_time: 0.0
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
@@ -158,6 +162,10 @@ Grasp-Octree-Gazebo-v0:
   optimize_memory_usage: True
 
 Grasp-OctreeWithColor-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.ParallelTrainCallback:
+        gradient_steps: 100
+        sleep_time: 0.0
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
@@ -198,6 +206,10 @@ Grasp-OctreeWithColor-Gazebo-v0:
 # GraspPlanetary task - hyperparameters are not tuned
 # TODO: Autotune GraspPlanetary task hyperparameters for TQC
 GraspPlanetary-Octree-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.ParallelTrainCallback:
+        gradient_steps: 100
+        sleep_time: 0.0
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
@@ -236,6 +248,10 @@ GraspPlanetary-Octree-Gazebo-v0:
   optimize_memory_usage: True
 
 GraspPlanetary-OctreeWithColor-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.ParallelTrainCallback:
+        gradient_steps: 100
+        sleep_time: 0.0
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
