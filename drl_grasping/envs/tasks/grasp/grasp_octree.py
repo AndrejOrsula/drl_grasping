@@ -107,7 +107,7 @@ class GraspOctree(Grasp, abc.ABC):
         octree_size = octree.shape[0]
         if octree_size > self._octree_max_size:
             self.get_logger().error(
-                f"Octree is larger than the maximum allowed size of {self._octree_max_siz} (exceeded with {octree_size})"
+                f"Octree is larger than the maximum allowed size of {self._octree_max_size} (exceeded with {octree_size})"
             )
         octree = np.pad(
             octree,
