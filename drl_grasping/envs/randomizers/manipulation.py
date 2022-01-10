@@ -950,10 +950,16 @@ class ManipulationGazeboEnvRandomizer(
 
         # Reset also the controllers
         task.moveit2.reset_controller(joint_state=arm_joint_positions)
-        if task._enable_gripper and self.robot.gripper_joint_names:
-            task.gripper.reset_controller(
-                joint_state=task.initial_gripper_joint_positions
-            )
+        # TODO (low): Reset of gripper causes the motion of robot with servo to become jittery. No idea why. Not really necessary to reset gripper controller either
+        # if task._enable_gripper and self.robot.gripper_joint_names:
+        #     task.gripper.reset_controller(task.initial_gripper_joint_positions)
+        #     if (
+        #         self.robot.CLOSED_GRIPPER_JOINT_POSITIONS
+        #         == task.initial_gripper_joint_positions
+        #     ):
+        #         task.gripper.close()
+        #     else:
+        #         task.gripper.open()
 
     def randomize_camera_pose(
         self, task: SupportedTasks, gazebo: scenario.GazeboSimulator, mode: str
