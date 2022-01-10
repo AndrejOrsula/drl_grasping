@@ -12,9 +12,8 @@ from scipy.spatial.transform import Rotation
 
 from drl_grasping.envs import models, tasks
 from drl_grasping.envs.utils.conversions import quat_to_wxyz
-from drl_grasping.envs.utils.gazebo import get_model_pose
+from drl_grasping.envs.utils.gazebo import *
 from drl_grasping.envs.utils.logging import set_log_level
-from drl_grasping.envs.utils.math import quat_mul
 
 # Tasks that are supported by this randomizer (used primarily for type hinting)
 SupportedTasks = Union[
@@ -27,6 +26,8 @@ SupportedTasks = Union[
     tasks.GraspPlanetary,
     tasks.GraspPlanetaryOctree,
 ]
+
+# TODO: Gazebo run sometimes causes crash (e.g. some cases with `random_flat` terrain) - Investigate why
 
 
 class ManipulationGazeboEnvRandomizer(
@@ -67,6 +68,7 @@ class ManipulationGazeboEnvRandomizer(
         robot_random_joint_positions_std: float = 0.1,
         robot_random_joint_positions_above_object_spawn: bool = False,
         robot_random_joint_positions_above_object_spawn_elevation: float = 0.2,
+        robot_random_joint_positions_above_object_spawn_xy_randomness: float = 0.2,
         # Camera #
         camera_enable: bool = True,
         camera_type: str = "rgbd_camera",
@@ -95,9 +97,11 @@ class ManipulationGazeboEnvRandomizer(
         camera_random_pose_mode: str = "orbit",
         camera_random_pose_orbit_distance: float = 1.0,
         camera_random_pose_orbit_height_range: Tuple[float, float] = (0.1, 0.7),
+        camera_random_pose_orbit_ignore_arc_behind_robot: float = np.pi / 8,
         camera_random_pose_select_position_options: List[
             Tuple[float, float, float]
         ] = [],
+        camera_random_pose_focal_point_z_offset: float = -0.22,
         # Terrain
         terrain_enable: bool = True,
         terrain_type: str = "flat",
@@ -125,7 +129,7 @@ class ManipulationGazeboEnvRandomizer(
         object_color: Tuple[float, float, float, float] = (0.8, 0.8, 0.8, 1.0),
         object_dimensions: List[float] = [0.05, 0.05, 0.05],
         object_mass: float = 0.1,
-        object_model_count: int = 1,
+        object_count: int = 1,
         object_spawn_position: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         object_random_pose: bool = True,
         object_random_spawn_position_segments: List[Tuple[float, float, float]] = [],
@@ -187,6 +191,9 @@ class ManipulationGazeboEnvRandomizer(
         self._robot_random_joint_positions_above_object_spawn_elevation = (
             robot_random_joint_positions_above_object_spawn_elevation
         )
+        self._robot_random_joint_positions_above_object_spawn_xy_randomness = (
+            robot_random_joint_positions_above_object_spawn_xy_randomness
+        )
 
         # Camera
         self._camera_enable = camera_enable
@@ -212,8 +219,14 @@ class ManipulationGazeboEnvRandomizer(
         self._camera_random_pose_orbit_height_range = (
             camera_random_pose_orbit_height_range
         )
+        self._camera_random_pose_orbit_ignore_arc_behind_robot = (
+            camera_random_pose_orbit_ignore_arc_behind_robot
+        )
         self._camera_random_pose_select_position_options = (
             camera_random_pose_select_position_options
+        )
+        self._camera_random_pose_focal_point_z_offset = (
+            camera_random_pose_focal_point_z_offset
         )
 
         # Terrain
@@ -242,7 +255,7 @@ class ManipulationGazeboEnvRandomizer(
         self._object_color = object_color
         self._object_dimensions = object_dimensions
         self._object_mass = object_mass
-        self._object_model_count = object_model_count
+        self._object_count = object_count
         self._object_spawn_position = object_spawn_position
         self._object_random_pose = object_random_pose
         self._object_random_spawn_position_segments = (
@@ -362,7 +375,7 @@ class ManipulationGazeboEnvRandomizer(
         # Set log level for (Gym) Ignition
         set_log_level(log_level=task.get_logger().get_effective_level().name)
 
-        # Execute a paused run on the empty environment for the first time
+        # Execute a paused run for the first time before initialising everything
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
@@ -383,12 +396,6 @@ class ManipulationGazeboEnvRandomizer(
         # Initialise all models that are persustent throughout the entire training
         self.init_models(task=task, gazebo=gazebo)
 
-        # Visualise volumes in GUI if desired
-        if self._visualise_workspace:
-            self.visualise_workspace(task=task, gazebo=gazebo)
-        if self._visualise_spawn_volume:
-            self.visualise_spawn_volume(task=task, gazebo=gazebo)
-
     def init_world_plugins(
         self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
     ):
@@ -405,6 +412,10 @@ class ManipulationGazeboEnvRandomizer(
                     "ignition::gazebo::systems::UserCommands",
                 )
 
+                # Execute a paused run to process world plugin insertion
+                if not gazebo.run(paused=True):
+                    raise RuntimeError("Failed to execute a paused Gazebo run")
+
         # UserCommands
         if self._plugin_user_commands:
             task.get_logger().info(
@@ -414,6 +425,10 @@ class ManipulationGazeboEnvRandomizer(
                 "ignition-gazebo-scene-broadcaster-system",
                 "ignition::gazebo::systems::SceneBroadcaster",
             )
+
+            # Execute a paused run to process world plugin insertion
+            if not gazebo.run(paused=True):
+                raise RuntimeError("Failed to execute a paused Gazebo run")
 
         # Sensors
         if self._camera_enable:
@@ -428,6 +443,10 @@ class ManipulationGazeboEnvRandomizer(
                 "</sdf>",
             )
 
+            # Execute a paused run to process world plugin insertion
+            if not gazebo.run(paused=True):
+                raise RuntimeError("Failed to execute a paused Gazebo run")
+
     def init_models(self, task: SupportedTasks, gazebo: scenario.GazeboSimulator):
         """
         Initialise all models that are persistent throughout the entire training (they do not need to be re-spawned).
@@ -441,6 +460,16 @@ class ManipulationGazeboEnvRandomizer(
                 f"\n\t{model_names}"
             )
 
+        # Insert default light if enabled and light randomization is disabled
+        if self._light_enable and not self.__light_model_randomizer_enabled():
+            task.get_logger().info("Inserting default light into the environment...")
+            self.add_default_light(task=task, gazebo=gazebo)
+
+        # Insert default terrain if enabled and terrain randomization is disabled
+        if self._terrain_enable and not self.__terrain_model_randomizer_enabled():
+            task.get_logger().info("Inserting default terrain into the environment...")
+            self.add_default_terrain(task=task, gazebo=gazebo)
+
         # Insert robot
         task.get_logger().info("Inserting robot into the environment...")
         self.add_robot(task=task, gazebo=gazebo)
@@ -449,16 +478,6 @@ class ManipulationGazeboEnvRandomizer(
         if self._camera_enable:
             task.get_logger().info("Inserting camera into the environment...")
             self.add_camera(task=task, gazebo=gazebo)
-
-        # Insert default terrain if enabled and terrain randomization is disabled
-        if self._terrain_enable and not self.__terrain_model_randomizer_enabled():
-            task.get_logger().info("Inserting default terrain into the environment...")
-            self.add_default_terrain(task=task, gazebo=gazebo)
-
-        # Insert default light if enabled and light randomization is disabled
-        if self._light_enable and not self.__light_model_randomizer_enabled():
-            task.get_logger().info("Inserting default light into the environment...")
-            self.add_default_light(task=task, gazebo=gazebo)
 
         # Insert default object if enabled and object randomization is disabled
         if self._object_enable and not self.__object_models_randomizer_enabled():
@@ -472,6 +491,13 @@ class ManipulationGazeboEnvRandomizer(
                 "Inserting invisible plane below the terrain into the environment..."
             )
             self.add_underworld_collision_plane(task=task, gazebo=gazebo)
+
+        # Visualise volumes in GUI if desired
+        # TODO: Visualization must follow the robot - consider using RViZ geometry markers instead of this appraoch
+        if self._visualise_workspace:
+            self.visualise_workspace(task=task, gazebo=gazebo)
+        if self._visualise_spawn_volume:
+            self.visualise_spawn_volume(task=task, gazebo=gazebo)
 
     def add_robot(self, task: SupportedTasks, gazebo: scenario.GazeboSimulator):
         """
@@ -502,7 +528,7 @@ class ManipulationGazeboEnvRandomizer(
             finger = robot_gazebo.get_link(link_name=gripper_link_name)
             finger.enable_contact_detection(True)
 
-        # Execute a paused run to process model insertion
+        # Execute a paused run to process robot model insertion
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
@@ -519,23 +545,14 @@ class ManipulationGazeboEnvRandomizer(
             camera_position = self._camera_spawn_position
             camera_quat_wxyz = quat_to_wxyz(self._camera_spawn_quat_xyzw)
         else:
-            # Transform the pose of camera to be with respect to robot - but represented in world reference frame for insertion into the world
-            target_frame_position, target_frame_quat_xyzw = get_model_pose(
-                task.world,
-                model=self.robot,
-                link=self._camera_relative_to,
-                xyzw=True,
-            )
-            camera_position = (
-                Rotation.from_quat(target_frame_quat_xyzw).apply(
-                    self._camera_spawn_position
-                )
-                + target_frame_position
-            )
-            camera_quat_wxyz = quat_to_wxyz(
-                quat_mul(
-                    self._camera_spawn_quat_xyzw, target_frame_quat_xyzw, xyzw=True
-                )
+            # Transform the pose of camera to be with respect to robot - but still represented in world reference frame for insertion into the world
+            camera_position, camera_quat_wxyz = transform_move_to_model_pose(
+                world=task.world,
+                position=self._camera_spawn_position,
+                quat=quat_to_wxyz(self._camera_spawn_quat_xyzw),
+                target_model=self.robot,
+                target_link=self._camera_relative_to,
+                xyzw=False,
             )
 
         # Create camera
@@ -558,7 +575,7 @@ class ManipulationGazeboEnvRandomizer(
             ros2_bridge_points=self._camera_publish_points,
         )
 
-        # Execute a paused run to process model insertion
+        # Execute a paused run to process camera model insertion
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
@@ -569,7 +586,8 @@ class ManipulationGazeboEnvRandomizer(
             ):
                 raise Exception("Cannot attach camera link to robot")
             self.__is_camera_attached = True
-            # Execute a paused run to process link attachment
+
+            # Execute a paused run to process camera link attachment
             if not gazebo.run(paused=True):
                 raise RuntimeError("Failed to execute a paused Gazebo run")
 
@@ -605,10 +623,11 @@ class ManipulationGazeboEnvRandomizer(
         task.terrain_name = self.terrain.name()
 
         # Enable contact detection
-        link = self.terrain.to_gazebo().get_link(link_name=self.terrain.link_names()[0])
-        link.enable_contact_detection(True)
+        for link_name in self.terrain.link_names():
+            link = self.terrain.to_gazebo().get_link(link_name=link_name)
+            link.enable_contact_detection(True)
 
-        # Execute a paused run to process model insertion
+        # Execute a paused run to process terrain model insertion
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
@@ -630,7 +649,7 @@ class ManipulationGazeboEnvRandomizer(
             np_random=task.np_random,
         )
 
-        # Execute a paused run to process model insertion
+        # Execute a paused run to process light model insertion
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
@@ -642,58 +661,64 @@ class ManipulationGazeboEnvRandomizer(
         """
 
         # Insert new models with random pose
-        while len(self.task.object_names) < self._object_model_count:
-            if self._object_model_count > 1:
-                position, quat_wxyz = self.get_random_object_pose(
+        while len(self.task.object_names) < self._object_count:
+            if self._object_count > 1:
+                object_position, object_quat_wxyz = self.get_random_object_pose(
                     task=task,
                     centre=self._object_spawn_position,
                     volume=self._object_random_spawn_volume,
                 )
             else:
-                position = self._object_spawn_position
-                quat_wxyz = (1.0, 0.0, 0.0, 0.0)
+                object_position = self._object_spawn_position
+                object_quat_wxyz = (1.0, 0.0, 0.0, 0.0)
 
-            if task.world.to_gazebo().name() != self._objects_relative_to:
-                # Transform the pose of camera to be with respect to robot - but represented in world reference frame for insertion into the world
-                target_frame_position, target_frame_quat_xyzw = get_model_pose(
-                    task.world,
-                    model=self.robot,
-                    link=self._objects_relative_to,
-                    xyzw=True,
+                if task.world.to_gazebo().name() != self._objects_relative_to:
+                    # Transform the pose of camera to be with respect to robot - but represented in world reference frame for insertion into the world
+                    object_position, object_quat_wxyz = transform_move_to_model_pose(
+                        world=task.world,
+                        position=object_position,
+                        quat=object_quat_wxyz,
+                        target_model=self.robot,
+                        target_link=self._objects_relative_to,
+                        xyzw=False,
+                    )
+
+            try:
+
+                # Create object
+                object_model = self.__object_model_class(
+                    world=task.world,
+                    position=object_position,
+                    orientation=object_quat_wxyz,
+                    size=self._object_dimensions,
+                    radius=self._object_dimensions[0],
+                    length=self._object_dimensions[1],
+                    mass=self._object_mass,
+                    collision=self._object_collision,
+                    visual=self._object_visual,
+                    static=self._object_static,
+                    color=self._object_color,
                 )
-                position = (
-                    Rotation.from_quat(target_frame_quat_xyzw).apply(position)
-                    + target_frame_position
+
+                model_name = object_model.name()
+
+                # Expose name of the object for task (append in case of more)
+                task.object_names.append(model_name)
+
+                # Enable contact detection
+                for link_name in object_model.link_names():
+                    link = object_model.to_gazebo().get_link(link_name=link_name)
+                    link.enable_contact_detection(True)
+
+            except Exception as ex:
+                task.get_logger().warn(
+                    "Model "
+                    + model_name
+                    + " could not be insterted. Reason: "
+                    + str(ex)
                 )
-                quat_wxyz = quat_to_wxyz(
-                    quat_mul(quat_wxyz, target_frame_quat_xyzw, xyzw=True)
-                )
 
-            # Create object
-            object_model = self.__object_model_class(
-                world=task.world,
-                position=position,
-                orientation=quat_wxyz,
-                size=self._object_dimensions,
-                radius=self._object_dimensions[0],
-                length=self._object_dimensions[1],
-                mass=self._object_mass,
-                collision=self._object_collision,
-                visual=self._object_visual,
-                static=self._object_static,
-                color=self._object_color,
-            )
-
-            # Expose name of the object for task (append in case of more)
-            task.object_names.append(object_model.name())
-
-            # Enable contact detection
-            link = object_model.to_gazebo().get_link(
-                link_name=object_model.link_names()[0]
-            )
-            link.enable_contact_detection(True)
-
-        # Execute a paused run to process model insertion
+        # Execute a paused run to process insertion of object model
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
@@ -714,7 +739,7 @@ class ManipulationGazeboEnvRandomizer(
             friction=1000.0,
         )
 
-        # Execute a paused run to process model insertion
+        # Execute a paused run to process model insertion of underworld collision plane
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
@@ -724,9 +749,19 @@ class ManipulationGazeboEnvRandomizer(
         Randomize models if needed
         """
 
+        # Randomize light plane if needed
+        if self._light_enable and self._light_model_expired():
+            self.randomize_light(task=task, gazebo=gazebo)
+
+        # Randomize terrain plane if needed
+        if self._terrain_enable and self._terrain_model_expired():
+            self.randomize_terrain(task=task, gazebo=gazebo)
+
         # Randomize robot model pose if needed
-        if self._robot_random_pose and self.robot.is_mobile:
-            self.randomize_robot_pose(task=task, gazebo=gazebo)
+        if self.robot.is_mobile:
+            self.reset_robot_pose(
+                task=task, gazebo=gazebo, randomize=self._robot_random_pose
+            )
 
         # Reset/randomize robot joint positions
         self.reset_robot_joint_positions(
@@ -735,14 +770,6 @@ class ManipulationGazeboEnvRandomizer(
             above_object_spawn=self._robot_random_joint_positions_above_object_spawn,
             randomize=self._robot_random_joint_positions,
         )
-
-        # Randomize terrain plane if needed
-        if self._terrain_enable and self._terrain_model_expired():
-            self.randomize_terrain(task=task, gazebo=gazebo)
-
-        # Randomize light plane if needed
-        if self._light_enable and self._light_model_expired():
-            self.randomize_light(task=task, gazebo=gazebo)
 
         # Randomize camera if needed
         if self._camera_enable and self._camera_pose_expired():
@@ -761,30 +788,37 @@ class ManipulationGazeboEnvRandomizer(
             else:
                 self.reset_default_object_pose(task=task, gazebo=gazebo)
 
-    def randomize_robot_pose(
-        self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
+    def reset_robot_pose(
+        self,
+        task: SupportedTasks,
+        gazebo: scenario.GazeboSimulator,
+        randomize: bool = False,
     ):
 
-        position = [
-            self._robot_spawn_position[0]
-            + task.np_random.uniform(
-                -self._robot_random_spawn_volume[0] / 2,
-                self._robot_random_spawn_volume[0] / 2,
-            ),
-            self._robot_spawn_position[1]
-            + task.np_random.uniform(
-                -self._robot_random_spawn_volume[1] / 2,
-                self._robot_random_spawn_volume[1] / 2,
-            ),
-            self._robot_spawn_position[2]
-            + task.np_random.uniform(
-                -self._robot_random_spawn_volume[2] / 2,
-                self._robot_random_spawn_volume[2] / 2,
-            ),
-        ]
-        quat_xyzw = Rotation.from_euler(
-            "xyz", (0, 0, task.np_random.uniform(-np.pi, np.pi))
-        ).as_quat()
+        if randomize:
+            position = [
+                self._robot_spawn_position[0]
+                + task.np_random.uniform(
+                    -self._robot_random_spawn_volume[0] / 2,
+                    self._robot_random_spawn_volume[0] / 2,
+                ),
+                self._robot_spawn_position[1]
+                + task.np_random.uniform(
+                    -self._robot_random_spawn_volume[1] / 2,
+                    self._robot_random_spawn_volume[1] / 2,
+                ),
+                self._robot_spawn_position[2]
+                + task.np_random.uniform(
+                    -self._robot_random_spawn_volume[2] / 2,
+                    self._robot_random_spawn_volume[2] / 2,
+                ),
+            ]
+            quat_xyzw = Rotation.from_euler(
+                "xyz", (0, 0, task.np_random.uniform(-np.pi, np.pi))
+            ).as_quat()
+        else:
+            position = self._robot_spawn_position
+            quat_xyzw = self._robot_spawn_quat_xyzw
 
         gazebo_robot = self.robot.to_gazebo()
         gazebo_robot.reset_base_pose(position, quat_to_wxyz(quat_xyzw))
@@ -813,19 +847,20 @@ class ManipulationGazeboEnvRandomizer(
         if above_object_spawn:
             # If desired, compute IK above object spawn
             if randomize:
-                rnd_displacement = 0.5 * task.np_random.uniform(
-                    (
-                        -self._object_random_spawn_volume[0],
-                        -self._object_random_spawn_volume[1],
-                        -self._object_random_spawn_volume[2],
-                    ),
-                    self._object_random_spawn_volume,
+                rnd_displacement = (
+                    self._robot_random_joint_positions_above_object_spawn_xy_randomness
+                    * task.np_random.uniform(
+                        (
+                            -self._object_random_spawn_volume[0],
+                            -self._object_random_spawn_volume[1],
+                        ),
+                        self._object_random_spawn_volume[:2],
+                    )
                 )
                 position = (
                     self._object_spawn_position[0] + rnd_displacement[0],
                     self._object_spawn_position[1] + rnd_displacement[1],
                     self._object_spawn_position[2]
-                    + rnd_displacement[2]
                     + self._robot_random_joint_positions_above_object_spawn_elevation,
                 )
                 quat_xyzw = Rotation.from_euler(
@@ -896,6 +931,10 @@ class ManipulationGazeboEnvRandomizer(
             ):
                 raise RuntimeError("Failed to reset passive joint velocities")
 
+        # Execute a paused run to process model modification
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
+
         # Start servoing again
         if task._use_servo:
             task.servo.enable(sync=False)
@@ -917,42 +956,50 @@ class ManipulationGazeboEnvRandomizer(
 
         # Get random camera pose, centred at object position (or centre of object spawn box)
         if "orbit" == mode:
-            position, quat_xyzw = self.get_random_camera_pose_orbit(
+            camera_position, camera_quat_xyzw = self.get_random_camera_pose_orbit(
                 task=task,
                 centre=self._object_spawn_position,
                 distance=self._camera_random_pose_orbit_distance,
                 height=self._camera_random_pose_orbit_height_range,
+                ignore_arc_behind_robot=self._camera_random_pose_orbit_ignore_arc_behind_robot,
+                focal_point_z_offset=self._camera_random_pose_focal_point_z_offset,
             )
         elif "select_random" == mode:
-            position, quat_xyzw = self.get_random_camera_pose_sample_random(
+            (
+                camera_position,
+                camera_quat_xyzw,
+            ) = self.get_random_camera_pose_sample_random(
                 task=task,
                 centre=self._object_spawn_position,
                 options=self._camera_random_pose_select_position_options,
             )
         elif "select_nearest" == mode:
-            position, quat_xyzw = self.get_random_camera_pose_sample_nearest(
+            (
+                camera_position,
+                camera_quat_xyzw,
+            ) = self.get_random_camera_pose_sample_nearest(
                 centre=self._object_spawn_position,
                 options=self._camera_random_pose_select_position_options,
             )
-
-        # If needed, transform the pose of camera to be with respect to robot - but represented in world reference frame for insertion into the world
-        if task.world.to_gazebo().name() != self._camera_relative_to:
-            target_frame_position, target_frame_quat_xyzw = get_model_pose(
-                task.world,
-                model=self.robot,
-                link=self._camera_relative_to,
-                xyzw=True,
-            )
-            transformed_position = (
-                Rotation.from_quat(target_frame_quat_xyzw).apply(position)
-                + target_frame_position
-            )
-            transformed_quat_wxyz = quat_to_wxyz(
-                quat_mul(quat_xyzw, target_frame_quat_xyzw, xyzw=True)
-            )
         else:
-            transformed_position = position
-            transformed_quat_wxyz = quat_to_wxyz(quat_xyzw)
+            raise TypeError("Invalid mode for camera pose randomization.")
+
+        if task.world.to_gazebo().name() == self._camera_relative_to:
+            transformed_camera_position = camera_position
+            transformed_camera_quat_wxyz = quat_to_wxyz(camera_quat_xyzw)
+        else:
+            # Transform the pose of camera to be with respect to robot - but represented in world reference frame for insertion into the world
+            (
+                transformed_camera_position,
+                transformed_camera_quat_wxyz,
+            ) = transform_move_to_model_pose(
+                world=task.world,
+                position=camera_position,
+                quat=quat_to_wxyz(camera_quat_xyzw),
+                target_model=self.robot,
+                target_link=self._camera_relative_to,
+                xyzw=False,
+            )
 
         # Detach camera if needed
         if self.__is_camera_attached:
@@ -960,15 +1007,18 @@ class ManipulationGazeboEnvRandomizer(
                 self._camera_relative_to, self.camera.name(), self.camera.link_name
             ):
                 raise Exception("Cannot detach camera link from robot")
-            # Execute a paused run to process link detachment
+
+            # Execute a paused run to process camera detachment
             if not gazebo.run(paused=True):
                 raise RuntimeError("Failed to execute a paused Gazebo run")
 
         # Move pose of the camera
         camera_gazebo = self.camera.to_gazebo()
-        camera_gazebo.reset_base_pose(transformed_position, transformed_quat_wxyz)
+        camera_gazebo.reset_base_pose(
+            transformed_camera_position, transformed_camera_quat_wxyz
+        )
 
-        # Execute a paused run to process model modification
+        # Execute a paused run to process change of camera pose
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
@@ -978,6 +1028,7 @@ class ManipulationGazeboEnvRandomizer(
                 self._camera_relative_to, self.camera.name(), self.camera.link_name
             ):
                 raise Exception("Cannot attach camera link to robot")
+
             # Execute a paused run to process link attachment
             if not gazebo.run(paused=True):
                 raise RuntimeError("Failed to execute a paused Gazebo run")
@@ -986,8 +1037,8 @@ class ManipulationGazeboEnvRandomizer(
         task.tf2_broadcaster.broadcast_tf(
             parent_frame_id=self._camera_relative_to,
             child_frame_id=self.camera.frame_id,
-            translation=position,
-            rotation=quat_xyzw,
+            translation=camera_position,
+            rotation=camera_quat_xyzw,
             xyzw=True,
         )
 
@@ -997,28 +1048,31 @@ class ManipulationGazeboEnvRandomizer(
         centre: Tuple[float, float, float],
         distance: float,
         height: Tuple[float, float],
-    ) -> Tuple[float, float]:
+        ignore_arc_behind_robot: float,
+        focal_point_z_offset: float,
+    ) -> Tuple[Tuple[float, float, float], Tuple[float, float, float, float]]:
 
         # Select a random 3D position (with restricted min height)
         while True:
-            position = np.array(
-                [
-                    task.np_random.uniform(low=-1.0, high=1.0),
-                    task.np_random.uniform(low=-1.0, high=1.0),
-                    task.np_random.uniform(low=height[0], high=height[1]),
-                ]
+            position = task.np_random.uniform(
+                low=(-1.0, -1.0, height[0]), high=(1.0, 1.0, height[1])
             )
             # Normalize
             position /= np.linalg.norm(position)
 
-            # Make sure it does not get spawned directly behind the robot (checking for +-22.5 deg)
-            if abs(np.arctan2(position[0], position[1]) + np.pi / 2) > np.pi / 8:
+            # Make sure it does not get spawned directly behind the robot
+            if (
+                abs(np.arctan2(position[0], position[1]) + np.pi / 2)
+                > ignore_arc_behind_robot
+            ):
                 break
 
         # Determine orientation such that camera faces the origin
         rpy = [
             0.0,
-            np.arctan2(position[2], np.linalg.norm(position[:2], 2)),
+            np.arctan2(
+                position[2] - focal_point_z_offset, np.linalg.norm(position[:2], 2)
+            ),
             np.arctan2(position[1], position[0]) + np.pi,
         ]
         quat_xyzw = Rotation.from_euler("xyz", rpy).as_quat()
@@ -1034,21 +1088,23 @@ class ManipulationGazeboEnvRandomizer(
         task: SupportedTasks,
         centre: Tuple[float, float, float],
         options: List[Tuple[float, float, float]],
-    ) -> Tuple[float, float]:
+    ) -> Tuple[Tuple[float, float, float], Tuple[float, float, float, float]]:
 
         # Select a random entry from the options
         selection = options[task.np_random.randint(len(options))]
 
         # Process it and return
         return self.get_random_camera_pose_sample_process(
-            centre=centre, position=selection
+            centre=centre,
+            position=selection,
+            focal_point_z_offset=self._camera_random_pose_focal_point_z_offset,
         )
 
     def get_random_camera_pose_sample_nearest(
         self,
         centre: Tuple[float, float, float],
         options: List[Tuple[float, float, float]],
-    ) -> Tuple[float, float]:
+    ) -> Tuple[Tuple[float, float, float], Tuple[float, float, float, float]]:
 
         # Select the nearest entry
         dist_sqr = np.sum((np.array(options) - np.array(centre)) ** 2, axis=1)
@@ -1056,20 +1112,23 @@ class ManipulationGazeboEnvRandomizer(
 
         # Process it and return
         return self.get_random_camera_pose_sample_process(
-            centre=centre, position=nearest
+            centre=centre,
+            position=nearest,
+            focal_point_z_offset=self._camera_random_pose_focal_point_z_offset,
         )
 
     def get_random_camera_pose_sample_process(
         self,
         centre: Tuple[float, float, float],
         position: Tuple[float, float, float],
-    ) -> Tuple[float, float]:
+        focal_point_z_offset: float,
+    ) -> Tuple[Tuple[float, float, float], Tuple[float, float, float, float]]:
 
         # Determine orientation such that camera faces the centre
         rpy = [
             0.0,
             np.arctan2(
-                position[2],
+                position[2] - focal_point_z_offset,
                 np.linalg.norm((position[0] - centre[0], position[1] - centre[1]), 2),
             ),
             np.arctan2(position[1] - centre[1], position[0] - centre[0]) + np.pi,
@@ -1084,6 +1143,10 @@ class ManipulationGazeboEnvRandomizer(
         if hasattr(self, "terrain"):
             if not task.world.to_gazebo().remove_model(self.terrain.name()):
                 raise RuntimeError(f"Failed to remove {self.terrain.name()}")
+
+            # Execute a paused run to process model removal
+            if not gazebo.run(paused=True):
+                raise RuntimeError("Failed to execute a paused Gazebo run")
 
         # Choose one of the random orientations for the texture (4 directions)
         orientation = [
@@ -1108,8 +1171,9 @@ class ManipulationGazeboEnvRandomizer(
         task.terrain_name = self.terrain.name()
 
         # Enable contact detection
-        link = self.terrain.to_gazebo().get_link(link_name=self.terrain.link_names()[0])
-        link.enable_contact_detection(True)
+        for link_name in self.terrain.link_names():
+            link = self.terrain.to_gazebo().get_link(link_name=link_name)
+            link.enable_contact_detection(True)
 
         # Execute a paused run to process model removal and insertion
         if not gazebo.run(paused=True):
@@ -1121,6 +1185,10 @@ class ManipulationGazeboEnvRandomizer(
         if hasattr(self, "light"):
             if not task.world.to_gazebo().remove_model(self.light.name()):
                 raise RuntimeError(f"Failed to remove {self.light.name()}")
+
+            # Execute a paused run to process model removal
+            if not gazebo.run(paused=True):
+                raise RuntimeError("Failed to execute a paused Gazebo run")
 
         # Create light
         self.light = self.__light_model_class(
@@ -1165,14 +1233,13 @@ class ManipulationGazeboEnvRandomizer(
             self.task.object_names.clear()
 
         # Insert new models with random pose
-        while len(self.task.object_names) < self._object_model_count:
+        while len(self.task.object_names) < self._object_count:
             position, quat_random = self.get_random_object_pose(
                 task=task,
                 centre=self._object_spawn_position,
                 volume=self._object_random_spawn_volume,
             )
             try:
-                model_name = ""
                 model = self.__object_model_class(
                     world=task.world,
                     position=position,
@@ -1183,8 +1250,10 @@ class ManipulationGazeboEnvRandomizer(
                 self.task.object_names.append(model_name)
                 self.__object_positions[model_name] = position
                 # Enable contact detection
-                link = model.to_gazebo().get_link(link_name=model.link_names()[0])
-                link.enable_contact_detection(True)
+                for link_name in model.link_names():
+                    link = model.to_gazebo().get_link(link_name=link_name)
+                    link.enable_contact_detection(True)
+
             except Exception as ex:
                 task.get_logger().warn(
                     "Model "
@@ -1193,7 +1262,7 @@ class ManipulationGazeboEnvRandomizer(
                     + str(ex)
                 )
 
-        # Execute a paused run to process model removal and insertion
+        # Execute a paused run to process model insertion
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
@@ -1228,7 +1297,7 @@ class ManipulationGazeboEnvRandomizer(
 
         is_too_close = True
         while is_too_close:
-            position = [
+            object_position = [
                 centre[0] + task.np_random.uniform(-volume[0] / 2, volume[0] / 2),
                 centre[1] + task.np_random.uniform(-volume[1] / 2, volume[1] / 2),
                 centre[2] + task.np_random.uniform(-volume[2] / 2, volume[2] / 2),
@@ -1236,25 +1305,24 @@ class ManipulationGazeboEnvRandomizer(
 
             if task.world.to_gazebo().name() != self._objects_relative_to:
                 # Transform the pose of camera to be with respect to robot - but represented in world reference frame for insertion into the world
-                target_frame_position, target_frame_quat_xyzw = get_model_pose(
-                    task.world,
-                    model=self.robot,
-                    link=self._objects_relative_to,
-                    xyzw=True,
-                )
-                position = (
-                    Rotation.from_quat(target_frame_quat_xyzw).apply(position)
-                    + target_frame_position
+                object_position = transform_move_to_model_position(
+                    world=task.world,
+                    position=object_position,
+                    target_model=self.robot,
+                    target_link=self._objects_relative_to,
                 )
 
             # Check if position is far enough from other
             is_too_close = False
-            for obj_name, obj_position in self.__object_positions.items():
-                if obj_name == name:
+            for (
+                existing_object_name,
+                existing_object_position,
+            ) in self.__object_positions.items():
+                if existing_object_name == name:
                     # Do not compare to itself
                     continue
                 if (
-                    distance.euclidean(position, obj_position)
+                    distance.euclidean(object_position, existing_object_position)
                     < min_distance_to_other_objects
                 ):
                     min_distance_to_other_objects *= min_distance_decay_factor
@@ -1264,7 +1332,7 @@ class ManipulationGazeboEnvRandomizer(
         quat = task.np_random.uniform(-1, 1, 4)
         quat /= np.linalg.norm(quat)
 
-        return position, quat
+        return object_position, quat
 
     # External overrides #
     def external_overrides(self, task: SupportedTasks):
@@ -1272,9 +1340,7 @@ class ManipulationGazeboEnvRandomizer(
         Perform external overrides from either task level or environment before initialising/randomising the task
         """
 
-        # Override number of objects in the scene if task requires it (e.g. if curriculum has this functionality)
-        if hasattr(task, "object_count_override"):
-            self._object_model_count = task.object_count_override
+        self.__consume_parameter_overrides(task=task)
 
     # Pre-randomization #
     def pre_randomization(self, task: SupportedTasks):
@@ -1538,6 +1604,14 @@ class ManipulationGazeboEnvRandomizer(
             return True
 
         return False
+
+    def __consume_parameter_overrides(self, task: SupportedTasks):
+
+        for key, value in task._randomizer_parameter_overrides.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+        task._randomizer_parameter_overrides.clear()
 
     # =============================
     # Additional features and debug
