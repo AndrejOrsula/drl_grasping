@@ -175,7 +175,7 @@ Grasp-Octree-Gazebo-v0:
   learning_rate: lin_0.00015
   gamma: 0.999
   tau: 0.00005
-  ent_coef: "auto_0.1_0.05"
+  ent_coef: "auto_0.1"
   target_entropy: "auto"
   train_freq: [1, "episode"]
   gradient_steps: 100
@@ -223,7 +223,7 @@ Grasp-OctreeWithColor-Gazebo-v0:
   learning_rate: lin_0.00015
   gamma: 0.999
   tau: 0.00005
-  ent_coef: "auto_0.1_0.05"
+  ent_coef: "auto_0.1"
   target_entropy: "auto"
   train_freq: [1, "episode"]
   gradient_steps: 100
@@ -273,7 +273,7 @@ GraspPlanetary-Octree-Gazebo-v0:
   learning_rate: lin_0.00015
   gamma: 0.999
   tau: 0.00005
-  ent_coef: "auto_0.1_0.05"
+  ent_coef: "auto_0.1"
   target_entropy: "auto"
   train_freq: [1, "episode"]
   gradient_steps: 100
@@ -321,7 +321,7 @@ GraspPlanetary-OctreeWithColor-Gazebo-v0:
   learning_rate: lin_0.00015
   gamma: 0.999
   tau: 0.00005
-  ent_coef: "auto_0.1_0.05"
+  ent_coef: "auto_0.1"
   target_entropy: "auto"
   train_freq: [1, "episode"]
   gradient_steps: 100
