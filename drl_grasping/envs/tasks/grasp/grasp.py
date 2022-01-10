@@ -161,7 +161,9 @@ class Grasp(Manipulation, abc.ABC):
 
         return touched_objects
 
-    def get_grasped_objects(self) -> List[str]:
+    def get_grasped_objects(
+        self, min_angle_between_two_contact: float = np.pi / 8
+    ) -> List[str]:
         """
         Returns list of all currently grasped objects.
         Grasped object must be in contact with all gripper links (fingers) and their contant normals must be dissimilar.
@@ -179,26 +181,25 @@ class Grasp(Manipulation, abc.ABC):
             finger_contacts = finger.contacts()
 
             if 0 == len(finger_contacts):
-                # If any of the fingers has no contact, immediately return None
-                return []
-            else:
-                # Otherwise, add all contacted objects as grasp candidates (together with contact points - used later)
-                for contact in finger_contacts:
-                    # Keep only the model name (disregard the link of object that is in collision)
-                    model_name = contact.body_b.split("::", 1)[0]
-                    if any(
-                        object_name in model_name for object_name in self.object_names
-                    ):
-                        if model_name not in grasp_candidates:
-                            grasp_candidates[model_name] = []
-                        grasp_candidates[model_name].append(contact.points)
+                # If any of the fingers has no contact, check the next gripper link
+                continue
+
+            # Otherwise, add all contacted objects as grasp candidates (together with contact points - used later)
+            for contact in finger_contacts:
+                # Keep only the model name (disregard the link of object that is in collision)
+                model_name = contact.body_b.split("::", 1)[0]
+                if any(object_name in model_name for object_name in self.object_names):
+                    if model_name not in grasp_candidates:
+                        grasp_candidates[model_name] = []
+                    grasp_candidates[model_name].append(contact.points)
 
         # Determine what grasp candidates are indeed grasped objects
         # First make sure it has contact with more than half of the fingers
         # Then make sure that their normals are dissimilar
         grasped_objects = []
         for model_name, contact_points_list in grasp_candidates.items():
-            if len(contact_points_list) < len(self.robot_gripper_link_names) // 2 + 1:
+            if len(contact_points_list) < 2:
+                # At least two contacts must be present to consider it a grasp
                 continue
 
             # Compute average normal of all finger-object collisions
@@ -214,8 +215,8 @@ class Grasp(Manipulation, abc.ABC):
             for n1, n2 in itertools.combinations(average_normals, 2):
                 normal_angles.append(np.arccos(np.clip(np.dot(n1, n2), -1.0, 1.0)))
 
-            # Angle between at least two normals must be larger than 0.25*pi
-            sufficient_angle = 0.25 * np.pi
+            # Angle between at least two normals must be significantly large
+            sufficient_angle = min_angle_between_two_contact
             for angle in normal_angles:
                 if angle > sufficient_angle:
                     # If sufficient, add to list and process other candidates
