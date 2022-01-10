@@ -17,7 +17,8 @@ class GraspOctree(Grasp, abc.ABC):
         self,
         camera_type: str,
         octree_reference_frame_id: str,
-        octree_dimension: float,
+        octree_min_bound: Tuple[float, float, float],
+        octree_max_bound: Tuple[float, float, float],
         octree_depth: int,
         octree_full_depth: int,
         octree_include_color: bool,
@@ -41,25 +42,11 @@ class GraspOctree(Grasp, abc.ABC):
             callback_group=self._callback_group,
         )
 
-        # Get exact name substitution of the frame for octree
-        octree_reference_frame_id = self.substitute_special_frame(
-            octree_reference_frame_id
-        )
-
-        octree_min_bound: Tuple[float, float, float] = (
-            self.workspace_centre[0] - octree_dimension / 2,
-            self.workspace_centre[1] - octree_dimension / 2,
-            self.workspace_centre[2] - octree_dimension / 2,
-        )
-        octree_max_bound: Tuple[float, float, float] = (
-            self.workspace_centre[0] + octree_dimension / 2,
-            self.workspace_centre[1] + octree_dimension / 2,
-            self.workspace_centre[2] + octree_dimension / 2,
-        )
+        # Octree creator
         self.octree_creator = OctreeCreator(
             node=self,
             tf2_listener=self.tf2_listener,
-            reference_frame_id=octree_reference_frame_id,
+            reference_frame_id=self.substitute_special_frame(octree_reference_frame_id),
             min_bound=octree_min_bound,
             max_bound=octree_max_bound,
             include_color=octree_include_color,
@@ -149,8 +136,8 @@ class GraspOctree(Grasp, abc.ABC):
             )
 
             # Gather proprioceptive observations
-            ee_position = self.get_ee_position()
-            ee_orientation = orientation_quat_to_6d(quat_xyzw=self.get_ee_orientation())
+            ee_position, ee_orientation = self.get_ee_pose()
+            ee_orientation = orientation_quat_to_6d(quat_xyzw=ee_orientation)
             aux_obs = (
                 (1 if self.gripper.is_open else -1,)
                 + ee_position

@@ -12,6 +12,7 @@ from gym_ignition.utils.typing import (
 )
 
 from drl_grasping.envs.tasks.manipulation import Manipulation
+from drl_grasping.envs.utils.math import distance_to_nearest_point
 
 
 class Reach(Manipulation, abc.ABC):
@@ -62,7 +63,7 @@ class Reach(Manipulation, abc.ABC):
         if self._use_servo:
             self.servo(linear=action[0:3])
         else:
-            position = self.get_relative_position(action[0:3])
+            position = self.get_relative_ee_position(action[0:3])
             quat_xyzw = (1.0, 0.0, 0.0, 0.0)
             self.moveit2.move_to_pose(position=position, quat_xyzw=quat_xyzw)
 
@@ -70,7 +71,7 @@ class Reach(Manipulation, abc.ABC):
 
         # Get current end-effector and target positions
         ee_position = self.get_ee_position()
-        target_position = self.get_target_position()
+        target_position = self.get_object_position(object_model=self.object_names[0])
 
         # Create the observation
         observation = Observation(np.concatenate([ee_position, target_position]))
@@ -115,6 +116,8 @@ class Reach(Manipulation, abc.ABC):
 
     def reset_task(self):
 
+        Manipulation.reset_task(self)
+
         self._is_done = False
 
         # Compute and store the distance after reset if using dense reward
@@ -125,22 +128,7 @@ class Reach(Manipulation, abc.ABC):
 
     def get_distance_to_target(self) -> Tuple[float, float, float]:
 
-        # Get current end-effector and target positions
         ee_position = self.get_ee_position()
-        target_position = self.get_target_position()
+        object_position = self.get_object_position(object_model=self.object_names[0])
 
-        # Compute the current distance to the target
-        return np.linalg.norm(
-            [
-                ee_position[0] - target_position[0],
-                ee_position[1] - target_position[1],
-                ee_position[2] - target_position[2],
-            ]
-        )
-
-    def get_target_position(self) -> Tuple[float, float, float]:
-
-        target_object = self.world.get_model(self.object_names[0]).to_gazebo()
-        return target_object.get_link(
-            link_name=target_object.link_names()[0]
-        ).position()
+        return distance_to_nearest_point(origin=ee_position, points=[object_position])
