@@ -143,10 +143,13 @@ class GraspCurriculum(
             origin=ee_position, points=list(object_positions.values())
         )
 
-        self.__task.get_logger().info(
+        self.__task.get_logger().debug(
             f"[Curriculum] Distance to nearest object: {nearest_object_distance}"
         )
         if nearest_object_distance < self.__reach_required_distance:
+            self.__task.get_logger().info(
+                f"[Curriculum] An object is now closer than the required distance of {self.__reach_required_distance}"
+            )
             self.stages_completed_this_episode[GraspStage.REACH] = True
             return self.__stages_base_reward
         else:
@@ -187,6 +190,9 @@ class GraspCurriculum(
         for grasped_object in grasped_objects:
             grasped_object_height = object_positions[grasped_object][2]
 
+            self.__task.get_logger().debug(
+                f"[Curriculum] Height of grasped object '{grasped_objects}': {grasped_object_height}"
+            )
             if grasped_object_height > self.__lift_required_height:
                 self.__task.get_logger().info(
                     f"[Curriculum] Lifted object: {grasped_object}"
