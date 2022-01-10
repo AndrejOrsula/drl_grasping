@@ -1,4 +1,6 @@
-from typing import Tuple
+from typing import List, Tuple
+
+import numpy as np
 
 
 def quat_mul(
@@ -27,3 +29,10 @@ def quat_mul(
             -x1 * z0 + y1 * w0 + z1 * x0 + w1 * y0,
             x1 * y0 - y1 * x0 + z1 * w0 + w1 * z0,
         )
+
+
+def distance_to_nearest_point(
+    origin: Tuple[float, float, float], points: List[Tuple[float, float, float]]
+) -> float:
+
+    return np.linalg.norm(np.array(points) - np.array(origin), axis=1).min()

@@ -30,7 +30,7 @@ def pointcloud2_to_open3d(
         xyz[valid_points].astype(numpy.float64)
     )
 
-    if include_rgb:
+    if include_rgb and len(ros_point_cloud2.fields) > 3:
         bgr = numpy.ndarray(
             shape=(size, 3),
             dtype=numpy.uint8,
