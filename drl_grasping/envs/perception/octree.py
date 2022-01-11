@@ -13,7 +13,7 @@ from drl_grasping.envs.utils import Tf2Listener, conversions
 class OctreeCreator:
     def __init__(
         self,
-        node: None,
+        node: Node,
         tf2_listener: Tf2Listener,
         reference_frame_id: str,
         min_bound: Tuple[float, float, float] = (-1.0, -1.0, -1.0),
