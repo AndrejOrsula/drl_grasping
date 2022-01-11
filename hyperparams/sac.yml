@@ -137,7 +137,8 @@ Reach-OctreeWithColor-Gazebo-v0:
 
 # Grasp task - hyperparameters are semi-tuned
 Grasp-Octree-Gazebo-v0:
-  # callback:
+  callback:
+      - drl_grasping.utils.callbacks.CurriculumLoggerCallback
   #   - drl_grasping.utils.callbacks.ParallelTrainCallback:
   #       gradient_steps: 100
   #       sleep_time: 0.0
@@ -189,7 +190,8 @@ Grasp-Octree-Gazebo-v0:
   optimize_memory_usage: True
 
 Grasp-OctreeWithColor-Gazebo-v0:
-  # callback:
+  callback:
+      - drl_grasping.utils.callbacks.CurriculumLoggerCallback
   #   - drl_grasping.utils.callbacks.ParallelTrainCallback:
   #       gradient_steps: 100
   #       sleep_time: 0.0
@@ -243,7 +245,8 @@ Grasp-OctreeWithColor-Gazebo-v0:
 # GraspPlanetary task - hyperparameters are not tuned
 # TODO: Autotune GraspPlanetary task hyperparameters for SAC
 GraspPlanetary-Octree-Gazebo-v0:
-  # callback:
+  callback:
+      - drl_grasping.utils.callbacks.CurriculumLoggerCallback
   #   - drl_grasping.utils.callbacks.ParallelTrainCallback:
   #       gradient_steps: 100
   #       sleep_time: 0.0
@@ -295,7 +298,8 @@ GraspPlanetary-Octree-Gazebo-v0:
   optimize_memory_usage: True
 
 GraspPlanetary-OctreeWithColor-Gazebo-v0:
-  # callback:
+  callback:
+      - drl_grasping.utils.callbacks.CurriculumLoggerCallback
   #   - drl_grasping.utils.callbacks.ParallelTrainCallback:
   #       gradient_steps: 100
   #       sleep_time: 0.0

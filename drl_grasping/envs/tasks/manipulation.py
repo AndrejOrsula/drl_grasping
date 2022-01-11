@@ -582,5 +582,13 @@ class Manipulation(task.Task, Node, abc.ABC):
         for key, value in self.__task_parameter_overrides.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+            elif hasattr(self, f"_{key}"):
+                setattr(self, f"_{key}", value)
+            elif hasattr(self, f"__{key}"):
+                setattr(self, f"__{key}", value)
+            else:
+                self.get_logger().error(
+                    f"Override '{key}' is not supperted by the task."
+                )
 
         self.__task_parameter_overrides.clear()

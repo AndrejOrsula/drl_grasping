@@ -40,8 +40,8 @@ class GraspCurriculum(
         persistent_reward_each_step: float,
         persistent_reward_terrain_collision: float,
         persistent_reward_all_objects_outside_workspace: float,
-        enable_workspace_scale_curriculum: bool,
         enable_stage_reward_curriculum: bool,
+        enable_workspace_scale_curriculum: bool,
         enable_object_spawn_volume_scale_curriculum: bool,
         enable_object_count_curriculum: bool,
         **kwargs,
@@ -108,7 +108,16 @@ class GraspCurriculum(
 
     def get_info(self) -> Dict:
 
-        return StageRewardCurriculum.get_info(self)
+        info = StageRewardCurriculum.get_info(self)
+        info.update(SuccessRateImpl.get_info(self))
+        if self.__enable_workspace_scale_curriculum:
+            info.update(WorkspaceScaleCurriculum.get_info(self))
+        if self.__enable_object_spawn_volume_scale_curriculum:
+            info.update(ObjectSpawnVolumeScaleCurriculum.get_info(self))
+        if self.__enable_object_count_curriculum:
+            info.update(ObjectCountCurriculum.get_info(self))
+
+        return info
 
     def reset_task(self):
 

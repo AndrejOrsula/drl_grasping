@@ -1620,6 +1620,14 @@ class ManipulationGazeboEnvRandomizer(
         for key, value in task._randomizer_parameter_overrides.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+            elif hasattr(self, f"_{key}"):
+                setattr(self, f"_{key}", value)
+            elif hasattr(self, f"__{key}"):
+                setattr(self, f"__{key}", value)
+            else:
+                task.get_logger().error(
+                    f"Override '{key}' is not supperted by the randomizer."
+                )
 
         task._randomizer_parameter_overrides.clear()
 

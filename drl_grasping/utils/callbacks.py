@@ -6,9 +6,7 @@ from functools import wraps
 from threading import Thread
 from typing import Optional
 
-import numpy as np
 import optuna
-from matplotlib import pyplot as plt
 from sb3_contrib import TQC
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import (
@@ -254,3 +252,48 @@ class CheckpointCallbackWithReplayBuffer(CheckpointCallback):
                 if self.verbose > 0:
                     print(f"Saving model checkpoint to {path_replay_buffer}")
         return True
+
+
+class CurriculumLoggerCallback(BaseCallback):
+    """
+    Custom callback for logging curriculum values.
+    """
+
+    def __init__(self, verbose=0):
+        super(CurriculumLoggerCallback, self).__init__(verbose)
+
+    def _on_step(self) -> bool:
+
+        for infos in self.locals["infos"]:
+            for info_key, info_value in infos.items():
+                if not (
+                    info_key.startswith("curriculum")
+                    and info_key.count("__mean_step__")
+                ):
+                    continue
+
+                self.logger.record_mean(
+                    key=info_key.replace("__mean_step__", ""), value=info_value
+                )
+
+        return True
+
+    def _on_rollout_end(self) -> None:
+
+        for infos in self.locals["infos"]:
+            for info_key, info_value in infos.items():
+                if not info_key.startswith("curriculum"):
+                    continue
+                if info_key.count("__mean_step__"):
+                    continue
+
+                if info_key.count("__mean_episode__"):
+                    self.logger.record_mean(
+                        key=info_key.replace("__mean_episode__", ""), value=info_value
+                    )
+                else:
+                    if isinstance(info_value, str):
+                        exclude = "tensorboard"
+                    else:
+                        exclude = None
+                    self.logger.record(key=info_key, value=info_value, exclude=exclude)
