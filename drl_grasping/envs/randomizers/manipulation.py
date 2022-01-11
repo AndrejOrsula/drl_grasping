@@ -405,11 +405,11 @@ class ManipulationGazeboEnvRandomizer(
                 task.substitute_special_frame("world")
             ):
                 task.get_logger().info(
-                    "Inserting world plugins for broadcasting GUI with enabled user commands..."
+                    "Inserting world plugins for broadcasting scene to GUI clients..."
                 )
                 task.world.to_gazebo().insert_world_plugin(
-                    "ignition-gazebo-user-commands-system",
-                    "ignition::gazebo::systems::UserCommands",
+                    "ignition-gazebo-scene-broadcaster-system",
+                    "ignition::gazebo::systems::SceneBroadcaster",
                 )
 
                 # Execute a paused run to process world plugin insertion
@@ -418,12 +418,10 @@ class ManipulationGazeboEnvRandomizer(
 
         # UserCommands
         if self._plugin_user_commands:
-            task.get_logger().info(
-                "Inserting world plugins for broadcasting GUI with enabled user commands..."
-            )
+            task.get_logger().info("Inserting world plugins to enable user commands...")
             task.world.to_gazebo().insert_world_plugin(
-                "ignition-gazebo-scene-broadcaster-system",
-                "ignition::gazebo::systems::SceneBroadcaster",
+                "ignition-gazebo-user-commands-system",
+                "ignition::gazebo::systems::UserCommands",
             )
 
             # Execute a paused run to process world plugin insertion
