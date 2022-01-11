@@ -60,7 +60,7 @@ fi
 
 ### Launch script
 LAUNCH_CMD=(
-    ros2 launch
+    ros2 launch -a
     drl_grasping optimize.launch.py
     "${LAUNCH_ARGS[*]}"
 )
