@@ -1,6 +1,6 @@
 from typing import Dict, List, Tuple
 
-from gym_ignition.base.task import Task
+from gym_ignition.base import Task
 
 from drl_grasping.envs.tasks.curriculums.common import *
 from drl_grasping.envs.utils.math import distance_to_nearest_point
