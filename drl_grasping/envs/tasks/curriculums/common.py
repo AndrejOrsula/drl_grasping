@@ -4,7 +4,7 @@ import enum
 import math
 from typing import Callable, Dict, Optional, Tuple, Type
 
-from gym_ignition.base import Task
+from gym_ignition.base.task import Task
 from gym_ignition.utils.typing import Reward
 from stable_baselines3.common import logger as stable_baselines3_logger
 from tf2_ros.buffer_interface import TypeException
