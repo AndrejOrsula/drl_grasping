@@ -948,6 +948,7 @@ class ManipulationGazeboEnvRandomizer(
             raise RuntimeError("Failed to execute an unpaused Gazebo step")
 
         # Reset also the controllers
+        task.moveit2.force_reset_executing_state()
         task.moveit2.reset_controller(joint_state=arm_joint_positions)
         if task._enable_gripper and self.robot.gripper_joint_names:
             task.gripper.force_reset_executing_state()

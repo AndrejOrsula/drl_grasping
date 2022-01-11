@@ -58,7 +58,7 @@ REACH_KWARGS: Dict[str, any] = {
     "workspace_frame_id": "world",
     "workspace_centre": (0.45, 0.0, 0.25),
     "workspace_volume": (0.5, 0.5, 0.5),
-    "ignore_new_actions_while_executing": True,
+    "ignore_new_actions_while_executing": False,
     "use_servo": True,
     "scaling_factor_translation": 0.2,
     "scaling_factor_rotation": pi / 4.0,
@@ -254,14 +254,14 @@ register(
 # Grasp #
 #########
 GRASP_MAX_EPISODE_STEPS: int = 150
-GRASP_AGENT_RATE: float = 4.0
+GRASP_AGENT_RATE: float = 3.0
 GRASP_KWARGS: Dict[str, any] = {
     "agent_rate": GRASP_AGENT_RATE,
     "robot_model": DRL_GRASPING_ROBOT_MODEL,
     "workspace_frame_id": "arm_base_link",
-    "workspace_centre": (0.5, 0.0, 0.11),
-    "workspace_volume": (0.24, 0.24, 0.24),
-    "ignore_new_actions_while_executing": True,
+    "workspace_centre": (0.5, 0.0, 0.0),
+    "workspace_volume": (0.24, 0.24, 2.0),
+    "ignore_new_actions_while_executing": False,
     "use_servo": True,
     "scaling_factor_translation": 0.5,
     "scaling_factor_rotation": pi / 3,
@@ -289,8 +289,8 @@ GRASP_KWARGS_OCTREE: Dict[str, any] = {
     "proprieceptive_observations": True,
 }
 GRASP_KWARGS_SIM: Dict[str, any] = {
-    "physics_rate": 200.0,
-    "real_time_factor": 15.0,
+    "physics_rate": 300.0,
+    "real_time_factor": 10.0,
     "world": path.join(DRL_GRASPING_WORLDS_DIR, "default.sdf"),
 }
 GRASP_RANDOMIZER: str = "drl_grasping.envs.randomizers:ManipulationGazeboEnvRandomizer"
@@ -316,7 +316,7 @@ GRASP_KWARGS_RANDOMIZER: Dict[str, any] = {
     "terrain_size": (1.5, 1.5),
     "terrain_model_rollouts_num": 1,
     "light_type": "sun",
-    "light_direction": (0.6, -0.4, -0.2),
+    "light_direction": (-0.5, -0.4, -0.2),
     "light_random_minmax_elevation": (-0.1, -0.5),
     "light_distance": 1000.0,
     "light_visual": True,
@@ -358,12 +358,13 @@ GRASP_KWARGS_CURRICULUM: Dict[str, any] = {
     "reach_required_distance": 0.1,
     "lift_required_height": LUNALAB_SUMMIT_XL_GEN_Z_OFFSET + 0.15,
     "persistent_reward_each_step": -0.005,
-    "persistent_reward_terrain_collision": -1.0,
-    "persistent_reward_all_objects_outside_workspace": 0.0,
-    "enable_workspace_scale_curriculum": False,
+    "persistent_reward_terrain_collision": -0.25,
+    "persistent_reward_all_objects_outside_workspace": -1.0,
+    "persistent_reward_arm_stuck": -0.1,
     "enable_stage_reward_curriculum": True,
+    "enable_workspace_scale_curriculum": False,
     "enable_object_spawn_volume_scale_curriculum": False,
-    "enable_object_count_curriculum": True,
+    "enable_object_count_curriculum": False,
     "stage_reward_multiplier": 7.0,
     "dense_reward": False,
     "initial_success_rate": 0.0,
@@ -377,7 +378,8 @@ GRASP_KWARGS_CURRICULUM: Dict[str, any] = {
     "object_count_min": 1,
     "object_count_max": GRASP_KWARGS_RANDOMIZER["object_count"],
     "max_object_count_success_rate_threshold": 0.6,
-    "enable_logger_sb3": True,
+    "arm_stuck_n_steps": 30,
+    "arm_stuck_min_joint_difference_norm": pi / 64,
 }
 
 # Task
@@ -449,7 +451,7 @@ GRASP_PLANETARY_KWARGS: Dict[str, any] = {
     "workspace_frame_id": "arm_base_link",
     "workspace_centre": (0.0, 0.0, 0.0),
     "workspace_volume": (2.0, 2.0, 2.0),
-    "ignore_new_actions_while_executing": True,
+    "ignore_new_actions_while_executing": False,
     "use_servo": True,
     "scaling_factor_translation": 0.5,
     "scaling_factor_rotation": pi / 3,
@@ -568,8 +570,9 @@ GRASP_PLANETARY_KWARGS_CURRICULUM: Dict[str, any] = {
     "persistent_reward_each_step": -0.005,
     "persistent_reward_terrain_collision": -1.0,
     "persistent_reward_all_objects_outside_workspace": 0.0,
-    "enable_workspace_scale_curriculum": False,
+    "persistent_reward_arm_stuck": -0.1,
     "enable_stage_reward_curriculum": True,
+    "enable_workspace_scale_curriculum": False,
     "enable_object_spawn_volume_scale_curriculum": False,
     "enable_object_count_curriculum": True,
     "stage_reward_multiplier": 7.0,
@@ -587,7 +590,8 @@ GRASP_PLANETARY_KWARGS_CURRICULUM: Dict[str, any] = {
     "object_count_min": 1,
     "object_count_max": GRASP_PLANETARY_KWARGS_RANDOMIZER["object_count"],
     "max_object_count_success_rate_threshold": 0.6,
-    "enable_logger_sb3": True,
+    "arm_stuck_n_steps": 30,
+    "arm_stuck_min_joint_difference_norm": pi / 64,
 }
 
 # Task
