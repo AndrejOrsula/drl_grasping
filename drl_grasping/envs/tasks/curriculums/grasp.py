@@ -26,6 +26,7 @@ class GraspCurriculum(
     WorkspaceScaleCurriculum,
     ObjectSpawnVolumeScaleCurriculum,
     ObjectCountCurriculum,
+    RobotStuckChecker,
 ):
     """
     Curriculum learning implementation for grasp task that provides termination (success/fail) and reward for each stage of the task.
@@ -40,6 +41,7 @@ class GraspCurriculum(
         persistent_reward_each_step: float,
         persistent_reward_terrain_collision: float,
         persistent_reward_all_objects_outside_workspace: float,
+        persistent_reward_arm_stuck: float,
         enable_stage_reward_curriculum: bool,
         enable_workspace_scale_curriculum: bool,
         enable_object_spawn_volume_scale_curriculum: bool,
@@ -58,6 +60,7 @@ class GraspCurriculum(
         ObjectCountCurriculum.__init__(
             self, task=task, success_rate_impl=self, **kwargs
         )
+        RobotStuckChecker.__init__(self, task=task, **kwargs)
 
         # Grasp task/environment that will be used to extract information from the scene
         self.__task = task
@@ -71,6 +74,7 @@ class GraspCurriculum(
         self.__persistent_reward_all_objects_outside_workspace = (
             persistent_reward_all_objects_outside_workspace
         )
+        self.__persistent_reward_arm_stuck = persistent_reward_arm_stuck
         self.__enable_stage_reward_curriculum = enable_stage_reward_curriculum
         self.__enable_workspace_scale_curriculum = enable_workspace_scale_curriculum
         self.__enable_object_spawn_volume_scale_curriculum = (
@@ -83,6 +87,10 @@ class GraspCurriculum(
             self.__persistent_reward_each_step *= -1.0
         if self.__persistent_reward_terrain_collision > 0.0:
             self.__persistent_reward_terrain_collision *= -1.0
+        if self.__persistent_reward_all_objects_outside_workspace > 0.0:
+            self.__persistent_reward_all_objects_outside_workspace *= -1.0
+        if self.__persistent_reward_arm_stuck > 0.0:
+            self.__persistent_reward_arm_stuck *= -1.0
 
     def get_reward(self) -> Reward:
 
@@ -116,6 +124,8 @@ class GraspCurriculum(
             info.update(ObjectSpawnVolumeScaleCurriculum.get_info(self))
         if self.__enable_object_count_curriculum:
             info.update(ObjectCountCurriculum.get_info(self))
+        if self.__persistent_reward_arm_stuck:
+            info.update(RobotStuckChecker.get_info(self))
 
         return info
 
@@ -128,6 +138,8 @@ class GraspCurriculum(
             ObjectSpawnVolumeScaleCurriculum.reset_task(self)
         if self.__enable_object_count_curriculum:
             ObjectCountCurriculum.reset_task(self)
+        if self.__persistent_reward_arm_stuck:
+            RobotStuckChecker.reset_task(self)
 
     def on_episode_success(self):
 
@@ -224,6 +236,9 @@ class GraspCurriculum(
         # Negative reward for colliding with terrain
         if self.__persistent_reward_terrain_collision:
             if self.__task.check_terrain_collision():
+                self.__task.get_logger().info(
+                    "[Curriculum] Robot collided with the terrain"
+                )
                 reward += self.__persistent_reward_terrain_collision
 
         # Negative reward for having all objects outside of the workspace
@@ -231,7 +246,19 @@ class GraspCurriculum(
             if self.__task.check_all_objects_outside_workspace(
                 object_positions=object_positions
             ):
+                self.__task.get_logger().warn(
+                    "[Curriculum] All objects are outside of the workspace"
+                )
                 reward += self.__persistent_reward_all_objects_outside_workspace
+                self.episode_failed = True
+
+        # Negative reward for arm getting stuck
+        if self.__persistent_reward_arm_stuck:
+            if RobotStuckChecker.is_robot_stuck(self):
+                self.__task.get_logger().error(
+                    f"[Curriculum] Robot appears to be stuck, resetting..."
+                )
+                reward += self.__persistent_reward_arm_stuck
                 self.episode_failed = True
 
         return reward

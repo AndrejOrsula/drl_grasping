@@ -337,7 +337,8 @@ class ManipulationGazeboEnvRandomizer(
 
     def randomize_task(self, task: SupportedTasks, **kwargs):
         """
-        Randomization of the task, which is called on each reset of the environment
+        Randomization of the task, which is called on each reset of the environment.
+        Note that this randomizer reset is called before `reset_task()`.
         """
 
         # Get gazebo instance associated with the task

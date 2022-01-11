@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import enum
+import itertools
 import math
-from typing import Callable, Dict, Optional, Tuple, Type
+from collections import deque
+from typing import Callable, Deque, Dict, Optional, Tuple, Type
 
+import numpy as np
 from gym_ignition.base.task import Task
 from gym_ignition.utils.typing import Reward
 from tf2_ros.buffer_interface import TypeException
@@ -501,3 +504,82 @@ class ObjectCountCurriculum:
                 "object_count": self.__object_count,
             }
         )
+
+
+class RobotStuckChecker:
+    """
+    Checker for arm getting stuck.
+    """
+
+    INFO_CURRICULUM_PREFIX: str = "curriculum/"
+
+    def __init__(
+        self,
+        task: Task,
+        arm_stuck_n_steps: int,
+        arm_stuck_min_joint_difference_norm: float,
+        **kwargs,
+    ):
+
+        self.__task = task
+        self.__arm_stuck_min_joint_difference_norm = arm_stuck_min_joint_difference_norm
+
+        # List of previous join positions (used to compute difference norm with an older previous reading)
+        self.__previous_joint_positions: Deque[np.ndarray] = deque([], maxlen=3)
+        # Counter of how many time the robot got stuck
+        self.__robot_stuck_total_counter: int = 0
+
+    def get_info(self) -> Dict:
+
+        info = {
+            f"{self.INFO_CURRICULUM_PREFIX}robot_stuck_count": self.__robot_stuck_total_counter,
+        }
+
+        return info
+
+    def reset_task(self):
+
+        self.__previous_joint_positions.clear()
+        self.__previous_joint_positions.append(
+            np.array(self.__task.moveit2.joint_state.position)
+        )
+
+    def is_robot_stuck(self) -> bool:
+
+        # Get current position and append to the list of previous ones
+        current_joint_positions = np.array(self.__task.moveit2.joint_state.position)
+        self.__previous_joint_positions.append(current_joint_positions)
+
+        # Stop checking if there is not yet enough entries in the list
+        if (
+            len(self.__previous_joint_positions)
+            < self.__previous_joint_positions.maxlen
+        ):
+            return False
+
+        # Make sure the length of joint position matches
+        if len(current_joint_positions) != len(self.__previous_joint_positions[0]):
+            return False
+
+        # Compute joint difference norm only with the `t - arm_stuck_n_steps` entry first (performance reason)
+        joint_difference_norm = np.linalg.norm(
+            current_joint_positions - self.__previous_joint_positions[0]
+        )
+
+        # If the difference is large enough, the arm does not appear to be stuck, so skip computing all other entries
+        if joint_difference_norm > self.__arm_stuck_min_joint_difference_norm:
+            return False
+
+        # If it is too small, consider all other entries as well
+        joint_difference_norms = np.linalg.norm(
+            current_joint_positions
+            - list(itertools.islice(self.__previous_joint_positions, 1, None)),
+            axis=1,
+        )
+
+        # Return true (stuck) if all joint difference entries are too small
+        is_stuck = all(
+            joint_difference_norms < self.__arm_stuck_min_joint_difference_norm
+        )
+        self.__robot_stuck_total_counter += int(is_stuck)
+        return is_stuck
