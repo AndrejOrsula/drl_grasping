@@ -525,7 +525,9 @@ class RobotStuckChecker:
         self.__arm_stuck_min_joint_difference_norm = arm_stuck_min_joint_difference_norm
 
         # List of previous join positions (used to compute difference norm with an older previous reading)
-        self.__previous_joint_positions: Deque[np.ndarray] = deque([], maxlen=3)
+        self.__previous_joint_positions: Deque[np.ndarray] = deque(
+            [], maxlen=arm_stuck_n_steps
+        )
         # Counter of how many time the robot got stuck
         self.__robot_stuck_total_counter: int = 0
 

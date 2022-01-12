@@ -378,8 +378,8 @@ GRASP_KWARGS_CURRICULUM: Dict[str, any] = {
     "object_count_min": 1,
     "object_count_max": GRASP_KWARGS_RANDOMIZER["object_count"],
     "max_object_count_success_rate_threshold": 0.6,
-    "arm_stuck_n_steps": 30,
-    "arm_stuck_min_joint_difference_norm": pi / 64,
+    "arm_stuck_n_steps": 25,
+    "arm_stuck_min_joint_difference_norm": pi / 32,
 }
 
 # Task
@@ -590,8 +590,8 @@ GRASP_PLANETARY_KWARGS_CURRICULUM: Dict[str, any] = {
     "object_count_min": 1,
     "object_count_max": GRASP_PLANETARY_KWARGS_RANDOMIZER["object_count"],
     "max_object_count_success_rate_threshold": 0.6,
-    "arm_stuck_n_steps": 30,
-    "arm_stuck_min_joint_difference_norm": pi / 64,
+    "arm_stuck_n_steps": 25,
+    "arm_stuck_min_joint_difference_norm": pi / 32,
 }
 
 # Task
