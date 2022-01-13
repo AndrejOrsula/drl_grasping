@@ -25,9 +25,10 @@ def generate_launch_description() -> LaunchDescription:
     prefix = LaunchConfiguration("prefix")
     env = LaunchConfiguration("env")
     env_kwargs = LaunchConfiguration("env_kwargs")
-    n_timesteps = LaunchConfiguration("n_timesteps")
+    n_episodes = LaunchConfiguration("n_episodes")
     seed = LaunchConfiguration("seed")
     check_env = LaunchConfiguration("check_env")
+    render = LaunchConfiguration("render")
     enable_rviz = LaunchConfiguration("enable_rviz")
     rviz_config = LaunchConfiguration("rviz_config")
     use_sim_time = LaunchConfiguration("use_sim_time")
@@ -74,12 +75,14 @@ def generate_launch_description() -> LaunchDescription:
                 # Make sure `robot_model` is specified (with priority)
                 "--env-kwargs",
                 ['robot_model:"', robot_model, '"'],
-                "--n-timesteps",
-                n_timesteps,
+                "--n-episodes",
+                n_episodes,
                 "--seed",
                 seed,
                 "--check-env",
                 check_env,
+                "--render",
+                render,
                 "--ros-args",
                 "--log-level",
                 log_level,
@@ -125,9 +128,9 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
             description="Optional keyword argument to pass to the env constructor.",
         ),
         DeclareLaunchArgument(
-            "n_timesteps",
-            default_value="10000",
-            description="Overwrite the number of timesteps.",
+            "n_episodes",
+            default_value="1000",
+            description="Overwrite the number of episodes.",
         ),
         # Random seed
         DeclareLaunchArgument(
@@ -140,6 +143,12 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
             "check_env",
             default_value="True",
             description="Flag to check the environment before running the random agent.",
+        ),
+        # Flag to enable rendering
+        DeclareLaunchArgument(
+            "render",
+            default_value="True",
+            description="Flag to enable rendering.",
         ),
         # Miscellaneous
         DeclareLaunchArgument(

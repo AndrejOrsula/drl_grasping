@@ -23,7 +23,7 @@ def main(args: Dict):
         check_env(env, warn=True, skip_render_check=True)
 
     # Step environment for bunch of episodes
-    for episode in range(args.n_timesteps):
+    for episode in range(args.n_episodes):
 
         # Initialize returned values
         done = False
@@ -34,6 +34,10 @@ def main(args: Dict):
 
         # Step through the current episode until it is done
         while not done:
+
+            # Enable rendering
+            if args.render:
+                env.render("human")
 
             # Sample random action
             action = env.action_space.sample()
@@ -66,13 +70,13 @@ if __name__ == "__main__":
         help="Optional keyword argument to pass to the env constructor",
     )
 
-    # Number of timesteps to run
+    # Number of episodes to run
     parser.add_argument(
         "-n",
-        "--n-timesteps",
+        "--n-episodes",
         type=int,
         default=10000,
-        help="Overwrite the number of timesteps",
+        help="Overwrite the number of episodes",
     )
 
     # Random seed
@@ -84,6 +88,14 @@ if __name__ == "__main__":
         type=str2bool,
         default=True,
         help="Flag to check the environment before running the random agent",
+    )
+
+    # Flag to enable rendering
+    parser.add_argument(
+        "--render",
+        type=str2bool,
+        default=False,
+        help="Flag to enable rendering",
     )
 
     args, unknown = parser.parse_known_args()
