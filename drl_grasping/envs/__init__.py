@@ -359,7 +359,7 @@ GRASP_KWARGS_CURRICULUM: Dict[str, any] = {
     "lift_required_height": LUNALAB_SUMMIT_XL_GEN_Z_OFFSET + 0.15,
     "persistent_reward_each_step": -0.005,
     "persistent_reward_terrain_collision": -0.25,
-    "persistent_reward_all_objects_outside_workspace": -1.0,
+    "persistent_reward_all_objects_outside_workspace": 0.0,
     "persistent_reward_arm_stuck": -0.5,
     "enable_stage_reward_curriculum": True,
     "enable_workspace_scale_curriculum": False,
