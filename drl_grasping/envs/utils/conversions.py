@@ -123,9 +123,6 @@ def quat_to_wxyz(
     if isinstance(xyzw, tuple):
         return (xyzw[3], xyzw[0], xyzw[1], xyzw[2])
 
-    if xyzw.shape != (4,):
-        raise ValueError(xyzw)
-
     return xyzw[[3, 0, 1, 2]]
 
 
@@ -135,8 +132,5 @@ def quat_to_xyzw(
 
     if isinstance(wxyz, tuple):
         return (wxyz[1], wxyz[2], wxyz[3], wxyz[0])
-
-    if wxyz.shape != (4,):
-        raise ValueError(wxyz)
 
     return wxyz[[1, 2, 3, 0]]
