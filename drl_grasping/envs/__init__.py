@@ -253,18 +253,18 @@ register(
 #########
 # Grasp #
 #########
-GRASP_MAX_EPISODE_STEPS: int = 150
-GRASP_AGENT_RATE: float = 3.0
+GRASP_MAX_EPISODE_STEPS: int = 100
+GRASP_AGENT_RATE: float = 2.5
 GRASP_KWARGS: Dict[str, any] = {
     "agent_rate": GRASP_AGENT_RATE,
     "robot_model": DRL_GRASPING_ROBOT_MODEL,
     "workspace_frame_id": "arm_base_link",
-    "workspace_centre": (0.5, 0.0, 0.0),
-    "workspace_volume": (0.24, 0.24, 2.0),
+    "workspace_centre": (0.5, 0.0, LUNALAB_SUMMIT_XL_GEN_Z_OFFSET + 0.525),
+    "workspace_volume": (0.24, 0.24, 1.0),
     "ignore_new_actions_while_executing": False,
-    "use_servo": True,
-    "scaling_factor_translation": 0.5,
-    "scaling_factor_rotation": pi / 3,
+    "use_servo": False,
+    "scaling_factor_translation": 0.25,
+    "scaling_factor_rotation": pi / 4,
     "restrict_position_goal_to_workspace": True,
     "enable_gripper": True,
     "gripper_dead_zone": 0.0,
@@ -289,7 +289,7 @@ GRASP_KWARGS_OCTREE: Dict[str, any] = {
     "proprieceptive_observations": True,
 }
 GRASP_KWARGS_SIM: Dict[str, any] = {
-    "physics_rate": 300.0,
+    "physics_rate": 200.0,
     "real_time_factor": 10.0,
     "world": path.join(DRL_GRASPING_WORLDS_DIR, "default.sdf"),
 }
@@ -360,7 +360,7 @@ GRASP_KWARGS_CURRICULUM: Dict[str, any] = {
     "persistent_reward_each_step": -0.005,
     "persistent_reward_terrain_collision": -0.25,
     "persistent_reward_all_objects_outside_workspace": -1.0,
-    "persistent_reward_arm_stuck": -0.1,
+    "persistent_reward_arm_stuck": -0.5,
     "enable_stage_reward_curriculum": True,
     "enable_workspace_scale_curriculum": False,
     "enable_object_spawn_volume_scale_curriculum": False,
