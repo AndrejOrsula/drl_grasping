@@ -54,7 +54,7 @@ LAUNCH_ARGS=(
     "log_interval:=-1"
     "eval_freq:=-1"
     "eval_episodes:=5"
-    "enable_rviz:=true"
+    "enable_rviz:=false"
 )
 if [[ -n ${TRAINED_AGENT} ]]; then
     LAUNCH_ARGS+=("trained_agent:=${TRAINED_AGENT}")
