@@ -182,7 +182,8 @@ class OctreeCreator:
                 ]
             )
             open3d_point_cloud.normals.append([0.0, 0.0, 0.0])
-            open3d_point_cloud.colors.append([0.0, 0.0, 0.0])
+            if include_color:
+                open3d_point_cloud.colors.append([0.0, 0.0, 0.0])
 
         # Convert open3d point cloud into octree points
         octree_points = conversions.open3d_point_cloud_to_octree_points(
