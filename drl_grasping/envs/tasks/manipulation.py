@@ -191,6 +191,7 @@ class Manipulation(task.Task, Node, abc.ABC):
                 gripper_joint_names=self.robot_gripper_joint_names,
                 open_gripper_joint_positions=self.robot_model_class.OPEN_GRIPPER_JOINT_POSITIONS,
                 closed_gripper_joint_positions=self.robot_model_class.CLOSED_GRIPPER_JOINT_POSITIONS,
+                skip_planning=True,
                 ignore_new_calls_while_executing=ignore_new_actions_while_executing,
                 callback_group=self._callback_group,
             )
