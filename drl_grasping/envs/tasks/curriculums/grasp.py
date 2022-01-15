@@ -26,7 +26,7 @@ class GraspCurriculum(
     WorkspaceScaleCurriculum,
     ObjectSpawnVolumeScaleCurriculum,
     ObjectCountCurriculum,
-    RobotStuckChecker,
+    ArmStuckChecker,
 ):
     """
     Curriculum learning implementation for grasp task that provides termination (success/fail) and reward for each stage of the task.
@@ -60,7 +60,7 @@ class GraspCurriculum(
         ObjectCountCurriculum.__init__(
             self, task=task, success_rate_impl=self, **kwargs
         )
-        RobotStuckChecker.__init__(self, task=task, **kwargs)
+        ArmStuckChecker.__init__(self, task=task, **kwargs)
 
         # Grasp task/environment that will be used to extract information from the scene
         self.__task = task
@@ -125,7 +125,7 @@ class GraspCurriculum(
         if self.__enable_object_count_curriculum:
             info.update(ObjectCountCurriculum.get_info(self))
         if self.__persistent_reward_arm_stuck:
-            info.update(RobotStuckChecker.get_info(self))
+            info.update(ArmStuckChecker.get_info(self))
 
         return info
 
@@ -139,7 +139,7 @@ class GraspCurriculum(
         if self.__enable_object_count_curriculum:
             ObjectCountCurriculum.reset_task(self)
         if self.__persistent_reward_arm_stuck:
-            RobotStuckChecker.reset_task(self)
+            ArmStuckChecker.reset_task(self)
 
     def on_episode_success(self):
 
@@ -254,7 +254,7 @@ class GraspCurriculum(
 
         # Negative reward for arm getting stuck
         if self.__persistent_reward_arm_stuck:
-            if RobotStuckChecker.is_robot_stuck(self):
+            if ArmStuckChecker.is_robot_stuck(self):
                 self.__task.get_logger().error(
                     f"[Curriculum] Robot appears to be stuck, resetting..."
                 )

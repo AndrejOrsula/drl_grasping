@@ -506,7 +506,7 @@ class ObjectCountCurriculum:
         )
 
 
-class RobotStuckChecker:
+class ArmStuckChecker:
     """
     Checker for arm getting stuck.
     """
@@ -531,6 +531,10 @@ class RobotStuckChecker:
         # Counter of how many time the robot got stuck
         self.__robot_stuck_total_counter: int = 0
 
+        # Initialize list of indices for the arm.
+        # It is assumed that these indices do not change during the operation
+        self.__arm_joint_indices = None
+
     def get_info(self) -> Dict:
 
         info = {
@@ -542,14 +546,15 @@ class RobotStuckChecker:
     def reset_task(self):
 
         self.__previous_joint_positions.clear()
-        self.__previous_joint_positions.append(
-            np.array(self.__task.moveit2.joint_state.position)
-        )
+
+        joint_positions = self.__get_arm_joint_positions()
+        if joint_positions is not None:
+            self.__previous_joint_positions.append(joint_positions)
 
     def is_robot_stuck(self) -> bool:
 
         # Get current position and append to the list of previous ones
-        current_joint_positions = np.array(self.__task.moveit2.joint_state.position)
+        current_joint_positions = self.__get_arm_joint_positions()
         self.__previous_joint_positions.append(current_joint_positions)
 
         # Stop checking if there is not yet enough entries in the list
@@ -560,8 +565,7 @@ class RobotStuckChecker:
             return False
 
         # Make sure the length of joint position matches
-        if len(current_joint_positions) != len(self.__previous_joint_positions[0]):
-            return False
+        assert len(current_joint_positions) == len(self.__previous_joint_positions[0])
 
         # Compute joint difference norm only with the `t - arm_stuck_n_steps` entry first (performance reason)
         joint_difference_norm = np.linalg.norm(
@@ -585,3 +589,19 @@ class RobotStuckChecker:
         )
         self.__robot_stuck_total_counter += int(is_stuck)
         return is_stuck
+
+    def __get_arm_joint_positions(self) -> Optional[np.ndarray[float]]:
+
+        joint_state = self.__task.moveit2.joint_state
+
+        if joint_state is None:
+            return None
+
+        if self.__arm_joint_indices is None:
+            self.__arm_joint_indices = [
+                i
+                for i, joint_name in enumerate(joint_state.name)
+                if joint_name in self.__task.robot_arm_joint_names
+            ]
+
+        return np.take(joint_state.position, self.__arm_joint_indices)
