@@ -174,7 +174,6 @@ class Manipulation(task.Task, Node, abc.ABC):
             end_effector_name=self.robot_ee_link_name,
             ignore_new_calls_while_executing=ignore_new_actions_while_executing,
             callback_group=self._callback_group,
-            execute_via_moveit=True,
         )
         # MoveIt2 real-time control (servo)
         if self._use_servo:
