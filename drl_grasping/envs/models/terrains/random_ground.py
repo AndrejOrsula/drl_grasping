@@ -3,7 +3,6 @@ from typing import List, Optional
 
 import numpy as np
 from gym_ignition.scenario import model_wrapper
-from gym_ignition.utils import misc
 from gym_ignition.utils.scenario import get_unique_model_name
 from numpy.random import RandomState
 from scenario import core as scenario
@@ -19,7 +18,7 @@ class RandomGround(model_wrapper.ModelWrapper):
         size: List[float] = (1.0, 1.0),
         collision_thickness: float = 0.05,
         friction: float = 5.0,
-        texture_dir: str = None,
+        texture_dir: Optional[str] = None,
         np_random: Optional[RandomState] = None,
         **kwargs,
     ):
@@ -33,12 +32,16 @@ class RandomGround(model_wrapper.ModelWrapper):
         # Initial pose
         initial_pose = scenario.Pose(position, orientation)
 
+        # Get textures from ENV variable if not directly specified
+        if not texture_dir:
+            texture_dir = os.environ.get("DRL_GRASPING_PBR_TEXTURES_DIR", default="")
+
         # Find random PBR texture
         albedo_map = None
         normal_map = None
         roughness_map = None
         metalness_map = None
-        if texture_dir is not None:
+        if texture_dir:
             # Get list of the available textures
             textures = os.listdir(texture_dir)
             # Keep only texture directories if texture_dir is a git repo (ugly fix)
@@ -60,7 +63,7 @@ class RandomGround(model_wrapper.ModelWrapper):
             # Extract the appropriate files
             for texture in texture_files:
                 texture_lower = texture.lower()
-                if "basecolor" in texture_lower or "albedo" in texture_lower:
+                if "color" in texture_lower or "albedo" in texture_lower:
                     albedo_map = os.path.join(random_texture_dir, texture)
                 elif "normal" in texture_lower:
                     normal_map = os.path.join(random_texture_dir, texture)

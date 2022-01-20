@@ -81,18 +81,22 @@ class ModelCollectionRandomizer:
         else:
             self.np_random = np.random.default_rng()
 
+    @classmethod
     def get_collection_paths(
-        self,
+        cls,
         owner="GoogleResearch",
         collection="Google Scanned Objects",
         server="https://fuel.ignitionrobotics.org",
         server_version="1.0",
+        model_name: str = "",
     ) -> List[str]:
 
         # First check the local cache (for performance)
         # Note: This unfortunately does not check if models belong to the specified collection
         # TODO: Make sure models belong to the collection if sampled from local cache
-        model_paths = scenario_gazebo.get_local_cache_model_paths(owner=owner, name="")
+        model_paths = scenario_gazebo.get_local_cache_model_paths(
+            owner=owner, name=model_name
+        )
         if len(model_paths) > 0:
             return model_paths
 
@@ -109,7 +113,9 @@ class ModelCollectionRandomizer:
         )
         os.system(download_command)
 
-        model_paths = scenario_gazebo.get_local_cache_model_paths(owner=owner, name="")
+        model_paths = scenario_gazebo.get_local_cache_model_paths(
+            owner=owner, name=model_name
+        )
         if 0 == len(model_paths):
             logger.error(
                 'URI "%s" is not valid and does not contain any models that are \

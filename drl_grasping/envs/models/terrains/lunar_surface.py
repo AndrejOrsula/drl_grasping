@@ -15,12 +15,13 @@ class LunarSurface(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
         orientation: List[float] = (1, 0, 0, 0),
         model_file: str = None,
         use_fuel: bool = False,
+        variant: str = "tycho",
         **kwargs,
     ):
 
         # Allow passing of custom model file as an argument
         if model_file is None:
-            model_file = self.get_model_file(fuel=use_fuel)
+            model_file = self.get_model_file(fuel=use_fuel, variant=variant)
 
         # Get a unique model name
         model_name = get_unique_model_name(world, name)
@@ -42,12 +43,12 @@ class LunarSurface(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
         super().__init__(model=model)
 
     @classmethod
-    def get_model_file(self, fuel: bool = False) -> str:
+    def get_model_file(self, fuel: bool = False, variant: str = "tycho") -> str:
         if fuel:
             # TODO: Add "lunar_surface" to Fuel
             raise NotImplementedError
             return scenario_gazebo.get_model_file_from_fuel(
-                "https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/lunar_surface"
+                f"https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/lunar_surface_{variant}"
             )
         else:
-            return "lunar_surface"
+            return f"lunar_surface_{variant}"
