@@ -27,8 +27,6 @@ SupportedTasks = Union[
     tasks.GraspPlanetaryOctree,
 ]
 
-# TODO: Gazebo run sometimes causes crash (e.g. some cases with `random_flat` terrain) - Investigate why
-
 
 class ManipulationGazeboEnvRandomizer(
     gazebo_env_randomizer.GazeboEnvRandomizer,
@@ -523,9 +521,15 @@ class ManipulationGazeboEnvRandomizer(
 
         # Enable contact detection for all gripper links (fingers)
         robot_gazebo = self.robot.to_gazebo()
-        for gripper_link_name in task.robot_gripper_link_names:
+        for gripper_link_name in self.robot.gripper_link_names:
             finger = robot_gazebo.get_link(link_name=gripper_link_name)
             finger.enable_contact_detection(True)
+
+        # # If mobile, enable contact detection also for the wheels (not needed atm)
+        # if self.robot.is_mobile:
+        #     for wheel_link_name in self.robot.wheel_link_names:
+        #         wheel = robot_gazebo.get_link(link_name=wheel_link_name)
+        #         wheel.enable_contact_detection(True)
 
         # Execute a paused run to process robot model insertion
         if not gazebo.run(paused=True):
@@ -619,7 +623,6 @@ class ManipulationGazeboEnvRandomizer(
             orientation=quat_to_wxyz(self._terrain_spawn_quat_xyzw),
             size=self._terrain_size,
             np_random=task.np_random,
-            texture_dir=environ.get("DRL_GRASPING_PBR_TEXTURES_DIR", default=""),
         )
 
         # The desired name is passed as arg on creation, however, a different name might be selected to be unique
@@ -757,10 +760,6 @@ class ManipulationGazeboEnvRandomizer(
         if self._light_enable and self._light_model_expired():
             self.randomize_light(task=task, gazebo=gazebo)
 
-        # Randomize terrain plane if needed
-        if self._terrain_enable and self._terrain_model_expired():
-            self.randomize_terrain(task=task, gazebo=gazebo)
-
         # Randomize robot model pose if needed
         if self.robot.is_mobile:
             self.reset_robot_pose(
@@ -791,6 +790,14 @@ class ManipulationGazeboEnvRandomizer(
                 self.object_random_pose(task=task, gazebo=gazebo)
             else:
                 self.reset_default_object_pose(task=task, gazebo=gazebo)
+
+        # This step is needed for some unknown reason. Otherwise, Gazebo server crashes without any trace.
+        # Similarly,
+        gazebo.step()
+
+        # Randomize terrain plane if needed
+        if self._terrain_enable and self._terrain_model_expired():
+            self.randomize_terrain(task=task, gazebo=gazebo)
 
     def reset_robot_pose(
         self,
@@ -1173,7 +1180,6 @@ class ManipulationGazeboEnvRandomizer(
             orientation=orientation,
             size=self._terrain_size,
             np_random=task.np_random,
-            texture_dir=environ.get("DRL_GRASPING_PBR_TEXTURES_DIR", default=""),
         )
 
         # Expose name of the terrain for task
@@ -1264,12 +1270,7 @@ class ManipulationGazeboEnvRandomizer(
                     link.enable_contact_detection(True)
 
             except Exception as ex:
-                task.get_logger().warn(
-                    "Model "
-                    + model_name
-                    + " could not be insterted. Reason: "
-                    + str(ex)
-                )
+                task.get_logger().warn(f"Model could not be insterted: {ex}")
 
         # Execute a paused run to process model insertion
         if not gazebo.run(paused=True):
