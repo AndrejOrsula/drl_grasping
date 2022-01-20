@@ -565,7 +565,8 @@ class ArmStuckChecker:
             return False
 
         # Make sure the length of joint position matches
-        assert len(current_joint_positions) == len(self.__previous_joint_positions[0])
+        if len(current_joint_positions) != len(self.__previous_joint_positions[0]):
+            return False
 
         # Compute joint difference norm only with the `t - arm_stuck_n_steps` entry first (performance reason)
         joint_difference_norm = np.linalg.norm(
