@@ -555,7 +555,8 @@ class ArmStuckChecker:
 
         # Get current position and append to the list of previous ones
         current_joint_positions = self.__get_arm_joint_positions()
-        self.__previous_joint_positions.append(current_joint_positions)
+        if current_joint_positions is not None:
+            self.__previous_joint_positions.append(current_joint_positions)
 
         # Stop checking if there is not yet enough entries in the list
         if (
