@@ -29,7 +29,7 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
         "ros2_control": True,
         "ros2_control_plugin": "ign",
         "ros2_control_command_interface": "effort",
-        "gazebo_preserve_fixed_joint": False,
+        "gazebo_preserve_fixed_joint": True,
     }
     __XACRO_MODEL_PATH_REMAP: Tuple[str, str] = (
         __DESCRIPTION_PACKAGE,
@@ -48,10 +48,8 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
     OPEN_GRIPPER_JOINT_POSITIONS: List[float] = (
         0.04,
         0.04,
-        0.04,
     )
     CLOSED_GRIPPER_JOINT_POSITIONS: List[float] = (
-        0.0,
         0.0,
         0.0,
     )
@@ -197,7 +195,6 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
         return [
             prefix + "finger_joint1",
             prefix + "finger_joint2",
-            prefix + "finger_joint3",
         ]
 
     @property
@@ -340,7 +337,6 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
     def get_gripper_link_names(cls, prefix: str = "") -> List[str]:
 
         return [
-            prefix + "hand",
             prefix + "leftfinger",
             prefix + "rightfinger",
         ]

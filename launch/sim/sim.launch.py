@@ -5,13 +5,16 @@ from os import path
 from typing import List
 
 from ament_index_python.packages import get_package_share_directory
+from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo
-from launch.conditions import LaunchConfigurationEquals
+from launch.conditions import LaunchConfigurationEquals, LaunchConfigurationNotEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+
+# TODO: Prettify simulation launch script
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -23,11 +26,28 @@ def generate_launch_description() -> LaunchDescription:
     world_name = LaunchConfiguration("world_name")
     robot_model = LaunchConfiguration("robot_model")
     robot_name = LaunchConfiguration("robot_name")
-    prefix = LaunchConfiguration("prefix")
     enable_rviz = LaunchConfiguration("enable_rviz")
     rviz_config = LaunchConfiguration("rviz_config")
     use_sim_time = LaunchConfiguration("use_sim_time")
     log_level = LaunchConfiguration("log_level")
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "__prefix",
+            default_value="panda_",
+            description="Robot-specific prefix for panda.",
+            condition=LaunchConfigurationEquals("robot_model", "panda"),
+        ),
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "__prefix",
+            default_value=LaunchConfiguration("prefix"),
+            description="Robot-specific prefix for all other robots.",
+            condition=LaunchConfigurationNotEquals("robot_model", "panda"),
+        ),
+    )
+    prefix = LaunchConfiguration("__prefix")
 
     # List of included launch descriptions
     launch_descriptions = [
@@ -69,13 +89,46 @@ def generate_launch_description() -> LaunchDescription:
                 ("use_sim_time", use_sim_time),
                 ("log_level", log_level),
             ],
-            # TODO: Make ROS<->IGN bridges more general to support all robots
-            # condition=LaunchConfigurationEquals("robot_model", "lunalab_summit_xl_gen"),
+            condition=LaunchConfigurationEquals("robot_model", "lunalab_summit_xl_gen"),
         ),
     ]
 
     # List of nodes to be launched
-    nodes = []
+    nodes = [
+        # ros_ign_bridge (clock -> ROS 2)
+        Node(
+            package="ros_ign_bridge",
+            executable="parameter_bridge",
+            output="log",
+            arguments=[
+                "/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock",
+                "--ros-args",
+                "--log-level",
+                log_level,
+            ],
+            parameters=[{"use_sim_time": use_sim_time}],
+            condition=LaunchConfigurationNotEquals(
+                "robot_model", "lunalab_summit_xl_gen"
+            ),
+        ),
+        # Static tf for base link of Panda
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            output="log",
+            arguments=[
+                "--frame-id",
+                world_name,
+                "--child-frame-id",
+                [prefix, "link0"],
+                "--ros-args",
+                "--log-level",
+                log_level,
+            ],
+            parameters=[{"use_sim_time": use_sim_time}],
+            condition=LaunchConfigurationEquals("robot_model", "panda"),
+        ),
+    ]
 
     # List for logging
     logs = [
