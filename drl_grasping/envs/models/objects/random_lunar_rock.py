@@ -87,7 +87,7 @@ class RandomLunarRock(model_wrapper.ModelWrapper):
                 elif "specular" in texture_lower or "metalness" in texture_lower:
                     metalness_map = os.path.join(random_texture_dir, texture)
 
-        material_intensity = np_random.uniform(low=0.25, high=1.0)
+        material_intensity = np_random.uniform(low=0.2, high=0.5)
         material_intensity_specular = material_intensity / 100000.0
 
         # Estimate inertial properties (with random mass)

@@ -135,7 +135,7 @@ class ManipulationGazeboEnvRandomizer(
         object_models_rollouts_num: int = 1,
         # Collision plane below terrain
         underworld_collision_plane: bool = True,
-        underworld_collision_plane_depth: float = -1.0,
+        underworld_collision_plane_depth: float = -2.5,
         # Visual debugging
         visualise_workspace: bool = False,
         visualise_spawn_volume: bool = False,
