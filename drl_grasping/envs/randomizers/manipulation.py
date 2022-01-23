@@ -718,12 +718,7 @@ class ManipulationGazeboEnvRandomizer(
                     link.enable_contact_detection(True)
 
             except Exception as ex:
-                task.get_logger().warn(
-                    "Model "
-                    + model_name
-                    + " could not be insterted. Reason: "
-                    + str(ex)
-                )
+                task.get_logger().warn(f"Model could not be insterted. Reason: {ex}")
 
         # Execute a paused run to process insertion of object model
         if not gazebo.run(paused=True):
