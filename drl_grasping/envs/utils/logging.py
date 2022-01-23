@@ -10,7 +10,14 @@ def set_log_level(log_level: Union[int, str]):
     """
 
     if not isinstance(log_level, int):
-        log_level = getattr(gym_logger, str(log_level).upper())
+        log_level = str(log_level).upper()
+
+        if "WARNING" == log_level:
+            log_level = "WARN"
+        elif not log_level in ["DEBUG", "INFO", "WARN", "ERROR", "DISABLED"]:
+            log_level = "DISABLED"
+
+        log_level = getattr(gym_logger, log_level)
 
     gym_ign_logger.set_level(
         level=log_level,
