@@ -2,6 +2,12 @@
 #### This script serves as an example of utilising `ros2 launch drl_grasping evaluate.launch.py` on some of the already pretrained agents.
 #### When this script is called, the corresponding launch string is printed to STDOUT. Therefore, feel free to modify and use such command directly.
 
+### Global configuration
+## OMP
+export OMP_DYNAMIC=FALSE
+export OMP_NUM_THREADS=3
+
+
 ### Arguments
 ## Random seed to use for both the environment and agent (-1 for random)
 SEED="77"
@@ -47,6 +53,7 @@ LAUNCH_ARGS=(
     "n_episodes:=200"
     "load_best:=false"
     "enable_rviz:=true"
+    "log_level:=fatal"
 )
 if [[ -n ${LOAD_CHECKPOINT} ]]; then
     LAUNCH_ARGS+=("load_checkpoint:=${LOAD_CHECKPOINT}")

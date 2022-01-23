@@ -3,6 +3,12 @@
 #### When this script is called, the corresponding launch string is printed to STDOUT. Therefore, feel free to modify and use such command directly.
 #### To view all arguments, run `ros2 launch drl_grasping optimize.launch.py --show-args`.
 
+### Global configuration
+## OMP
+export OMP_DYNAMIC=FALSE
+export OMP_NUM_THREADS=3
+
+
 ### Arguments
 ## Random seed to use for both the environment and agent (-1 for random)
 SEED="69"
@@ -53,6 +59,7 @@ LAUNCH_ARGS=(
     "eval_episodes:=20"
     "log_interval:=-1"
     "enable_rviz:=true"
+    "log_level:=fatal"
 )
 if [[ -n ${PRELOAD_REPLAY_BUFFER} ]]; then
     LAUNCH_ARGS+=("preload_replay_buffer:=${PRELOAD_REPLAY_BUFFER}")

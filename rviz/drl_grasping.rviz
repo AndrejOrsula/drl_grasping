@@ -3,9 +3,10 @@ Panels:
     Help Height: 0
     Name: Displays
     Property Tree Widget:
-      Expanded: ~
+      Expanded:
+        - /PointCloud22
       Splitter Ratio: 0.6278260946273804
-    Tree Height: 424
+    Tree Height: 408
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -33,12 +34,14 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        depth_camera/depth_camera_link/camera:
+          Value: true
         drl_grasping_world:
           Value: true
         lunalab_summit_xl_gen:
           Value: true
-        rgbd_camera/rgbd_camera_link/camera:
-          Value: true
+        panda_link0:
+          Value: false
         robot_j2s7s300_end_effector:
           Value: true
         robot_j2s7s300_link_1:
@@ -56,7 +59,7 @@ Visualization Manager:
         robot_j2s7s300_link_7:
           Value: false
         robot_j2s7s300_link_base:
-          Value: true
+          Value: false
         robot_j2s7s300_link_finger_1:
           Value: false
         robot_j2s7s300_link_finger_2:
@@ -78,7 +81,7 @@ Visualization Manager:
         robot_summit_xl_base_footprint:
           Value: false
         robot_summit_xl_base_link:
-          Value: true
+          Value: false
         robot_summit_xl_front_left_wheel:
           Value: false
         robot_summit_xl_front_right_wheel:
@@ -87,12 +90,12 @@ Visualization Manager:
       Name: TF
       Show Arrows: true
       Show Axes: true
-      Show Names: false
+      Show Names: true
       Tree:
         drl_grasping_world:
           lunalab_summit_xl_gen:
             robot_summit_xl_base_footprint:
-              rgbd_camera/rgbd_camera_link/camera:
+              depth_camera/depth_camera_link/camera:
                 {}
               robot_summit_xl_base_link:
                 robot_j2s7s300_link_base:
@@ -124,6 +127,8 @@ Visualization Manager:
                   {}
                 robot_summit_xl_front_right_wheel:
                   {}
+          panda_link0:
+            {}
       Update Interval: 0
       Value: true
     - Acceleration_Scaling_Factor: 0.5
@@ -270,7 +275,7 @@ Visualization Manager:
         Robot Alpha: 0.25
         Robot Color: 150; 50; 150
         Show Robot Collision: false
-        Show Robot Visual: true
+        Show Robot Visual: false
         Show Trail: false
         State Display Time: 0.1s
         Trail Step Size: 1
@@ -457,6 +462,40 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: -1.6002144813537598
+        Min Value: -2.0147387981414795
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 127; 127; 127
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.009999999776482582
+      Style: Spheres
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /depth_camera/points
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -503,7 +542,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 3
+      Distance: 3.593212604522705
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -518,22 +557,22 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7853981852531433
-      Target Frame: lunalab_summit_xl_gen
+      Pitch: 0.6903979778289795
+      Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.7853981852531433
+      Yaw: 2.1403872966766357
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1055
+  Height: 1051
   Hide Left Dock: false
   Hide Right Dock: true
   MotionPlanning:
     collapsed: false
   MotionPlanning - Trajectory Slider:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd000000040000000000000247000003bcfc020000000bfb0000001200530065006c0065006300740069006f006e00000001e10000009b0000007901000003fb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000040000001f1000000f901000003fb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000004c01000003fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e00670100000232000001ca00000190010000030000000100000110000003bcfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a005600690065007700730000000040000003bc000000cb01000003fb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000078000000048fc0100000002fb0000000800540069006d00650000000000000007800000023601000003fb0000000800540069006d0065010000000000000450000000000000000000000538000003bc00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd000000040000000000000245000003acfc020000000bfb0000001200530065006c0065006300740069006f006e00000001e10000009b0000007901000003fb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000046000001e7000000ff01000003fb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000005201000003fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e0067010000022e000001c4000001b9010000030000000100000110000003acfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a005600690065007700730000000046000003ac000000d701000003fb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000078000000048fc0100000002fb0000000800540069006d0065000000000000000780000002d701000003fb0000000800540069006d006501000000000000045000000000000000000000053a000003ac00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
