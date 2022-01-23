@@ -30,17 +30,22 @@ def pointcloud2_to_open3d(
         xyz[valid_points].astype(numpy.float64)
     )
 
-    if include_rgb and len(ros_point_cloud2.fields) > 3:
-        bgr = numpy.ndarray(
-            shape=(size, 3),
-            dtype=numpy.uint8,
-            buffer=ros_point_cloud2.data,
-            offset=ros_point_cloud2.fields[3].offset,
-            strides=(ros_point_cloud2.point_step, 1),
-        )
-        open3d_pc.colors = open3d.utility.Vector3dVector(
-            (bgr[valid_points][:, [2, 1, 0]] / 255).astype(numpy.float64)
-        )
+    if include_rgb:
+        if len(ros_point_cloud2.fields) > 3:
+            bgr = numpy.ndarray(
+                shape=(size, 3),
+                dtype=numpy.uint8,
+                buffer=ros_point_cloud2.data,
+                offset=ros_point_cloud2.fields[3].offset,
+                strides=(ros_point_cloud2.point_step, 1),
+            )
+            open3d_pc.colors = open3d.utility.Vector3dVector(
+                (bgr[valid_points][:, [2, 1, 0]] / 255).astype(numpy.float64)
+            )
+        else:
+            open3d_pc.colors = open3d.utility.Vector3dVector(
+                [0, 0, 0] * len(xyz[valid_points])
+            )
 
     # Return the converted Open3D PointCloud
     return open3d_pc
