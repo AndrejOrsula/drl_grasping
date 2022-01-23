@@ -7,7 +7,7 @@ from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 import rclpy
-from gym_ignition.base import task
+from gym_ignition.base.task import Task
 from gym_ignition.utils.typing import (
     Action,
     ActionSpace,
@@ -28,7 +28,7 @@ from drl_grasping.envs.utils.gazebo import *
 from drl_grasping.envs.utils.math import quat_mul
 
 
-class Manipulation(task.Task, Node, abc.ABC):
+class Manipulation(Task, Node, abc.ABC):
     _ids = count(0)
 
     def __init__(
@@ -52,7 +52,7 @@ class Manipulation(task.Task, Node, abc.ABC):
         self.id = next(self._ids)
 
         # Initialize the Task base class
-        task.Task.__init__(self, agent_rate=agent_rate)
+        Task.__init__(self, agent_rate=agent_rate)
 
         # Initialize ROS 2 context (if not done before)
         try:
@@ -172,6 +172,7 @@ class Manipulation(task.Task, Node, abc.ABC):
             joint_names=self.robot_arm_joint_names,
             base_link_name=self.robot_arm_base_link_name,
             end_effector_name=self.robot_ee_link_name,
+            execute_via_moveit=False,
             ignore_new_calls_while_executing=ignore_new_actions_while_executing,
             callback_group=self._callback_group,
         )
