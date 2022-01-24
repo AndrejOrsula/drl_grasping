@@ -40,7 +40,20 @@ repos:
     hooks:
       - id: mdformat
 
-  # - repo: https://github.com/AleksaC/hadolint-py
-  #   rev: v2.8.0
-  #   hooks:
-  #     - id: hadolint
+  - repo: https://github.com/AleksaC/hadolint-py
+    rev: v2.8.0
+    hooks:
+      - id: hadolint
+        args:
+          [
+            --ignore,
+            DL3003,
+            --ignore,
+            DL3008,
+            --ignore,
+            DL3013,
+            --ignore,
+            DL4006,
+            --ignore,
+            SC1091,
+          ]

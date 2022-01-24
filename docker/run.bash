@@ -55,11 +55,10 @@ GUI_VOLUMES=(
     --volume "/dev/input:/dev/input"
 )
 
-VOLUMES=""
+VOLUMES="--volume ${PWD}/drl_grasping_training_docker:/root/drl_grasping_training"
 if [[ -n ${DRL_GRASPING_PBR_TEXTURES_DIR} ]]; then
-    VOLUMES="${VOLUMES} --volume ${DRL_GRASPING_PBR_TEXTURES_DIR}:/root/drl_grasping/pbr_textures"
+    VOLUMES="${VOLUMES} --volume ${DRL_GRASPING_PBR_TEXTURES_DIR}:/root/pbr_textures"
 fi
-VOLUMES="${VOLUMES} --volume ${PWD}/training:/root/drl_grasping/training"
 ## Use this volume for custom config and models that are stored locally on your machine
 # VOLUMES="${VOLUMES} --volume ${HOME}/.ignition:/root/.ignition"
 
