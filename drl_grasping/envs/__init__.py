@@ -557,6 +557,7 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict[str, any] = {
     "object_random_spawn_volume": (0.2, 0.2, 0.05),
     "object_models_rollouts_num": 2,
     "underworld_collision_plane": True,
+    "boundary_collision_walls": True,
 }
 GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
     "camera_enable": True,

@@ -135,7 +135,8 @@ class ManipulationGazeboEnvRandomizer(
         object_models_rollouts_num: int = 1,
         # Collision plane below terrain
         underworld_collision_plane: bool = True,
-        underworld_collision_plane_depth: float = -2.5,
+        boundary_collision_walls: bool = False,
+        collision_plane_offset: float = 2.5,
         # Visual debugging
         visualise_workspace: bool = False,
         visualise_spawn_volume: bool = False,
@@ -264,7 +265,10 @@ class ManipulationGazeboEnvRandomizer(
 
         # Collision plane beneath the terrain (prevent objects from falling forever)
         self._underworld_collision_plane = underworld_collision_plane
-        self._underworld_collision_plane_depth = underworld_collision_plane_depth
+        self._boundary_collision_walls = boundary_collision_walls
+        self._collision_plane_offset = collision_plane_offset
+        if self._collision_plane_offset < 0.0:
+            self._collision_plane_offset *= -1.0
 
         # Visual debugging
         self._visualise_workspace = visualise_workspace
@@ -481,16 +485,22 @@ class ManipulationGazeboEnvRandomizer(
             task.get_logger().info("Inserting default objects into the environment...")
             self.add_default_objects(task=task, gazebo=gazebo)
 
+        # TODO (medium): Consider replacing invisible planes with removal of all objects that are too low along a certain axis
         # Insert invisible plane below the terrain to prevent objects from falling into the abyss and causing physics errors
-        # TODO (medium): Consider replacing invisible plane with removal of all objects that are too low along z axis
         if self._underworld_collision_plane:
             task.get_logger().info(
                 "Inserting invisible plane below the terrain into the environment..."
             )
             self.add_underworld_collision_plane(task=task, gazebo=gazebo)
+        # Insert invisible planes arround the environment to precent objects from going into the abyss and causing physics errors
+        if self._boundary_collision_walls:
+            task.get_logger().info(
+                "Inserting invisible planes around the terrain into the environment..."
+            )
+            self.add_voundary_collision_walls(task=task, gazebo=gazebo)
 
+        # TODO: Visualization must follow the robot - consider using RViZ geometry markers instead of this appraocz
         # Visualise volumes in GUI if desired
-        # TODO: Visualization must follow the robot - consider using RViZ geometry markers instead of this appraoch
         if self._visualise_workspace:
             self.visualise_workspace(task=task, gazebo=gazebo)
         if self._visualise_spawn_volume:
@@ -732,8 +742,13 @@ class ManipulationGazeboEnvRandomizer(
         """
 
         models.Plane(
+            name="_collision_plane",
             world=task.world,
-            position=(0.0, 0.0, self._underworld_collision_plane_depth),
+            position=(
+                0.0,
+                0.0,
+                self._terrain_spawn_position[2] - self._collision_plane_offset,
+            ),
             orientation=(1.0, 0.0, 0.0, 0.0),
             direction=(0.0, 0.0, 1.0),
             visual=False,
@@ -742,6 +757,85 @@ class ManipulationGazeboEnvRandomizer(
         )
 
         # Execute a paused run to process model insertion of underworld collision plane
+        if not gazebo.run(paused=True):
+            raise RuntimeError("Failed to execute a paused Gazebo run")
+
+    def add_voundary_collision_walls(
+        self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
+    ):
+        """
+        Add an infinitely large collision planes arround the terrain in order to prevent object from going into the abyss forever
+        """
+
+        models.Plane(
+            name="_collision_plane",
+            world=task.world,
+            position=(
+                self._terrain_spawn_position[0]
+                + self._terrain_size[0] / 2
+                + self._collision_plane_offset,
+                0.0,
+                0.0,
+            ),
+            orientation=(1.0, 0.0, 0.0, 0.0),
+            direction=(-1.0, 0.0, 0.0),
+            visual=False,
+            collision=True,
+            friction=1000.0,
+        )
+
+        models.Plane(
+            name="_collision_plane",
+            world=task.world,
+            position=(
+                self._terrain_spawn_position[0]
+                - self._terrain_size[0] / 2
+                - self._collision_plane_offset,
+                0.0,
+                0.0,
+            ),
+            orientation=(1.0, 0.0, 0.0, 0.0),
+            direction=(1.0, 0.0, 0.0),
+            visual=False,
+            collision=True,
+            friction=1000.0,
+        )
+
+        models.Plane(
+            name="_collision_plane",
+            world=task.world,
+            position=(
+                0.0,
+                self._terrain_spawn_position[1]
+                + self._terrain_size[1] / 2
+                + self._collision_plane_offset,
+                0.0,
+            ),
+            orientation=(1.0, 0.0, 0.0, 0.0),
+            direction=(0.0, -1.0, 0.0),
+            visual=False,
+            collision=True,
+            friction=1000.0,
+        )
+
+        models.Plane(
+            name="_collision_plane",
+            world=task.world,
+            position=(
+                0.0,
+                self._terrain_spawn_position[1]
+                - self._terrain_size[1] / 2
+                - self._collision_plane_offset,
+                0.0,
+            ),
+            orientation=(1.0, 0.0, 0.0, 0.0),
+            direction=(0.0, 1.0, 0.0),
+            visual=False,
+            collision=True,
+            friction=1000.0,
+        )
+
+        # Execute a paused run to process model insertion of boundary walls
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
