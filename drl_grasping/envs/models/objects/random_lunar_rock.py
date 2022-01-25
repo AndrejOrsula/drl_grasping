@@ -35,7 +35,7 @@ class RandomLunarRock(model_wrapper.ModelWrapper):
 
         # Get path to the model and the important directories
         model_path = ModelCollectionRandomizer.get_collection_paths(
-            owner="AndrejOrsula", collection="lunar", model_name="lunar_rock"
+            owner="AndrejOrsula", collection="", model_name="lunar_rock"
         )[0]
 
         visual_mesh_dir = os.path.join(model_path, "meshes", "visual")

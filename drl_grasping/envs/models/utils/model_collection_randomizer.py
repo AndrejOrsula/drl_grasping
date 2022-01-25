@@ -101,15 +101,23 @@ class ModelCollectionRandomizer:
             return model_paths
 
         # Else download the models from Fuel and then try again
-        collection_uri = "%s/%s/%s/collections/%s" % (
-            server,
-            server_version,
-            owner,
-            collection,
-        )
+        if collection:
+            download_uri = "%s/%s/%s/collections/%s" % (
+                server,
+                server_version,
+                owner,
+                collection,
+            )
+        elif model_name:
+            download_uri = "%s/%s/%s/models/%s" % (
+                server,
+                server_version,
+                owner,
+                model_name,
+            )
         download_command = 'ign fuel download -v 3 -t model -j %s -u "%s"' % (
             os.cpu_count(),
-            collection_uri,
+            download_uri,
         )
         os.system(download_command)
 
@@ -120,7 +128,7 @@ class ModelCollectionRandomizer:
             logger.error(
                 'URI "%s" is not valid and does not contain any models that are \
                           owned by the owner of the collection'
-                % collection_uri
+                % download_uri
             )
             pass
 

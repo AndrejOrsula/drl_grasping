@@ -36,7 +36,7 @@ class RandomLunarSurface(model_wrapper.ModelWrapper):
 
         # Get path to the model and the important directories
         model_path = ModelCollectionRandomizer.get_collection_paths(
-            owner="AndrejOrsula", collection="lunar", model_name="lunar_surface"
+            owner="AndrejOrsula", collection="", model_name="lunar_surface"
         )[0]
         visual_mesh_dir = os.path.join(model_path, "meshes", "visual")
         collision_mesh_dir = os.path.join(model_path, "meshes", "collision")
