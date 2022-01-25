@@ -1,10 +1,12 @@
 import os
 from threading import Thread
-from typing import List, Union
+from typing import List, Optional, Union
 
 from gym_ignition.scenario import model_wrapper
 from gym_ignition.utils.scenario import get_unique_model_name
 from scenario import core as scenario
+
+from drl_grasping.envs.models.utils import ModelCollectionRandomizer
 
 
 class Camera(model_wrapper.ModelWrapper):
@@ -18,6 +20,7 @@ class Camera(model_wrapper.ModelWrapper):
         camera_type: str = "rgbd_camera",
         width: int = 212,
         height: int = 120,
+        image_format: str = "R8G8B8",
         update_rate: int = 15,
         horizontal_fov: float = 1.567821,
         vertical_fov: float = 1.022238,
@@ -29,7 +32,8 @@ class Camera(model_wrapper.ModelWrapper):
         ros2_bridge_depth: bool = False,
         ros2_bridge_points: bool = False,
         visibility_mask: int = 0,
-        visual: bool = False,
+        visual: Optional[str] = None,
+        # visual: Optional[str] = "intel_realsense_d435",
     ):
 
         # Get a unique model name
@@ -41,6 +45,56 @@ class Camera(model_wrapper.ModelWrapper):
 
         # Initial pose
         initial_pose = scenario.Pose(position, orientation)
+
+        # Get resources for visual (if enabled)
+        if visual:
+            use_mesh: bool = False
+            if "intel_realsense_d435" == visual:
+                use_mesh = True
+
+                # Get path to the model and the important directories
+                model_path = ModelCollectionRandomizer.get_collection_paths(
+                    owner="OpenRobotics",
+                    collection="",
+                    model_name="Intel RealSense D435",
+                )[0]
+
+                mesh_dir = os.path.join(model_path, "meshes")
+                texture_dir = os.path.join(model_path, "materials", "textures")
+
+                # Get path to the mesh
+                mesh_path_visual = os.path.join(mesh_dir, "realsense.dae")
+                # Make sure that it exists
+                if not os.path.exists(mesh_path_visual):
+                    raise ValueError(
+                        f"Visual mesh '{mesh_path_visual}' for Camera model is not a valid file."
+                    )
+
+                # Find PBR textures
+                albedo_map = None
+                normal_map = None
+                roughness_map = None
+                metalness_map = None
+                if texture_dir:
+                    # List all files
+                    texture_files = os.listdir(texture_dir)
+
+                    # Extract the appropriate files
+                    for texture in texture_files:
+                        texture_lower = texture.lower()
+                        if "basecolor" in texture_lower or "albedo" in texture_lower:
+                            albedo_map = os.path.join(texture_dir, texture)
+                        elif "normal" in texture_lower:
+                            normal_map = os.path.join(texture_dir, texture)
+                        elif "roughness" in texture_lower:
+                            roughness_map = os.path.join(texture_dir, texture)
+                        elif (
+                            "specular" in texture_lower or "metalness" in texture_lower
+                        ):
+                            metalness_map = os.path.join(texture_dir, texture)
+
+                if not (albedo_map and normal_map and roughness_map and metalness_map):
+                    raise ValueError(f"Not all textures for Camera model were found.")
 
         # Create SDF string for the model
         sdf = f'''<sdf version="1.9">
@@ -55,6 +109,7 @@ class Camera(model_wrapper.ModelWrapper):
                             <image>
                                 <width>{width}</width>
                                 <height>{height}</height>
+                                <format>{image_format}</format>
                             </image>
                             <horizontal_fov>{horizontal_fov}</horizontal_fov>
                             <vertical_fov>{vertical_fov}</vertical_fov>
@@ -110,7 +165,46 @@ class Camera(model_wrapper.ModelWrapper):
                                 <specular>0.0 0.8 0.0</specular>
                             </material>
                         </visual>
-                        """ if visual else ""
+                        """ if visual and not use_mesh else ""
+                        }
+                        {
+                        f"""
+                        <inertial>
+                            <mass>0.0615752</mass>
+                            <inertia>
+                                <ixx>9.108e-05</ixx>
+                                <ixy>0.0</ixy>
+                                <ixz>0.0</ixz>
+                                <iyy>2.51e-06</iyy>
+                                <iyz>0.0</iyz>
+                                <izz>8.931e-05</izz>
+                            </inertia>
+                        </inertial>
+                        <visual name="{model_name}_visual">
+                            <pose>0 0 0 0 0 1.5707963</pose>
+                            <geometry>
+                                <mesh>
+                                    <uri>{mesh_path_visual}</uri>
+                                    <submesh>
+                                        <name>RealSense</name>
+                                        <center>false</center>
+                                    </submesh>
+                                </mesh>
+                            </geometry>
+                            <material>
+                                <diffuse>1 1 1 1</diffuse>
+                                <specular>1 1 1 1</specular>
+                                <pbr>
+                                    <metal>
+                                        <albedo_map>{albedo_map}</albedo_map>
+                                        <normal_map>{normal_map}</normal_map>
+                                        <roughness_map>{roughness_map}</roughness_map>
+                                        <metalness_map>{metalness_map}</metalness_map>
+                                    </metal>
+                                </pbr>
+                            </material>
+                        </visual>
+                        """ if visual and use_mesh else ""
                         }
                 </link>
             </model>
