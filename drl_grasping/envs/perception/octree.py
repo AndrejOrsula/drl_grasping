@@ -19,6 +19,8 @@ class OctreeCreator:
         min_bound: Tuple[float, float, float] = (-1.0, -1.0, -1.0),
         max_bound: Tuple[float, float, float] = (1.0, 1.0, 1.0),
         include_color: bool = False,
+        # Note: For efficiency, the first channel of RGB is used for intensity
+        include_intensity: bool = False,
         depth: int = 4,
         full_depth: int = 2,
         adaptive: bool = False,
@@ -47,6 +49,7 @@ class OctreeCreator:
         self._min_bound = min_bound
         self._max_bound = max_bound
         self._include_color = include_color
+        self._include_intensity = include_intensity
         self._normals_radius = normals_radius
         self._normals_max_nn = normals_max_nn
         self._debug_draw = debug_draw
@@ -74,7 +77,9 @@ class OctreeCreator:
 
         # Convert to Open3D PointCloud
         open3d_point_cloud = conversions.pointcloud2_to_open3d(
-            ros_point_cloud2=ros_point_cloud2
+            ros_point_cloud2=ros_point_cloud2,
+            include_color=self._include_color,
+            include_intensity=self._include_intensity,
         )
 
         # Preprocess point cloud (transform to robot frame, crop to workspace and estimate normals)
@@ -102,7 +107,9 @@ class OctreeCreator:
 
         # Construct octree from such point cloud
         octree = self.construct_octree(
-            open3d_point_cloud, include_color=self._include_color
+            open3d_point_cloud,
+            include_color=self._include_color,
+            include_intensity=self._include_intensity,
         )
 
         # Write if needed
@@ -167,7 +174,10 @@ class OctreeCreator:
         return open3d_point_cloud
 
     def construct_octree(
-        self, open3d_point_cloud: open3d.geometry.PointCloud, include_color: bool
+        self,
+        open3d_point_cloud: open3d.geometry.PointCloud,
+        include_color: bool,
+        include_intensity: bool,
     ) -> torch.Tensor:
 
         # In case the point cloud has no points, add a single point
@@ -175,19 +185,21 @@ class OctreeCreator:
         # TODO: Figure out a better way of making an empty octree (it does not occur if setup correctly, so probably not worth it)
         if not open3d_point_cloud.has_points():
             open3d_point_cloud.points.append(
-                [
+                (
                     (self._min_bound[0] + self._max_bound[0]) / 2,
                     (self._min_bound[1] + self._max_bound[1]) / 2,
                     (self._min_bound[2] + self._max_bound[2]) / 2,
-                ]
+                )
             )
-            open3d_point_cloud.normals.append([0.0, 0.0, 0.0])
-            if include_color:
-                open3d_point_cloud.colors.append([0.0, 0.0, 0.0])
+            open3d_point_cloud.normals.append((0.0, 0.0, 0.0))
+            if include_color or include_intensity:
+                open3d_point_cloud.colors.append((0.0, 0.0, 0.0))
 
         # Convert open3d point cloud into octree points
         octree_points = conversions.open3d_point_cloud_to_octree_points(
-            open3d_point_cloud, include_color
+            open3d_point_cloud=open3d_point_cloud,
+            include_color=include_color,
+            include_intensity=include_intensity,
         )
 
         # Convert octree points into 1D Tensor (via ndarray)

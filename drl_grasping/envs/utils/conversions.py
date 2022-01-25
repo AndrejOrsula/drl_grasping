@@ -9,7 +9,11 @@ from scipy.spatial.transform import Rotation
 
 
 def pointcloud2_to_open3d(
-    ros_point_cloud2: sensor_msgs.msg.PointCloud2, include_rgb: bool = True
+    ros_point_cloud2: sensor_msgs.msg.PointCloud2,
+    include_color: bool = False,
+    include_intensity: bool = False,
+    # Note: Order does not matter for DL, that's why channel swapping is disabled by default
+    fix_rgb_channel_order: bool = False,
 ) -> open3d.geometry.PointCloud:
 
     # Create output Open3D PointCloud
@@ -30,7 +34,7 @@ def pointcloud2_to_open3d(
         xyz[valid_points].astype(numpy.float64)
     )
 
-    if include_rgb:
+    if include_color or include_intensity:
         if len(ros_point_cloud2.fields) > 3:
             bgr = numpy.ndarray(
                 shape=(size, 3),
@@ -39,13 +43,42 @@ def pointcloud2_to_open3d(
                 offset=ros_point_cloud2.fields[3].offset,
                 strides=(ros_point_cloud2.point_step, 1),
             )
+            if fix_rgb_channel_order:
+                # Swap channels to gain rgb (faster than `bgr[:, [2, 1, 0]]`)
+                bgr[:, 0], bgr[:, 2] = bgr[:, 2], bgr[:, 0].copy()
             open3d_pc.colors = open3d.utility.Vector3dVector(
-                (bgr[valid_points][:, [2, 1, 0]] / 255).astype(numpy.float64)
+                (bgr[valid_points] / 255).astype(numpy.float64)
             )
         else:
             open3d_pc.colors = open3d.utility.Vector3dVector(
-                [0, 0, 0] * len(xyz[valid_points])
+                numpy.zeros((len(valid_points), 3), dtype=numpy.float64)
             )
+    # TODO: Update octree craetor once L8 image format is supported in Ignition Gazebop
+    # elif include_intensity:
+    #     # Faster approach, but only the first channel gets the intensity value (rest is 0)
+    #     intensities = numpy.zeros((len(valid_points), 3), dtype=numpy.float64)
+    #     intensities[:, [0]] = (
+    #         numpy.ndarray(
+    #             shape=(size, 1),
+    #             dtype=numpy.uint8,
+    #             buffer=ros_point_cloud2.data,
+    #             offset=ros_point_cloud2.fields[3].offset,
+    #             strides=(ros_point_cloud2.point_step, 1),
+    #         )[valid_points]
+    #         / 255
+    #     ).astype(numpy.float64)
+    #     open3d_pc.colors = open3d.utility.Vector3dVector(intensities)
+    #     # # Slower approach, but all channels get the intensity value
+    #     # intensities = numpy.ndarray(
+    #     #     shape=(size, 1),
+    #     #     dtype=numpy.uint8,
+    #     #     buffer=ros_point_cloud2.data,
+    #     #     offset=ros_point_cloud2.fields[3].offset,
+    #     #     strides=(ros_point_cloud2.point_step, 1),
+    #     # )
+    #     # open3d_pc.colors = open3d.utility.Vector3dVector(
+    #     #     numpy.tile(intensities[valid_points] / 255, (1, 3)).astype(numpy.float64)
+    #     # )
 
     # Return the converted Open3D PointCloud
     return open3d_pc
@@ -72,21 +105,27 @@ def transform_to_matrix(transform: geometry_msgs.msg.Transform) -> numpy.ndarray
 
 
 def open3d_point_cloud_to_octree_points(
-    open3d_point_cloud: open3d.geometry.PointCloud, include_color: bool = False
+    open3d_point_cloud: open3d.geometry.PointCloud,
+    include_color: bool = False,
+    include_intensity: bool = False,
 ) -> pyoctree.Points:
 
     octree_points = pyoctree.Points()
+
+    if include_color:
+        features = numpy.reshape(numpy.asarray(open3d_point_cloud.colors), -1)
+    elif include_intensity:
+        features = numpy.asarray(open3d_point_cloud.colors)[:, 0]
+    else:
+        features = []
+
     octree_points.set_points(
         # XYZ points
         numpy.reshape(numpy.asarray(open3d_point_cloud.points), -1),
         # Normals
         numpy.reshape(numpy.asarray(open3d_point_cloud.normals), -1),
         # Other features, e.g. color
-        (
-            numpy.reshape(numpy.asarray(open3d_point_cloud.colors), -1)
-            if include_color
-            else []
-        ),
+        features,
         # Labels - not used
         [],
     )

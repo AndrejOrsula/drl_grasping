@@ -25,6 +25,7 @@ class ReachOctree(Reach, abc.ABC):
         octree_depth: int,
         octree_full_depth: int,
         octree_include_color: bool,
+        octree_include_intensity: bool,
         octree_n_stacked: int,
         octree_max_size: int,
         **kwargs,
@@ -56,6 +57,7 @@ class ReachOctree(Reach, abc.ABC):
             min_bound=octree_min_bound,
             max_bound=octree_max_bound,
             include_color=octree_include_color,
+            include_intensity=octree_include_intensity,
             depth=octree_depth,
             full_depth=octree_full_depth,
         )

@@ -73,6 +73,7 @@ class ManipulationGazeboEnvRandomizer(
         camera_relative_to: str = "base_link",
         camera_width: int = 128,
         camera_height: int = 128,
+        camera_image_format: str = "R8G8B8",
         camera_update_rate: int = 10,
         camera_horizontal_fov: float = np.pi / 3.0,
         camera_vertical_fov: float = np.pi / 3.0,
@@ -200,6 +201,7 @@ class ManipulationGazeboEnvRandomizer(
         self._camera_relative_to = camera_relative_to
         self._camera_width = camera_width
         self._camera_height = camera_height
+        self._camera_image_format = camera_image_format
         self._camera_update_rate = camera_update_rate
         self._camera_horizontal_fov = camera_horizontal_fov
         self._camera_vertical_fov = camera_vertical_fov
@@ -581,6 +583,7 @@ class ManipulationGazeboEnvRandomizer(
             camera_type=self._camera_type,
             width=self._camera_width,
             height=self._camera_height,
+            image_format=self._camera_image_format,
             update_rate=self._camera_update_rate,
             horizontal_fov=self._camera_horizontal_fov,
             vertical_fov=self._camera_vertical_fov,
