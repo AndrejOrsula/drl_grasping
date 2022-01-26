@@ -94,11 +94,14 @@ class Grasp(Manipulation, abc.ABC):
 
         # Motion
         if self._use_servo:
+            linear = action[1:4]
+            if self._restrict_position_goal_to_workspace:
+                linear = self.restrict_servo_translation_to_workspace(linear)
             if self.__full_3d_orientation:
                 angular = action[4:7]
             else:
                 angular = [0.0, 0.0, action[4]]
-            self.servo(linear=action[1:4], angular=angular)
+            self.servo(linear=linear, angular=angular)
         else:
             position = self.get_relative_ee_position(action[1:4])
             if self.__full_3d_orientation:

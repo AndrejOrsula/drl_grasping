@@ -87,7 +87,7 @@ class Manipulation(Task, Node, abc.ABC):
         # Store passed arguments for later use
         self.workspace_centre = workspace_centre
         self.workspace_volume = workspace_volume
-        self.__restrict_position_goal_to_workspace = restrict_position_goal_to_workspace
+        self._restrict_position_goal_to_workspace = restrict_position_goal_to_workspace
         self._use_servo = use_servo
         self.__scaling_factor_translation = scaling_factor_translation
         self.__scaling_factor_rotation = scaling_factor_rotation
@@ -254,7 +254,7 @@ class Manipulation(Task, Node, abc.ABC):
         )
 
         # Restrict target position to a limited workspace, if desired
-        if self.__restrict_position_goal_to_workspace:
+        if self._restrict_position_goal_to_workspace:
             target_position = self.restrict_position_goal_to_workspace(target_position)
 
         return target_position
@@ -352,6 +352,28 @@ class Manipulation(Task, Node, abc.ABC):
                 ),
             ),
         )
+
+    def restrict_servo_translation_to_workspace(
+        self, translation: Tuple[float, float, float]
+    ) -> Tuple[float, float, float]:
+
+        current_ee_position = self.get_ee_position()
+
+        translation = tuple(
+            0.0
+            if (
+                current_ee_position[i] > self.workspace_max_bound[i]
+                and translation[i] > 0.0
+            )
+            or (
+                current_ee_position[i] < self.workspace_min_bound[i]
+                and translation[i] < 0.0
+            )
+            else translation[i]
+            for i in range(3)
+        )
+
+        return translation
 
     def get_ee_pose(
         self,
