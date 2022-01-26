@@ -132,6 +132,7 @@ class ManipulationGazeboEnvRandomizer(
         object_spawn_position: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         object_random_pose: bool = True,
         object_random_spawn_position_segments: List[Tuple[float, float, float]] = [],
+        object_random_spawn_position_update_workspace_centre: bool = True,
         object_random_spawn_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5),
         object_models_rollouts_num: int = 1,
         # Collision plane below terrain
@@ -261,6 +262,9 @@ class ManipulationGazeboEnvRandomizer(
         self._object_random_pose = object_random_pose
         self._object_random_spawn_position_segments = (
             object_random_spawn_position_segments
+        )
+        self._object_random_spawn_position_update_workspace_centre = (
+            object_random_spawn_position_update_workspace_centre
         )
         self._object_random_spawn_volume = object_random_spawn_volume
         self._object_models_rollouts_num = object_models_rollouts_num
@@ -1473,6 +1477,30 @@ class ManipulationGazeboEnvRandomizer(
                 segment[0][1] + intersect * direction[1],
                 segment[0][2] + intersect * direction[2],
             )
+
+            # Update also the workspace centre (and bounding box) if desired
+            if self._object_random_spawn_position_update_workspace_centre:
+                task.workspace_centre = (
+                    self._object_spawn_position[0],
+                    self._object_spawn_position[1],
+                    # Z workspace is currently kept the same on purpose
+                    task.workspace_centre[2],
+                )
+                workspace_volume_half = (
+                    task.workspace_volume[0] / 2,
+                    task.workspace_volume[1] / 2,
+                    task.workspace_volume[2] / 2,
+                )
+                task.workspace_min_bound = (
+                    task.workspace_centre[0] - workspace_volume_half[0],
+                    task.workspace_centre[1] - workspace_volume_half[1],
+                    task.workspace_centre[2] - workspace_volume_half[2],
+                )
+                task.workspace_max_bound = (
+                    task.workspace_centre[0] + workspace_volume_half[0],
+                    task.workspace_centre[1] + workspace_volume_half[1],
+                    task.workspace_centre[2] + workspace_volume_half[2],
+                )
 
     # Post-randomization #
     def post_randomization(
