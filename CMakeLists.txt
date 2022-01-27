@@ -52,6 +52,7 @@ set(EXAMPLES_DIR examples)
 install(PROGRAMS
     ${EXAMPLES_DIR}/ex_evaluate.bash
     ${EXAMPLES_DIR}/ex_evaluate_pretrained_agent.bash
+    ${EXAMPLES_DIR}/ex_evaluate_real.bash
     ${EXAMPLES_DIR}/ex_optimize.bash
     ${EXAMPLES_DIR}/ex_train.bash
     DESTINATION lib/${PROJECT_NAME}

@@ -132,7 +132,7 @@ class ManipulationGazeboEnvRandomizer(
         object_spawn_position: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         object_random_pose: bool = True,
         object_random_spawn_position_segments: List[Tuple[float, float, float]] = [],
-        object_random_spawn_position_update_workspace_centre: bool = True,
+        object_random_spawn_position_update_workspace_centre: bool = False,
         object_random_spawn_volume: Tuple[float, float, float] = (0.5, 0.5, 0.5),
         object_models_rollouts_num: int = 1,
         # Collision plane below terrain
@@ -1053,7 +1053,7 @@ class ManipulationGazeboEnvRandomizer(
         # Reset also the controllers
         task.moveit2.force_reset_executing_state()
         task.moveit2.reset_controller(joint_state=arm_joint_positions)
-        if task._enable_gripper and self.robot.gripper_joint_names:
+        if task._enable_gripper:
             if (
                 self.robot.CLOSED_GRIPPER_JOINT_POSITIONS
                 == task.initial_gripper_joint_positions

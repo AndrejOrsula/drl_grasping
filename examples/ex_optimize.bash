@@ -5,7 +5,7 @@
 
 ### Global configuration
 ## OMP
-export OMP_DYNAMIC=FALSE
+export OMP_DYNAMIC=TRUE
 export OMP_NUM_THREADS=3
 
 
@@ -22,11 +22,14 @@ ROBOT_MODEL="lunalab_summit_xl_gen"
 # ENV="Reach-ColorImage-Gazebo-v0"
 # ENV="Reach-DepthImage-Gazebo-v0"
 # ENV="Reach-Octree-Gazebo-v0"
+# ENV="Reach-OctreeWithIntensity-Gazebo-v0"
 # ENV="Reach-OctreeWithColor-Gazebo-v0"
 # ENV="Grasp-Octree-Gazebo-v0"
+# ENV="Grasp-OctreeWithIntensity-Gazebo-v0"
 # ENV="Grasp-OctreeWithColor-Gazebo-v0"
 # ENV="GraspPlanetary-Octree-Gazebo-v0"
-ENV="GraspPlanetary-OctreeWithColor-Gazebo-v0"
+ENV="GraspPlanetary-OctreeWithIntensity-Gazebo-v0"
+# ENV="GraspPlanetary-OctreeWithColor-Gazebo-v0"
 
 ## Selection of RL algorithm
 # ALGO="td3"

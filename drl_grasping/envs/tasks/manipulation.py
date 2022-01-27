@@ -20,7 +20,7 @@ from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.node import Node
 from scipy.spatial.transform import Rotation
 
-from drl_grasping.envs.control import MoveIt2, MoveIt2Gripper, MoveIt2Servo
+from drl_grasping.envs.control import *
 from drl_grasping.envs.models.robots import get_robot_model_class
 from drl_grasping.envs.utils import Tf2Broadcaster, Tf2Listener
 from drl_grasping.envs.utils.conversions import orientation_6d_to_quat
@@ -175,6 +175,8 @@ class Manipulation(Task, Node, abc.ABC):
             execute_via_moveit=False,
             ignore_new_calls_while_executing=ignore_new_actions_while_executing,
             callback_group=self._callback_group,
+            # TODO: Expose as arg
+            follow_joint_trajectory_action_name="/robot_j2s7s300/follow_joint_trajectory",
         )
         # MoveIt2 real-time control (servo)
         if self._use_servo:
@@ -195,7 +197,19 @@ class Manipulation(Task, Node, abc.ABC):
                 skip_planning=True,
                 ignore_new_calls_while_executing=ignore_new_actions_while_executing,
                 callback_group=self._callback_group,
+                # TODO: Expose action server as arg (and test with launch script)
             )
+            # TODO: Expose selection of MoveIt2Gripper/GripperCommand as argument
+            # self.gripper = GripperCommand(
+            #     node=self,
+            #     open_gripper_joint_positions=self.robot_model_class.OPEN_GRIPPER_JOINT_POSITIONS,
+            #     closed_gripper_joint_positions=self.robot_model_class.CLOSED_GRIPPER_JOINT_POSITIONS,
+            #     max_effort=10.0,
+            #     ignore_new_calls_while_executing=ignore_new_actions_while_executing,
+            #     callback_group=self._callback_group,
+            #     # TODO: Expose as arg (and test with launch script)node: Node,
+            #     gripper_command_action_name="/robot_j2s7s300_gripper/gripper_command",
+            # )
 
         # Initialize task and randomizer overrides (e.g. from curriculum)
         # Both of these are consumed at the beginning of reset
@@ -587,6 +601,33 @@ class Manipulation(Task, Node, abc.ABC):
                 return "drl_grasping_world"
         else:
             return frame_id
+
+    def wait_until_action_executed(self):
+
+        if self._use_servo:
+            rate = self.create_rate(self.agent_rate)
+            try:
+                while rclpy.ok():
+                    rate.sleep()
+            except KeyboardInterrupt:
+                pass
+
+        self.moveit2.wait_until_executed()
+
+        if self._enable_gripper:
+            self.gripper.wait_until_executed()
+
+    def move_to_initial_joint_configuration(self):
+
+        self.moveit2.move_to_configuration(self.initial_arm_joint_positions)
+
+        if (
+            self.robot_model_class.CLOSED_GRIPPER_JOINT_POSITIONS
+            == self.initial_gripper_joint_positions
+        ):
+            self.gripper.close()
+        else:
+            self.gripper.open()
 
     def add_parameter_overrides(self, parameter_overrides: Dict[str, any]):
 

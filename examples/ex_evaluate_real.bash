@@ -18,18 +18,18 @@ SEED="77"
 ROBOT_MODEL="lunalab_summit_xl_gen"
 
 ## ID of the environment
-# ENV="Reach-Gazebo-v0"
-# ENV="Reach-ColorImage-Gazebo-v0"
-# ENV="Reach-DepthImage-Gazebo-v0"
-# ENV="Reach-Octree-Gazebo-v0"
-# ENV="Reach-OctreeWithIntensity-Gazebo-v0"
-# ENV="Reach-OctreeWithColor-Gazebo-v0"
-# ENV="Grasp-Octree-Gazebo-v0"
-# ENV="Grasp-OctreeWithIntensity-Gazebo-v0"
-# ENV="Grasp-OctreeWithColor-Gazebo-v0"
-# ENV="GraspPlanetary-Octree-Gazebo-v0"
-ENV="GraspPlanetary-OctreeWithIntensity-Gazebo-v0"
-# ENV="GraspPlanetary-OctreeWithColor-Gazebo-v0"
+# ENV="Reach-v0"
+# ENV="Reach-ColorImage-v0"
+# ENV="Reach-DepthImage-v0"
+# ENV="Reach-Octree-v0"
+# ENV="Reach-OctreeWithIntensity-v0"
+# ENV="Reach-OctreeWithColor-v0"
+# ENV="Grasp-Octree-v0"
+# ENV="Grasp-OctreeWithIntensity-v0"
+# ENV="Grasp-OctreeWithColor-v0"
+# ENV="GraspPlanetary-Octree-v0"
+ENV="GraspPlanetary-OctreeWithIntensity-v0"
+# ENV="GraspPlanetary-OctreeWithColor-v0"
 
 ## Selection of RL algorithm
 # ALGO="td3"
@@ -43,7 +43,7 @@ LOG_FOLDER="${PWD}/drl_grasping_training/train/${ENV}/logs"
 REWARD_LOG="${PWD}/drl_grasping_training/evaluate/${ENV}"
 
 ## Load checkpoint instead of last model (# steps)
-# LOAD_CHECKPOINT="0"
+LOAD_CHECKPOINT="0"
 
 ### Arguments
 LAUNCH_ARGS=(
@@ -66,7 +66,7 @@ fi
 ### Launch script
 LAUNCH_CMD=(
     ros2 launch -a
-    drl_grasping evaluate.launch.py
+    drl_grasping evaluate_real.launch.py
     "${LAUNCH_ARGS[*]}"
 )
 
