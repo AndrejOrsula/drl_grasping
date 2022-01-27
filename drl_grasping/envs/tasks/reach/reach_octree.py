@@ -18,7 +18,6 @@ class ReachOctree(Reach, abc.ABC):
 
     def __init__(
         self,
-        camera_type: str,
         octree_reference_frame_id: str,
         octree_min_bound: Tuple[float, float, float],
         octree_max_bound: Tuple[float, float, float],
@@ -28,6 +27,7 @@ class ReachOctree(Reach, abc.ABC):
         octree_include_intensity: bool,
         octree_n_stacked: int,
         octree_max_size: int,
+        camera_type: str = "rgbd_camera",
         **kwargs,
     ):
 

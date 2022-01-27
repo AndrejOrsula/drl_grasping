@@ -12,9 +12,9 @@ from drl_grasping.envs.tasks.reach import Reach
 class ReachColorImage(Reach, abc.ABC):
     def __init__(
         self,
-        camera_type: str,
         camera_width: int,
         camera_height: int,
+        camera_type: str = "camera",
         **kwargs,
     ):
 

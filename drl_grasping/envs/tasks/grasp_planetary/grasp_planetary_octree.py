@@ -15,7 +15,6 @@ from drl_grasping.envs.utils.conversions import orientation_quat_to_6d
 class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
     def __init__(
         self,
-        camera_type: str,
         octree_reference_frame_id: str,
         octree_min_bound: Tuple[float, float, float],
         octree_max_bound: Tuple[float, float, float],
@@ -26,6 +25,7 @@ class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
         octree_n_stacked: int,
         octree_max_size: int,
         proprieceptive_observations: bool,
+        camera_type: str = "rgbd_camera",
         **kwargs,
     ):
 
