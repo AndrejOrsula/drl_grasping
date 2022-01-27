@@ -22,14 +22,16 @@ from drl_grasping.utils.utils import ALGOS, StoreDict, str2bool
 def main(args: Dict):
 
     if args.exp_id == 0:
-        args.exp_id = get_latest_run_id(os.path.join(args.folder, args.algo), args.env)
+        args.exp_id = get_latest_run_id(
+            os.path.join(args.log_folder, args.algo), args.env
+        )
         print(f"Loading latest experiment, id={args.exp_id}")
 
     # Sanity checks
     if args.exp_id > 0:
-        log_path = os.path.join(args.folder, args.algo, f"{args.env}_{args.exp_id}")
+        log_path = os.path.join(args.log_folder, args.algo, f"{args.env}_{args.exp_id}")
     else:
-        log_path = os.path.join(args.folder, args.algo)
+        log_path = os.path.join(args.log_folder, args.algo)
 
     assert os.path.isdir(log_path), f"The {log_path} folder was not found"
 
@@ -288,6 +290,6 @@ if __name__ == "__main__":
         "--verbose", type=int, default=1, help="Verbose mode (0: no output, 1: INFO)"
     )
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
 
     main(args)
