@@ -2,23 +2,38 @@
 import open3d  # isort:skip
 import stable_baselines3  # isort:skip
 
-from os import path
+from os import environ, path
 from typing import Dict, Tuple
 
 import numpy as np
 from ament_index_python.packages import get_package_share_directory
 from gym.envs.registration import register
 
-from . import randomizers, tasks
+from drl_grasping.utils.utils import str2bool
+
+from . import tasks
 
 ######################
-# Generic padameters #
+# Runtime Entrypoint #
 ######################
 # Entrypoint for tasks (can be simulated or real)
-DRL_GRASPING_TASK_ENTRYPOINT: str = "gym_ignition.runtimes.gazebo_runtime:GazeboRuntime"
-# Robot model to use in the tasks where robot can be static
+if str2bool(environ.get("DRL_GRASPING_REAL_EVALUATION", default=False)):
+    DRL_GRASPING_TASK_ENTRYPOINT: str = (
+        "drl_grasping.envs.runtimes:RealEvaluationRuntime"
+    )
+else:
+    DRL_GRASPING_TASK_ENTRYPOINT: str = (
+        "gym_ignition.runtimes.gazebo_runtime:GazeboRuntime"
+    )
+
+
+###################
+# Robot Selection #
+###################
+## Fully supported robots: "panda", "lunalab_summit_xl_gen"
+# Default robot model to use in the tasks where robot can be static
 DRL_GRASPING_ROBOT_MODEL: str = "panda"
-# Robot model to use in the tasks where robot needs to be mobile
+# Default robot model to use in the tasks where robot needs to be mobile
 DRL_GRASPING_ROBOT_MODEL_MOBILE: str = "lunalab_summit_xl_gen"
 
 
@@ -46,6 +61,7 @@ GRAVITY_MARS_STD: Tuple[float, float, float] = (0.0, 0.0, 0.0191)
 
 # Offset of "lunalab_summit_xl_gen" from `base_arm_link` to it base footprint
 LUNALAB_SUMMIT_XL_GEN_Z_OFFSET: float = -0.22
+
 
 #########
 # Reach #
@@ -132,6 +148,7 @@ REACH_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
     "camera_random_pose_select_position_options": [],
     "camera_random_pose_focal_point_z_offset": 0.0,
 }
+
 # Task
 register(
     id="Reach-v0",
@@ -368,6 +385,7 @@ GRASP_KWARGS_RANDOMIZER: Dict[str, any] = {
     "object_spawn_position": (0.5, 0.0, GRASP_ROBOT_Z_OFFSET + 0.1),
     "object_random_pose": True,
     "object_random_spawn_position_segments": [],
+    "object_random_spawn_position_update_workspace_centre": False,
     "object_random_spawn_volume": (0.18, 0.18, 0.075),
     "object_models_rollouts_num": 1,
     "underworld_collision_plane": True,
@@ -408,7 +426,8 @@ GRASP_KWARGS_CURRICULUM: Dict[str, any] = {
     "lift_required_height": GRASP_ROBOT_Z_OFFSET + 0.1,
     "persistent_reward_each_step": -0.005,
     "persistent_reward_terrain_collision": -1.0,
-    "persistent_reward_all_objects_outside_workspace": -0.25,
+    # Checking for objects outside of workspace must currently be disabled `object_random_spawn_position_update_workspace_centre` is enabled
+    "persistent_reward_all_objects_outside_workspace": 0.0,
     "persistent_reward_arm_stuck": -1.0,
     "enable_stage_reward_curriculum": True,
     "enable_workspace_scale_curriculum": False,
@@ -498,7 +517,10 @@ register(
         **GRASP_KWARGS_SIM,
         **GRASP_KWARGS_RANDOMIZER,
         **GRASP_KWARGS_RANDOMIZER_CAMERA,
-        "terrain_type": "random_flat",
+        # Note: "random_flat" terrain is currently not functional
+        # TODO: Fix "random_flat" terrain
+        # "terrain_type": "random_flat",
+        "terrain_type": "flat",
         "camera_type": "rgbd_camera",
         # "camera_image_format": "L8",
         "camera_publish_points": True,
@@ -513,7 +535,10 @@ register(
         **GRASP_KWARGS_SIM,
         **GRASP_KWARGS_RANDOMIZER,
         **GRASP_KWARGS_RANDOMIZER_CAMERA,
-        "terrain_type": "random_flat",
+        # Note: "random_flat" terrain is currently not functional
+        # TODO: Fix "random_flat" terrain
+        # "terrain_type": "random_flat",
+        "terrain_type": "flat",
         "camera_type": "rgbd_camera",
         "camera_publish_points": True,
     },
@@ -675,6 +700,7 @@ GRASP_PLANETARY_KWARGS_CURRICULUM: Dict[str, any] = {
     "persistent_reward_terrain_collision": -1.0,
     # Checking for objects outside of workspace must currently be disabled `object_random_spawn_position_update_workspace_centre` is enabled
     "persistent_reward_all_objects_outside_workspace": 0.0,
+    # TODO: Consider disabling arm stuck
     "persistent_reward_arm_stuck": -1.0,
     "enable_stage_reward_curriculum": True,
     # TODO: Incorporate curriculums

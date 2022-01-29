@@ -202,6 +202,7 @@ class Manipulation(Task, Node, abc.ABC):
             # TODO: Expose selection of MoveIt2Gripper/GripperCommand as argument
             # self.gripper = GripperCommand(
             #     node=self,
+            #     gripper_joint_names=self.robot_gripper_joint_names,
             #     open_gripper_joint_positions=self.robot_model_class.OPEN_GRIPPER_JOINT_POSITIONS,
             #     closed_gripper_joint_positions=self.robot_model_class.CLOSED_GRIPPER_JOINT_POSITIONS,
             #     max_effort=10.0,
@@ -607,7 +608,7 @@ class Manipulation(Task, Node, abc.ABC):
         if self._use_servo:
             rate = self.create_rate(self.agent_rate)
             try:
-                while rclpy.ok():
+                if rclpy.ok():
                     rate.sleep()
             except KeyboardInterrupt:
                 pass
@@ -625,9 +626,9 @@ class Manipulation(Task, Node, abc.ABC):
             self.robot_model_class.CLOSED_GRIPPER_JOINT_POSITIONS
             == self.initial_gripper_joint_positions
         ):
-            self.gripper.close()
+            self.gripper.reset_close()
         else:
-            self.gripper.open()
+            self.gripper.reset_open()
 
     def add_parameter_overrides(self, parameter_overrides: Dict[str, any]):
 

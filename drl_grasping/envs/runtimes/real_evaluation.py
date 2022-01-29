@@ -97,7 +97,7 @@ class RealEvaluationRuntime(Runtime):
 
         # Wait until Enter is pressed (if manual stepping is enabled)
         if self._manual_stepping:
-            input("Press 'Enter' to continue...")
+            input("Press a key to continue...")
 
         # Time the execution of the step to determine running time
         pre_step_time = time.time()
@@ -155,15 +155,15 @@ class RealEvaluationRuntime(Runtime):
         )
 
         print(
-            "After 10 seconds, the robot will move to its initial joint configuration. Be ready..."
+            "After 5 seconds, the robot will move to its initial joint configuration. Be ready..."
         )
-        time.sleep(10.0)
+        time.sleep(5.0)
 
         # Move to initial joint configuration
         if isinstance(self.task, Manipulation):
             print("Moving to the initial joint configuration...")
             # TODO: Return initialisation once everything else is tested
-            # self.task.move_to_initial_joint_configuration()
+            self.task.move_to_initial_joint_configuration()
 
         input("Press any key to confirm that robot and workspace are reset...")
 

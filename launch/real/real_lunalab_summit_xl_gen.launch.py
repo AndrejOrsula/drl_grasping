@@ -130,7 +130,7 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
         # Naming of the world and robot
         DeclareLaunchArgument(
             "robot_name",
-            default_value=LaunchConfiguration("robot_model"),
+            default_value="lunalab_summit_xl_gen",
             description="Name of the robot.",
         ),
         DeclareLaunchArgument(
@@ -145,7 +145,9 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
         DeclareLaunchArgument(
             "rviz_config",
             default_value=path.join(
-                get_package_share_directory("drl_grasping"), "rviz", "drl_grasping.rviz"
+                get_package_share_directory("drl_grasping"),
+                "rviz",
+                "drl_grasping_real_evaluation.rviz",
             ),
             description="Path to configuration for RViz2.",
         ),

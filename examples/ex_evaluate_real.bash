@@ -8,6 +8,8 @@
 export OMP_DYNAMIC=True
 export OMP_NUM_THREADS=3
 
+## Use the correct runtime
+export DRL_GRASPING_REAL_EVALUATION=True
 
 ### Arguments
 ## Random seed to use for both the environment and agent (-1 for random)
@@ -43,34 +45,74 @@ LOG_FOLDER="${PWD}/drl_grasping_training/train/${ENV}/logs"
 REWARD_LOG="${PWD}/drl_grasping_training/evaluate/${ENV}"
 
 ## Load checkpoint instead of last model (# steps)
-LOAD_CHECKPOINT="0"
+# LOAD_CHECKPOINT="0"
 
+#### Launch script ####
 ### Arguments
 LAUNCH_ARGS=(
-    "seed:=${SEED}"
-    "robot_model:=${ROBOT_MODEL}"
-    "env:=${ENV}"
-    "algo:=${ALGO}"
-    "log_folder:=${LOG_FOLDER}"
-    "reward_log:=${REWARD_LOG}"
-    "stochastic:=false"
-    "n_episodes:=200"
-    "load_best:=false"
     "enable_rviz:=true"
     "log_level:=warn"
 )
-if [[ -n ${LOAD_CHECKPOINT} ]]; then
-    LAUNCH_ARGS+=("load_checkpoint:=${LOAD_CHECKPOINT}")
-fi
 
 ### Launch script
 LAUNCH_CMD=(
     ros2 launch -a
-    drl_grasping evaluate_real.launch.py
+    drl_grasping "real_${ROBOT_MODEL}.launch.py"
     "${LAUNCH_ARGS[*]}"
 )
 
 echo -e "\033[1;30m${LAUNCH_CMD[*]}\033[0m" | xargs
 
 # shellcheck disable=SC2048
-exec ${LAUNCH_CMD[*]}
+exec ${LAUNCH_CMD[*]} &
+
+terminate_child_processes() {
+    echo "Signal received. Terminating all child processes..."
+    for job in $(jobs -p); do
+        kill -TERM "$job" 2>/dev/null || echo -e "\033[31m$job could not be terminated...\033[0m" >&2
+    done
+}
+trap terminate_child_processes SIGINT SIGTERM SIGQUIT
+
+#### Evaluation node ####
+# Note: Evaluation node is started separately in order to enable user input
+### Arguments
+NODE_ARGS=(
+    "--env" "${ENV}"
+    "--env-kwargs" "robot_model:\"${ROBOT_MODEL}\""
+    "--algo" "${ALGO}"
+    "--seed" "${SEED}"
+    "--num-threads" "-1"
+    "--n-episodes" "200"
+    "--stochastic" "false"
+    "--log-folder" "${LOG_FOLDER}"
+    "--reward-log" "${REWARD_LOG}"
+    "--exp-id" "0"
+    "--load-best" "false"
+    "--norm-reward" "false"
+    "--no-render" "true"
+    "--verbose" "1"
+)
+if [[ -n ${LOAD_CHECKPOINT} ]]; then
+    NODE_ARGS+=("--load-checkpoint" "${LOAD_CHECKPOINT}")
+fi
+
+### ROS arguments
+NODE_ARGS+=(
+    "--ros-args"
+    "--log-level" "warn"
+    "--param" "use_sim_time:=false"
+    "--remap" "/rgbd_camera/points:=/lunalab_summit_xl_gen_d455/depth/color/points"
+)
+
+### Run the node
+NODE_CMD=(
+    ros2 run
+    drl_grasping evaluate.py
+    "${NODE_ARGS[*]}"
+)
+
+echo -e "\033[1;30m${NODE_CMD[*]}\033[0m" | xargs
+
+# shellcheck disable=SC2048
+exec ${NODE_CMD[*]}
