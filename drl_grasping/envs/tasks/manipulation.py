@@ -176,7 +176,7 @@ class Manipulation(Task, Node, abc.ABC):
             ignore_new_calls_while_executing=ignore_new_actions_while_executing,
             callback_group=self._callback_group,
             # TODO: Expose as arg
-            follow_joint_trajectory_action_name="/robot_j2s7s300/follow_joint_trajectory",
+            # follow_joint_trajectory_action_name="/robot_j2s7s300/follow_joint_trajectory",
         )
         # MoveIt2 real-time control (servo)
         if self._use_servo:
