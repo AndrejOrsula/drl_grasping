@@ -291,12 +291,12 @@ GraspPlanetary-Octree-Gazebo-v0:
   callback:
       - drl_grasping.utils.callbacks.CurriculumLoggerCallback
       # - drl_grasping.utils.callbacks.ParallelTrainCallback:
-      #     gradient_steps: 100
+      #     gradient_steps: 200
       #     sleep_time: 0.0
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
-      depth: 5
+      depth: 4
       full_depth: 2
       channels_in: 4
       channel_multiplier: 32
@@ -324,7 +324,7 @@ GraspPlanetary-Octree-Gazebo-v0:
   target_entropy: "auto"
   top_quantiles_to_drop_per_net: 3
   train_freq: [1, "episode"]
-  gradient_steps: 100
+  gradient_steps: 200
   noise_type: "normal"
   noise_std: 0.025
   use_sde: False
@@ -334,12 +334,12 @@ GraspPlanetary-OctreeWithIntensity-Gazebo-v0:
   callback:
       - drl_grasping.utils.callbacks.CurriculumLoggerCallback
       # - drl_grasping.utils.callbacks.ParallelTrainCallback:
-      #     gradient_steps: 100
+      #     gradient_steps: 200
       #     sleep_time: 0.0
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
-      depth: 5
+      depth: 4
       full_depth: 2
       channels_in: 5
       channel_multiplier: 32
@@ -367,7 +367,7 @@ GraspPlanetary-OctreeWithIntensity-Gazebo-v0:
   target_entropy: "auto"
   top_quantiles_to_drop_per_net: 3
   train_freq: [1, "episode"]
-  gradient_steps: 100
+  gradient_steps: 200
   noise_type: "normal"
   noise_std: 0.025
   use_sde: False
@@ -382,7 +382,7 @@ GraspPlanetary-OctreeWithColor-Gazebo-v0:
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
-      depth: 5
+      depth: 4
       full_depth: 2
       channels_in: 7
       channel_multiplier: 48
