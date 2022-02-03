@@ -503,7 +503,7 @@ class ManipulationGazeboEnvRandomizer(
             task.get_logger().info(
                 "Inserting invisible planes around the terrain into the environment..."
             )
-            self.add_voundary_collision_walls(task=task, gazebo=gazebo)
+            self.add_boundary_collision_walls(task=task, gazebo=gazebo)
 
         # TODO: Visualization must follow the robot - consider using RViZ geometry markers instead of this appraocz
         # Visualise volumes in GUI if desired
@@ -767,7 +767,7 @@ class ManipulationGazeboEnvRandomizer(
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
 
-    def add_voundary_collision_walls(
+    def add_boundary_collision_walls(
         self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
     ):
         """
