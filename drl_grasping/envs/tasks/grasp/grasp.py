@@ -228,44 +228,6 @@ class Grasp(Manipulation, abc.ABC):
 
         return grasped_objects
 
-    def check_terrain_collision(self) -> bool:
-        """
-        Returns true if robot links are in collision with the ground.
-        """
-
-        robot_name_len = len(self.robot_name)
-        for contact in self.world.get_model(self.terrain_name).contacts():
-            if len(contact.body_b) > robot_name_len:
-                if contact.body_b[:robot_name_len] == self.robot_name:
-                    link = contact.body_b[len(self.robot_name) + 2 :]
-
-                    if not self.robot_base_link_name == link and (
-                        link in self.robot_arm_link_names
-                        or link in self.robot_gripper_link_names
-                    ):
-                        return True
-        return False
-
-    def check_all_objects_outside_workspace(
-        self,
-        object_positions: Dict[str, Tuple[float, float, float]],
-    ) -> bool:
-        """
-        Returns true if all objects are outside the workspace
-        """
-
-        return all(
-            [
-                object_position[0] < self.workspace_min_bound[0]
-                or object_position[1] < self.workspace_min_bound[1]
-                or object_position[2] < self.workspace_min_bound[2]
-                or object_position[0] > self.workspace_max_bound[0]
-                or object_position[1] > self.workspace_max_bound[1]
-                or object_position[2] > self.workspace_max_bound[2]
-                for object_position in object_positions.values()
-            ]
-        )
-
     def _demonstrate_action(self) -> np.ndarray:
 
         self.__actual_actions = np.zeros(self.action_space.shape)
