@@ -28,13 +28,16 @@ else:
 
 
 ###################
-# Robot Selection #
+# Robot Specifics #
 ###################
 ## Fully supported robots: "panda", "lunalab_summit_xl_gen"
 # Default robot model to use in the tasks where robot can be static
-DRL_GRASPING_ROBOT_MODEL: str = "panda"
+DRL_GRASPING_ROBOT_MODEL: str = "lunalab_summit_xl_gen"
 # Default robot model to use in the tasks where robot needs to be mobile
 DRL_GRASPING_ROBOT_MODEL_MOBILE: str = "lunalab_summit_xl_gen"
+
+# Offset of "lunalab_summit_xl_gen" from `base_arm_link` to it base footprint
+LUNALAB_SUMMIT_XL_GEN_Z_OFFSET: float = -0.22
 
 
 ######################
@@ -58,9 +61,6 @@ GRAVITY_MOON_STD: Tuple[float, float, float] = (0.0, 0.0, 0.0084)
 # Gravity preset for Mars
 GRAVITY_MARS: Tuple[float, float, float] = (0.0, 0.0, -3.72076)
 GRAVITY_MARS_STD: Tuple[float, float, float] = (0.0, 0.0, 0.0191)
-
-# Offset of "lunalab_summit_xl_gen" from `base_arm_link` to it base footprint
-LUNALAB_SUMMIT_XL_GEN_Z_OFFSET: float = -0.22
 
 
 #########
@@ -361,12 +361,11 @@ GRASP_KWARGS_RANDOMIZER: Dict[str, any] = {
     "robot_random_pose": False,
     "robot_random_spawn_volume": (0, 0, 0),
     "robot_random_joint_positions": True,
-    "robot_random_joint_positions_std": 0.1,
-    "robot_random_joint_positions_above_object_spawn": True,
+    "robot_random_joint_positions_std": np.pi / 20,
+    "robot_random_joint_positions_above_object_spawn": False,
     "robot_random_joint_positions_above_object_spawn_elevation": 0.15,
-    "robot_random_joint_positions_above_object_spawn_xy_randomness": 0.2,
+    "robot_random_joint_positions_above_object_spawn_xy_randomness": 0.1,
     "terrain_enable": True,
-    # "terrain_type": "flat",
     "terrain_spawn_position": (0.25, 0, 0),
     "terrain_spawn_quat_xyzw": (0, 0, 0, 1),
     "terrain_size": (1.5, 1.5),
@@ -379,7 +378,7 @@ GRASP_KWARGS_RANDOMIZER: Dict[str, any] = {
     "light_radius": 25.0,
     "light_model_rollouts_num": 1,
     "object_enable": True,
-    "object_type": "random_mesh",
+    "object_type": "random_lunar_rock",
     "objects_relative_to": "arm_base_link",
     "object_count": 4,
     "object_spawn_position": (0.5, 0.0, GRASP_ROBOT_Z_OFFSET + 0.1),
@@ -387,14 +386,15 @@ GRASP_KWARGS_RANDOMIZER: Dict[str, any] = {
     "object_random_spawn_position_segments": [],
     "object_random_spawn_position_update_workspace_centre": False,
     "object_random_spawn_volume": (0.18, 0.18, 0.075),
-    "object_models_rollouts_num": 1,
+    "object_models_rollouts_num": 2,
     "underworld_collision_plane": True,
+    "boundary_collision_walls": True,
 }
 GRASP_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
     "camera_enable": True,
     "camera_width": 64,
     "camera_height": 64,
-    "camera_update_rate": 1.2 * GRASP_AGENT_RATE,
+    "camera_update_rate": 4.0 * GRASP_AGENT_RATE,
     "camera_horizontal_fov": np.pi / 5.0,
     "camera_vertical_fov": np.pi / 5.0,
     "camera_noise_mean": 0.0,
@@ -423,21 +423,23 @@ GRASP_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
 GRASP_KWARGS_CURRICULUM: Dict[str, any] = {
     "stages_base_reward": 1.0,
     "reach_required_distance": 0.1,
-    "lift_required_height": GRASP_ROBOT_Z_OFFSET + 0.1,
+    "lift_required_height": GRASP_ROBOT_Z_OFFSET + 0.05,
+    "lift_required_height_max": GRASP_ROBOT_Z_OFFSET + 0.25,
+    "lift_required_height_max_threshold": 0.6,
     "persistent_reward_each_step": -0.005,
     "persistent_reward_terrain_collision": -1.0,
     # Checking for objects outside of workspace must currently be disabled `object_random_spawn_position_update_workspace_centre` is enabled
     "persistent_reward_all_objects_outside_workspace": 0.0,
     "persistent_reward_arm_stuck": -1.0,
     "enable_stage_reward_curriculum": True,
-    "enable_workspace_scale_curriculum": False,
-    "enable_object_spawn_volume_scale_curriculum": False,
+    "enable_workspace_scale_curriculum": True,
+    "enable_object_spawn_volume_scale_curriculum": True,
     "enable_object_count_curriculum": False,
     "stage_reward_multiplier": 7.0,
     "dense_reward": False,
     "initial_success_rate": 0.0,
     "rolling_average_n": 100,
-    "min_workspace_scale": 0.1,
+    "min_workspace_scale": 0.5,
     "max_workspace_volume": GRASP_KWARGS["workspace_volume"],
     "max_workspace_scale_success_rate_threshold": 0.6,
     "min_object_spawn_volume_scale": 0.1,
@@ -446,7 +448,7 @@ GRASP_KWARGS_CURRICULUM: Dict[str, any] = {
     "object_count_min": 1,
     "object_count_max": GRASP_KWARGS_RANDOMIZER["object_count"],
     "max_object_count_success_rate_threshold": 0.6,
-    "arm_stuck_n_steps": 15,
+    "arm_stuck_n_steps": 20,
     "arm_stuck_min_joint_difference_norm": np.pi / 32,
 }
 
@@ -552,16 +554,15 @@ GRASP_PLANETARY_MAX_EPISODE_STEPS: int = 100
 GRASP_PLANETARY_AGENT_RATE: float = 2.5
 GRASP_PLANETARY_ROBOT_Z_OFFSET: float = (
     LUNALAB_SUMMIT_XL_GEN_Z_OFFSET
-    if "lunalab_summit_xl_gen" == DRL_GRASPING_ROBOT_MODEL
+    if "lunalab_summit_xl_gen" == DRL_GRASPING_ROBOT_MODEL_MOBILE
     else 0.0
 )
 GRASP_PLANETARY_KWARGS: Dict[str, any] = {
     "agent_rate": GRASP_PLANETARY_AGENT_RATE,
     "robot_model": DRL_GRASPING_ROBOT_MODEL_MOBILE,
     "workspace_frame_id": "arm_base_link",
-    # "workspace_centre": (0.0, -0.45, GRASP_PLANETARY_ROBOT_Z_OFFSET - 0.05),
-    "workspace_centre": (0.5, 0.0, GRASP_PLANETARY_ROBOT_Z_OFFSET - 0.05),
-    "workspace_volume": (0.3, 0.3, 0.5),
+    "workspace_centre": (0.5, 0.0, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.25),
+    "workspace_volume": (0.4, 0.4, 0.8),
     "ignore_new_actions_while_executing": True,
     # "use_servo": True,
     # "scaling_factor_translation": 0.25,
@@ -578,10 +579,12 @@ GRASP_PLANETARY_KWARGS: Dict[str, any] = {
 }
 GRASP_PLANETARY_KWARGS_OCTREE: Dict[str, any] = {
     "octree_reference_frame_id": "arm_base_link",
-    # "octree_min_bound": (0.1 - 0.6, 0.0 - 0.6, 0.0 - 0.6),
+    # ## Large volume around the robot
+    #  "octree_min_bound": (0.1 - 0.6, 0.0 - 0.6, 0.0 - 0.6),
     # "octree_max_bound": (0.1 + 0.6, 0.0 + 0.6, 0.0 + 0.6),
     # "octree_min_bound": (0.1 - 0.6, 0.0 - 0.6, -0.1 - 0.3),
     # "octree_max_bound": (0.1 + 0.6, 0.0 + 0.6, -0.1 + 0.3),
+    # ## Front-left of robot
     # "octree_min_bound": (
     #     0.15 - 0.16,
     #     -0.5 - 0.16,
@@ -592,15 +595,16 @@ GRASP_PLANETARY_KWARGS_OCTREE: Dict[str, any] = {
     #     -0.5 + 0.16,
     #     GRASP_PLANETARY_ROBOT_Z_OFFSET - 0.1 + 0.16,
     # ),
+    ## Front of robot
     "octree_min_bound": (
-        0.5 - 0.16,
-        0.0 - 0.16,
-        GRASP_PLANETARY_ROBOT_Z_OFFSET - 0.1 - 0.16,
+        0.5 - 0.24,
+        0.0 - 0.24,
+        GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.14 - 0.24,
     ),
     "octree_max_bound": (
-        0.5 + 0.16,
-        0.0 + 0.16,
-        GRASP_PLANETARY_ROBOT_Z_OFFSET - 0.1 + 0.16,
+        0.5 + 0.24,
+        0.0 + 0.24,
+        GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.14 + 0.24,
     ),
     "octree_depth": 4,
     "octree_full_depth": 2,
@@ -620,11 +624,10 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict[str, any] = {
     "gravity_std": GRAVITY_EARTH_STD,
     # "gravity": GRAVITY_MOON,
     # "gravity_std": GRAVITY_MOON_STD,
-    # TODO: Revert to False when training for long durations
     "plugin_scene_broadcaster": False,
     "plugin_user_commands": False,
     "plugin_sensors_render_engine": "ogre2",
-    "robot_spawn_position": (0, 0, 0.25),
+    "robot_spawn_position": (0, 0, 0.1),
     "robot_spawn_quat_xyzw": (0, 0, 0, 1),
     "robot_random_pose": True,
     "robot_random_spawn_volume": (1.0, 1.0, 0),
@@ -638,7 +641,7 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict[str, any] = {
     "terrain_spawn_position": (0, 0, 0),
     "terrain_spawn_quat_xyzw": (0, 0, 0, 1),
     "terrain_size": (3.0, 3.0),
-    "terrain_model_rollouts_num": 8,
+    "terrain_model_rollouts_num": 4,
     "light_type": "random_sun",
     "light_direction": (0.6, -0.4, -0.2),
     "light_random_minmax_elevation": (-0.15, -0.5),
@@ -649,21 +652,21 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict[str, any] = {
     "object_enable": True,
     "object_type": "random_lunar_rock",
     "objects_relative_to": "arm_base_link",
-    "object_count": 3,
-    "object_spawn_position": (1.2, 0.0, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
+    "object_count": 4,
+    "object_spawn_position": (0.5, 0.0, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
     "object_random_pose": True,
     "object_random_spawn_position_segments": [
-        (0.5, -0.01, -0.05),
-        (0.5, 0.01, -0.05),
-        # (0.1, -0.6, -0.05),
-        # (0.2, -0.5, -0.05),
-        # (-0.1, -0.45, -0.05),
-        # (0.4, -0.45, -0.05),
-        # (0.4, 0.45, -0.05),
-        # (-0.1, 0.45, -0.05),
+        # (0.5, -0.01, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
+        # (0.5, 0.01, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
+        # (0.1, -0.6, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
+        # (0.2, -0.5, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
+        # (-0.1, -0.45, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
+        # (0.4, -0.45, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
+        # (0.4, 0.45, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
+        # (-0.1, 0.45, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
     ],
-    "object_random_spawn_position_update_workspace_centre": True,
-    "object_random_spawn_volume": (0.15, 0.15, 0.05),
+    "object_random_spawn_position_update_workspace_centre": False,
+    "object_random_spawn_volume": (0.25, 0.25, 0.1),
     "object_models_rollouts_num": 2,
     "underworld_collision_plane": True,
     "boundary_collision_walls": True,
@@ -672,100 +675,102 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
     "camera_enable": True,
     "camera_width": 128,
     "camera_height": 128,
-    "camera_update_rate": 10.0 * GRASP_PLANETARY_AGENT_RATE,
+    "camera_update_rate": 4.0 * GRASP_PLANETARY_AGENT_RATE,
     # "camera_horizontal_fov": np.pi / 4.0,
     # "camera_vertical_fov": np.pi / 4.0,
     "camera_horizontal_fov": np.pi / 2.0,
     "camera_vertical_fov": np.pi / 2.0,
     "camera_noise_mean": 0.0,
     "camera_noise_stddev": 0.001,
-    "camera_relative_to": "base_link",
-    # # Above robot
-    # "camera_relative_to": "base_link",
-    # "camera_spawn_position": (0, 0, 1),
-    # "camera_spawn_quat_xyzw": (0, 0.707107, 0, 0.707107),
+    "camera_relative_to": "arm_base_link",
     # # Pole-mount
-    # "camera_relative_to": "base_link",
-    # "camera_spawn_position": (-0.2, 0, 0.75),
+    # "camera_relative_to": "arm_base_link",
+    # "camera_spawn_position": (-0.4, 0, 0.65),
     # "camera_spawn_quat_xyzw": (0, 0.258819, 0, 0.9659258),
     # # Bumper-mount
-    # "camera_relative_to": "base_link",
-    # "camera_spawn_position": (0.37, 0, 0.25),
+    # "camera_relative_to": "arm_base_link",
+    # "camera_spawn_position": (0.05, 0, 0.15),
     # "camera_spawn_quat_xyzw": (0, 0.2164396, 0, 0.976296),
     # # End-effector
     # "camera_relative_to": "end_effector",
     # "camera_spawn_position": (0, 0.07, -0.05),
     # "camera_spawn_quat_xyzw": (0, -0.707107, 0, 0.707107),
-    # TODO: Reduce rollout num of camera pose randomizer to 1 if camera pose changes
+    # TODO: Reduce rollout num of camera pose randomizer to 1 if object spawn position changes
     "camera_random_pose_rollouts_num": 4,
     "camera_random_pose_mode": "select_random",
     "camera_random_pose_orbit_distance": 1.0,
     "camera_random_pose_orbit_height_range": (0.1, 0.7),
     "camera_random_pose_orbit_ignore_arc_behind_robot": np.pi / 6,
     "camera_random_pose_select_position_options": [
-        # (-0.2, 0.05, 0.75),
-        # (-0.2, -0.05, 0.75),
-        # (-0.25, 0, 0.75),
-        # (-0.15, 0, 0.75),
-        # (-0.25, 0.05, 0.75),
-        # (-0.25, -0.05, 0.75),
-        # (-0.15, 0.05, 0.75),
-        # (-0.15, -0.05, 0.75),
-        # (0.1, 0.25, 0.3),
-        # (0.1, -0.25, 0.3),
-        (0.37, 0, 0.225),
-        (0.36, 0, 0.225),
-        (0.37, 0.05, 0.225),
-        (0.37, -0.05, 0.225),
-        (0.36, 0.05, 0.225),
-        (0.36, -0.05, 0.225),
-        (0.37, 0, 0.235),
-        (0.36, 0, 0.235),
-        (0.37, 0.05, 0.235),
-        (0.37, -0.05, 0.235),
-        (0.36, 0.05, 0.235),
-        (0.36, -0.05, 0.235),
-        (0.37, 0, 0.235),
-        (0.36, 0, 0.215),
-        (0.37, 0.05, 0.215),
-        (0.37, -0.05, 0.215),
-        (0.36, 0.05, 0.215),
-        (0.36, -0.05, 0.215),
+        # (-0.4, 0.05, 0.65),
+        # (-0.4, -0.05, 0.65),
+        # (-0.45, 0, 0.65),
+        # (-0.35, 0, 0.65),
+        # (-0.45, 0.05, 0.65),
+        # (-0.45, -0.05, 0.65),
+        # (-0.35, 0.05, 0.65),
+        # (-0.35, -0.05, 0.65),
+        # (-0.1, 0.25, 0.2),
+        # (-0.1, -0.25, 0.2),
+        (0.17, 0, 0.11),
+        (0.17, 0.05, 0.11),
+        (0.17, -0.05, 0.11),
+        (0.17, 0, 0.12),
+        (0.17, 0.05, 0.12),
+        (0.17, -0.05, 0.12),
+        (0.17, 0, 0.12),
+        (0.17, 0.05, 0.1),
+        (0.17, -0.05, 0.1),
+        (0.16, 0, 0.11),
+        (0.16, 0.05, 0.11),
+        (0.16, -0.05, 0.11),
+        (0.16, 0, 0.12),
+        (0.16, 0.05, 0.12),
+        (0.16, -0.05, 0.12),
+        (0.16, 0, 0.12),
+        (0.16, 0.05, 0.1),
+        (0.16, -0.05, 0.1),
+        (0.15, 0, 0.11),
+        (0.15, 0.05, 0.11),
+        (0.15, -0.05, 0.11),
+        (0.15, 0, 0.12),
+        (0.15, 0.05, 0.12),
+        (0.15, -0.05, 0.12),
+        (0.15, 0, 0.1),
+        (0.15, 0.05, 0.1),
+        (0.15, -0.05, 0.1),
     ],
-    # TODO: Consider reducing the offset
-    # "camera_random_pose_focal_point_z_offset": GRASP_PLANETARY_ROBOT_Z_OFFSET,
-    "camera_random_pose_focal_point_z_offset": 0.0,
+    "camera_random_pose_focal_point_z_offset": GRASP_PLANETARY_ROBOT_Z_OFFSET,
 }
 GRASP_PLANETARY_KWARGS_CURRICULUM: Dict[str, any] = {
     "stages_base_reward": 1.0,
     "reach_required_distance": 0.1,
-    "lift_required_height": GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.0,
+    "lift_required_height": GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.05,
+    "lift_required_height_max": GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.25,
+    "lift_required_height_max_threshold": 0.5,
     "persistent_reward_each_step": -0.005,
     "persistent_reward_terrain_collision": -1.0,
-    # Checking for objects outside of workspace must currently be disabled `object_random_spawn_position_update_workspace_centre` is enabled
-    "persistent_reward_all_objects_outside_workspace": 0.0,
-    # TODO: Consider disabling arm stuck
+    "persistent_reward_all_objects_outside_workspace": -0.1,
     "persistent_reward_arm_stuck": -1.0,
     "enable_stage_reward_curriculum": True,
-    # TODO: Incorporate curriculums
-    "enable_workspace_scale_curriculum": False,
-    "enable_object_spawn_volume_scale_curriculum": False,
-    "enable_object_count_curriculum": False,
+    "enable_workspace_scale_curriculum": True,
+    "enable_object_spawn_volume_scale_curriculum": True,
+    "enable_object_count_curriculum": True,
     "stage_reward_multiplier": 7.0,
     "dense_reward": False,
     "initial_success_rate": 0.0,
     "rolling_average_n": 100,
-    "min_workspace_scale": 0.1,
+    "min_workspace_scale": 0.5,
     "max_workspace_volume": GRASP_PLANETARY_KWARGS["workspace_volume"],
-    "max_workspace_scale_success_rate_threshold": 0.6,
-    "min_object_spawn_volume_scale": 0.1,
+    "max_workspace_scale_success_rate_threshold": 0.5,
+    "min_object_spawn_volume_scale": 0.5,
     "max_object_spawn_volume": GRASP_PLANETARY_KWARGS_RANDOMIZER[
         "object_random_spawn_volume"
     ],
-    "max_object_spawn_volume_scale_success_rate_threshold": 0.6,
-    "object_count_min": 1,
+    "max_object_spawn_volume_scale_success_rate_threshold": 0.5,
+    "object_count_min": 2,
     "object_count_max": GRASP_PLANETARY_KWARGS_RANDOMIZER["object_count"],
-    "max_object_count_success_rate_threshold": 0.6,
+    "max_object_count_success_rate_threshold": 0.5,
     "arm_stuck_n_steps": 20,
     "arm_stuck_min_joint_difference_norm": np.pi / 32,
 }
@@ -782,7 +787,7 @@ register(
         **GRASP_PLANETARY_KWARGS_OCTREE,
         "octree_include_color": False,
         "octree_include_intensity": False,
-        "octree_max_size": 100000,
+        "octree_max_size": 35000,
     },
 )
 register(
@@ -796,7 +801,7 @@ register(
         **GRASP_PLANETARY_KWARGS_OCTREE,
         "octree_include_color": False,
         "octree_include_intensity": True,
-        "octree_max_size": 120000,
+        "octree_max_size": 40000,
     },
 )
 register(
@@ -810,7 +815,7 @@ register(
         **GRASP_PLANETARY_KWARGS_OCTREE,
         "octree_include_color": True,
         "octree_include_intensity": False,
-        "octree_max_size": 150000,
+        "octree_max_size": 60000,
     },
 )
 # Gazebo wrapper
