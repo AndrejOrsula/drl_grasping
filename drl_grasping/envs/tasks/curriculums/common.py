@@ -162,7 +162,7 @@ class StageRewardCurriculum:
         # What stage was reached during this episode so far
         for stage in iter(self._stage_type):
             reached_stage = stage
-            if self.stages_completed_this_episode[stage]:
+            if not self.stages_completed_this_episode[stage]:
                 break
         info.update(
             {
