@@ -46,6 +46,12 @@ class GraspCurriculum(
         enable_workspace_scale_curriculum: bool,
         enable_object_spawn_volume_scale_curriculum: bool,
         enable_object_count_curriculum: bool,
+        reach_required_distance_min: Optional[float] = None,
+        reach_required_distance_max: Optional[float] = None,
+        reach_required_distance_max_threshold: Optional[float] = None,
+        lift_required_height_min: Optional[float] = None,
+        lift_required_height_max: Optional[float] = None,
+        lift_required_height_max_threshold: Optional[float] = None,
         **kwargs,
     ):
 
@@ -92,6 +98,64 @@ class GraspCurriculum(
         if self.__persistent_reward_arm_stuck > 0.0:
             self.__persistent_reward_arm_stuck *= -1.0
 
+        # Setup curriculum for Reach distance requirement (if enabled)
+        reach_required_distance_min = (
+            reach_required_distance_min
+            if reach_required_distance_min is not None
+            else reach_required_distance
+        )
+        reach_required_distance_max = (
+            reach_required_distance_max
+            if reach_required_distance_max is not None
+            else reach_required_distance
+        )
+        reach_required_distance_max_threshold = (
+            reach_required_distance_max_threshold
+            if reach_required_distance_max_threshold is not None
+            else 0.5
+        )
+        self.__reach_required_distance_curriculum_enabled = (
+            not reach_required_distance_min == reach_required_distance_max
+        )
+        if self.__reach_required_distance_curriculum_enabled:
+            self.__reach_required_distance_curriculum = AttributeCurriculum(
+                success_rate_impl=self,
+                attribute_owner=self,
+                attribute_name="reach_required_distance",
+                initial_value=reach_required_distance_min,
+                target_value=reach_required_distance_max,
+                target_value_threshold=reach_required_distance_max_threshold,
+            )
+
+        # Setup curriculum for Lift height requirement (if enabled)
+        lift_required_height_min = (
+            lift_required_height_min
+            if lift_required_height_min is not None
+            else lift_required_height
+        )
+        lift_required_height_max = (
+            lift_required_height_max
+            if lift_required_height_max is not None
+            else lift_required_height
+        )
+        lift_required_height_max_threshold = (
+            lift_required_height_max_threshold
+            if lift_required_height_max_threshold is not None
+            else 0.5
+        )
+        self.__lift_required_height_curriculum_enabled = (
+            not lift_required_height_min == lift_required_height_max
+        )
+        if self.__lift_required_height_curriculum_enabled:
+            self.__lift_required_height_curriculum = AttributeCurriculum(
+                success_rate_impl=self,
+                attribute_owner=self,
+                attribute_name="lift_required_height",
+                initial_value=lift_required_height_min,
+                target_value=lift_required_height_max,
+                target_value_threshold=lift_required_height_max_threshold,
+            )
+
     def get_reward(self) -> Reward:
 
         if self.__enable_stage_reward_curriculum:
@@ -126,6 +190,10 @@ class GraspCurriculum(
             info.update(ObjectCountCurriculum.get_info(self))
         if self.__persistent_reward_arm_stuck:
             info.update(ArmStuckChecker.get_info(self))
+        if self.__reach_required_distance_curriculum_enabled:
+            info.update(self.__reach_required_distance_curriculum.get_info())
+        if self.__lift_required_height_curriculum_enabled:
+            info.update(self.__lift_required_height_curriculum.get_info())
 
         return info
 
@@ -140,6 +208,10 @@ class GraspCurriculum(
             ObjectCountCurriculum.reset_task(self)
         if self.__persistent_reward_arm_stuck:
             ArmStuckChecker.reset_task(self)
+        if self.__reach_required_distance_curriculum_enabled:
+            self.__reach_required_distance_curriculum.reset_task()
+        if self.__lift_required_height_curriculum_enabled:
+            self.__lift_required_height_curriculum.reset_task()
 
     def on_episode_success(self):
 
