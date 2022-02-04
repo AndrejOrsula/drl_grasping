@@ -1,5 +1,4 @@
 import abc
-from os import environ
 from typing import List, Tuple, Union
 
 import numpy as np
@@ -541,11 +540,11 @@ class ManipulationGazeboEnvRandomizer(
             finger = robot_gazebo.get_link(link_name=gripper_link_name)
             finger.enable_contact_detection(True)
 
-        # # If mobile, enable contact detection also for the wheels (not needed atm)
-        # if self.robot.is_mobile:
-        #     for wheel_link_name in self.robot.wheel_link_names:
-        #         wheel = robot_gazebo.get_link(link_name=wheel_link_name)
-        #         wheel.enable_contact_detection(True)
+        # If mobile, enable contact detection also for the wheels
+        if self.robot.is_mobile:
+            for wheel_link_name in self.robot.wheel_link_names:
+                wheel = robot_gazebo.get_link(link_name=wheel_link_name)
+                wheel.enable_contact_detection(True)
 
         # Execute a paused run to process robot model insertion
         if not gazebo.run(paused=True):
@@ -635,7 +634,6 @@ class ManipulationGazeboEnvRandomizer(
         # Create terrain
         self.terrain = self.__terrain_model_class(
             world=task.world,
-            name=task.terrain_name,
             position=self._terrain_spawn_position,
             orientation=quat_to_wxyz(self._terrain_spawn_quat_xyzw),
             size=self._terrain_size,
@@ -663,7 +661,6 @@ class ManipulationGazeboEnvRandomizer(
         # Create light
         self.light = self.__light_model_class(
             world=task.world,
-            name="sun",
             direction=self._light_direction,
             minmax_elevation=self._light_random_minmax_elevation,
             color=self._light_color,
@@ -749,7 +746,7 @@ class ManipulationGazeboEnvRandomizer(
         """
 
         models.Plane(
-            name="_collision_plane",
+            name="_collision_plane_B",
             world=task.world,
             position=(
                 0.0,
@@ -775,7 +772,7 @@ class ManipulationGazeboEnvRandomizer(
         """
 
         models.Plane(
-            name="_collision_plane",
+            name="_collision_plane_N",
             world=task.world,
             position=(
                 self._terrain_spawn_position[0]
@@ -792,7 +789,7 @@ class ManipulationGazeboEnvRandomizer(
         )
 
         models.Plane(
-            name="_collision_plane",
+            name="_collision_plane_S",
             world=task.world,
             position=(
                 self._terrain_spawn_position[0]
@@ -809,7 +806,7 @@ class ManipulationGazeboEnvRandomizer(
         )
 
         models.Plane(
-            name="_collision_plane",
+            name="_collision_plane_E",
             world=task.world,
             position=(
                 0.0,
@@ -826,7 +823,7 @@ class ManipulationGazeboEnvRandomizer(
         )
 
         models.Plane(
-            name="_collision_plane",
+            name="_collision_plane_W",
             world=task.world,
             position=(
                 0.0,
@@ -852,7 +849,7 @@ class ManipulationGazeboEnvRandomizer(
         Randomize models if needed
         """
 
-        # Randomize light plane if needed
+        # Randomize light if needed
         if self._light_enable and self._light_model_expired():
             self.randomize_light(task=task, gazebo=gazebo)
 
@@ -878,8 +875,8 @@ class ManipulationGazeboEnvRandomizer(
 
         # Randomize objects if needed
         # Note: No need to randomize pose of new models because they are already spawned randomly
-        self.__object_positions.clear()
         if self._object_enable:
+            self.__object_positions.clear()
             if self._object_models_expired():
                 self.randomize_object_models(task=task, gazebo=gazebo)
             elif self._object_random_pose:
@@ -887,11 +884,7 @@ class ManipulationGazeboEnvRandomizer(
             else:
                 self.reset_default_object_pose(task=task, gazebo=gazebo)
 
-        # This step is needed for some unknown reason. Otherwise, Gazebo server crashes without any trace.
-        # Similarly,
-        gazebo.step()
-
-        # Randomize terrain plane if needed
+        # Randomize terrain if needed
         if self._terrain_enable and self._terrain_model_expired():
             self.randomize_terrain(task=task, gazebo=gazebo)
 
@@ -1256,10 +1249,6 @@ class ManipulationGazeboEnvRandomizer(
             if not task.world.to_gazebo().remove_model(self.terrain.name()):
                 raise RuntimeError(f"Failed to remove {self.terrain.name()}")
 
-            # Execute a paused run to process model removal
-            if not gazebo.run(paused=True):
-                raise RuntimeError("Failed to execute a paused Gazebo run")
-
         # Choose one of the random orientations for the texture (4 directions)
         orientation = [
             (1, 0, 0, 0),
@@ -1271,7 +1260,6 @@ class ManipulationGazeboEnvRandomizer(
         # Create terrain
         self.terrain = self.__terrain_model_class(
             world=task.world,
-            name=task.terrain_name,
             position=self._terrain_spawn_position,
             orientation=orientation,
             size=self._terrain_size,
@@ -1286,9 +1274,9 @@ class ManipulationGazeboEnvRandomizer(
             link = self.terrain.to_gazebo().get_link(link_name=link_name)
             link.enable_contact_detection(True)
 
-        # Execute a paused run to process model removal and insertion
-        if not gazebo.run(paused=True):
-            raise RuntimeError("Failed to execute a paused Gazebo run")
+        # Execute an unpaused step to process terrain removal and insertion
+        if not gazebo.step():
+            raise RuntimeError("Failed to execute an unpaused Gazebo run")
 
     def randomize_light(self, task: SupportedTasks, gazebo: scenario.GazeboSimulator):
 
@@ -1297,14 +1285,9 @@ class ManipulationGazeboEnvRandomizer(
             if not task.world.to_gazebo().remove_model(self.light.name()):
                 raise RuntimeError(f"Failed to remove {self.light.name()}")
 
-            # Execute a paused run to process model removal
-            if not gazebo.run(paused=True):
-                raise RuntimeError("Failed to execute a paused Gazebo run")
-
         # Create light
         self.light = self.__light_model_class(
             world=task.world,
-            name="sun",
             direction=self._light_direction,
             minmax_elevation=self._light_random_minmax_elevation,
             color=self._light_color,
@@ -1397,7 +1380,7 @@ class ManipulationGazeboEnvRandomizer(
         centre: Tuple[float, float, float],
         volume: Tuple[float, float, float],
         name: str = "",
-        min_distance_to_other_objects: float = 0.25,
+        min_distance_to_other_objects: float = 0.075,
         min_distance_decay_factor: float = 0.9,
     ):
 
@@ -1513,6 +1496,66 @@ class ManipulationGazeboEnvRandomizer(
         attempts = 0
         object_overlapping_ok = False
 
+        # Wait until robot gets in contact with terrain
+        if self.robot.is_mobile:
+            robot_gazebo = self.robot.to_gazebo()
+            wheel_links = [
+                robot_gazebo.get_link(link_name=wheel_link_name)
+                for wheel_link_name in self.robot.wheel_link_names
+            ]
+            is_robot_in_contact_with_terrain = False
+            while (
+                not is_robot_in_contact_with_terrain
+                and attempts < self.POST_RANDOMIZATION_MAX_STEPS
+            ):
+                for wheel_link in wheel_links:
+                    wheel_contacts = wheel_link.contacts()
+                    if wheel_contacts:
+                        break
+
+                for contact in wheel_contacts:
+                    if f"{task.terrain_name}::" in contact.body_b:
+                        is_robot_in_contact_with_terrain = True
+                        break
+                    elif "_collision_plane_B::" in contact.body_b:
+                        # Reset robot and object poses in case they passed through the terrain for some reason
+                        attempts += 1
+                        if self._terrain_enable:
+                            self.randomize_terrain(task=task, gazebo=gazebo)
+                        self.reset_robot_pose(
+                            task=task, gazebo=gazebo, randomize=self._robot_random_pose
+                        )
+                        if self._object_enable:
+                            if self._object_random_pose:
+                                self.object_random_pose(task=task, gazebo=gazebo)
+                            else:
+                                self.reset_default_object_pose(task=task, gazebo=gazebo)
+                        break
+
+                object_overlapping_ok = self.check_object_overlapping(task=task)
+                if not gazebo.step():
+                    raise RuntimeError("Failed to execute an unpaused Gazebo step")
+        if self.POST_RANDOMIZATION_MAX_STEPS == attempts:
+            task.get_logger().error(
+                "Robot keeps falling through the terrain. There is something wrong..."
+            )
+            return
+
+        # Make sure no objects are overlapping (intersections between collision geometry)
+        while (
+            not object_overlapping_ok and attempts < self.POST_RANDOMIZATION_MAX_STEPS
+        ):
+            attempts += 1
+            task.get_logger().info("Objects overlapping, trying new positions")
+            object_overlapping_ok = self.check_object_overlapping(task=task)
+            if not gazebo.step():
+                raise RuntimeError("Failed to execute an unpaused Gazebo step")
+        if self.POST_RANDOMIZATION_MAX_STEPS == attempts:
+            task.get_logger().warn(
+                "Objects could not be spawned without any overlapping. The workspace might be too crowded!"
+            )
+            return
+
         # Execute steps until new observations are available
         observations_ready = False
         task.moveit2.reset_new_joint_state_checker()
@@ -1530,7 +1573,6 @@ class ManipulationGazeboEnvRandomizer(
                 task.get_logger().debug("Waiting for new joint state after reset.")
             if not gazebo.step():
                 raise RuntimeError("Failed to execute an unpaused Gazebo step")
-            object_overlapping_ok = self.check_object_overlapping(task=task)
 
             # Break once all observaions are available
             if not task.moveit2.new_joint_state_available:
@@ -1542,26 +1584,15 @@ class ManipulationGazeboEnvRandomizer(
                 if not task.camera_sub.new_observation_available:
                     continue
             observations_ready = True
-
-        # Make sure no objects are overlapping (intersections between collision geometry)
-        while (
-            not object_overlapping_ok and attempts < self.POST_RANDOMIZATION_MAX_STEPS
-        ):
-            attempts += 1
-            task.get_logger().info("Objects overlapping, trying new positions")
-            if not gazebo.step():
-                raise RuntimeError("Failed to execute an unpaused Gazebo step")
-            object_overlapping_ok = self.check_object_overlapping(task=task)
         if self.POST_RANDOMIZATION_MAX_STEPS == attempts:
-            task.get_logger().warn(
-                "Objects could not be spawned overlapping. The workspace might be too crowded!"
-            )
+            task.get_logger().error("Cannot obtain new observation.")
+            return
 
     def check_object_overlapping(
         self,
         task: SupportedTasks,
-        allowed_penetration_depth: float = 0.001,
-        terrain_allowed_penetration_depth: float = 0.01,
+        allowed_penetration_depth: float = 0.01,
+        terrain_allowed_penetration_depth: float = 0.02,
     ) -> bool:
         """
         Go through all objects and make sure that none of them are overlapping.
@@ -1580,6 +1611,22 @@ class ManipulationGazeboEnvRandomizer(
 
         for object_name in self.task.object_names:
             obj = task.world.get_model(object_name).to_gazebo()
+
+            # Make sure the object is inside workspace
+            if task.check_object_outside_workspace(
+                self.__object_positions[object_name]
+            ):
+                position, quat_random = self.get_random_object_pose(
+                    task=task,
+                    centre=self._object_spawn_position,
+                    volume=self._object_random_spawn_volume,
+                    name=object_name,
+                )
+                obj.reset_base_pose(position, quat_random)
+                obj.reset_base_world_velocity([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+                return False
+
+            # Make sure the object is not intersecting other objects
             for contact in obj.contacts():
                 depth = np.mean([point.depth for point in contact.points])
                 if (
@@ -1765,7 +1812,7 @@ class ManipulationGazeboEnvRandomizer(
         # Insert a translucent box visible only in simulation with no physical interactions
         models.Box(
             world=task.world,
-            name="workspace_volume",
+            name="_workspace_volume",
             position=self._object_spawn_position,
             orientation=(0, 0, 0, 1),
             size=task.workspace_volume,
@@ -1790,7 +1837,7 @@ class ManipulationGazeboEnvRandomizer(
         # Insert translucent boxes visible only in simulation with no physical interactions
         models.Box(
             world=task.world,
-            name="object_random_spawn_volume",
+            name="_object_random_spawn_volume",
             position=self._object_spawn_position,
             orientation=(0, 0, 0, 1),
             size=self._object_random_spawn_volume,
@@ -1802,7 +1849,7 @@ class ManipulationGazeboEnvRandomizer(
         )
         models.Box(
             world=task.world,
-            name="object_random_spawn_volume_with_height",
+            name="_object_random_spawn_volume_with_height",
             position=self._object_spawn_position,
             orientation=(0, 0, 0, 1),
             size=self._object_random_spawn_volume,
