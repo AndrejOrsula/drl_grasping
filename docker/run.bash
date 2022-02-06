@@ -46,8 +46,10 @@ if [ ! -f ${XAUTH} ]; then
 fi
 GUI_ENVS=(
     --env XAUTHORITY="${XAUTH}"
-    --env DISPLAY="${DISPLAY}"
     --env QT_X11_NO_MITSHM=1
+    --env DISPLAY="${DISPLAY}"
+    # --env DISPLAY=:1.0
+    # --env MESA_GL_VERSION_OVERRIDE=3.3
 )
 GUI_VOLUMES=(
     --volume "${XAUTH}:${XAUTH}"

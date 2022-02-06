@@ -82,21 +82,19 @@ ENV ASSETS_DIR=${WS_DIR}/assets
 ARG UNILU_GITLAB_ACCESS_TOKEN
 RUN git config --global url."https://oauth2:${UNILU_GITLAB_ACCESS_TOKEN}@gitlab.uni.lu".insteadOf "https://gitlab.uni.lu"
 
-### Clone drl_grasping and all colcon-enabled dependencies
+### Clone drl_grasping and all colcon-enabled dependencies, then install Python requirements (Torch, SB3, ...)
 WORKDIR ${WS_SRC_DIR}
 ARG DRL_GRASPING_GIT_BRANCH=devel
 # TODO: Add `--recursive` arg once pretrained agents are ready to use
 RUN git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/drl_grasping.git -b ${DRL_GRASPING_GIT_BRANCH} && \
-    vcs import < ${WS_SRC_DIR}/drl_grasping/drl_grasping.repos
-
-### Install Python requirements (Torch, SB3, ...)
-RUN pip install --no-cache-dir --upgrade pip && \
+    vcs import < ${WS_SRC_DIR}/drl_grasping/drl_grasping.repos && \
+    pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r ${WS_SRC_DIR}/drl_grasping/python_requirements.txt
 
 ### Install ROS dependencies and build with colcon
 WORKDIR ${WS_DIR}
-RUN apt-get update && \
-    rosdep update && \
+RUN rosdep update && \
+    apt-get update && \
     rosdep install -r --from-paths ${WS_SRC_DIR} -yi --rosdistro ${ROS2_DISTRO} && \
     rm -rf /var/lib/apt/lists/* && \
     source /opt/ros/${ROS2_DISTRO}/setup.bash && \
@@ -176,8 +174,8 @@ RUN git fetch origin && \
     git reset --hard origin/${DRL_GRASPING_GIT_BRANCH} && \
     git pull
 WORKDIR ${WS_DIR}
-RUN apt-get update && \
-    rosdep update && \
+RUN rosdep update && \
+    apt-get update && \
     rosdep install -r --from-paths ${WS_SRC_DIR} -yi --rosdistro ${ROS2_DISTRO} && \
     rm -rf /var/lib/apt/lists/* && \
     source /opt/ros/${ROS2_DISTRO}/setup.bash && \
