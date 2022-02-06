@@ -334,7 +334,7 @@ GraspPlanetary-OctreeWithIntensity-Gazebo-v0:
   callback:
       - drl_grasping.utils.callbacks.CurriculumLoggerCallback
       # - drl_grasping.utils.callbacks.ParallelTrainCallback:
-      #     gradient_steps: 200
+      #     gradient_steps: 100
       #     sleep_time: 0.0
   policy: "OctreeCnnPolicy"
   policy_kwargs:
@@ -356,8 +356,8 @@ GraspPlanetary-OctreeWithIntensity-Gazebo-v0:
     net_arch: [512, 512]
     separate_networks_for_stacks: True
     share_features_extractor: True
-  n_timesteps: 500000
-  buffer_size: 30000
+  n_timesteps: 1000000
+  buffer_size: 50000
   learning_starts: 0
   batch_size: 32
   learning_rate: lin_0.00015
@@ -367,7 +367,7 @@ GraspPlanetary-OctreeWithIntensity-Gazebo-v0:
   target_entropy: "auto"
   top_quantiles_to_drop_per_net: 3
   train_freq: [1, "episode"]
-  gradient_steps: 200
+  gradient_steps: 100
   noise_type: "normal"
   noise_std: 0.025
   use_sde: False
