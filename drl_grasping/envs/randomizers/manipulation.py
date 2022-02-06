@@ -938,8 +938,8 @@ class ManipulationGazeboEnvRandomizer(
 
         # Stop servoing
         if task._use_servo:
-            task.servo()
             if task.servo.is_enabled:
+                task.servo.servo()
                 task.servo.disable(sync=True)
 
         gazebo_robot = self.robot.to_gazebo()
@@ -1030,14 +1030,6 @@ class ManipulationGazeboEnvRandomizer(
                 self.robot.passive_joint_names,
             ):
                 raise RuntimeError("Failed to reset passive joint velocities")
-
-        # Execute a paused run to process model modification
-        if not gazebo.run(paused=True):
-            raise RuntimeError("Failed to execute a paused Gazebo run")
-
-        # Start servoing again
-        if task._use_servo:
-            task.servo.enable(sync=False)
 
         # Execute an unpaused run to process model modification and get new JointStates
         if not gazebo.step():
