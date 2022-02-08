@@ -777,6 +777,51 @@ GRASP_PLANETARY_KWARGS_CURRICULUM: Dict[str, any] = {
 
 # Task
 register(
+    id="GraspPlanetary-DepthImage-v0",
+    entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
+    max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
+    kwargs={
+        "task_cls": tasks.GraspPlanetaryDepthImage,
+        **GRASP_PLANETARY_KWARGS,
+        **GRASP_PLANETARY_KWARGS_CURRICULUM,
+        "depth_max_distance": 1.0,
+        "image_include_color": False,
+        "image_include_intensity": False,
+        "image_n_stacked": 3,
+        "proprioceptive_observations": True,
+    },
+)
+register(
+    id="GraspPlanetary-DepthImageWithIntensity-v0",
+    entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
+    max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
+    kwargs={
+        "task_cls": tasks.GraspPlanetaryDepthImage,
+        **GRASP_PLANETARY_KWARGS,
+        **GRASP_PLANETARY_KWARGS_CURRICULUM,
+        "depth_max_distance": 1.0,
+        "image_include_color": False,
+        "image_include_intensity": True,
+        "image_n_stacked": 3,
+        "proprioceptive_observations": True,
+    },
+)
+register(
+    id="GraspPlanetary-DepthImageWithColor-v0",
+    entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
+    max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
+    kwargs={
+        "task_cls": tasks.GraspPlanetaryDepthImage,
+        **GRASP_PLANETARY_KWARGS,
+        **GRASP_PLANETARY_KWARGS_CURRICULUM,
+        "depth_max_distance": 1.0,
+        "image_include_color": True,
+        "image_include_intensity": False,
+        "image_n_stacked": 3,
+        "proprioceptive_observations": True,
+    },
+)
+register(
     id="GraspPlanetary-Octree-v0",
     entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
     max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
@@ -819,6 +864,47 @@ register(
     },
 )
 # Gazebo wrapper
+register(
+    id="GraspPlanetary-DepthImage-Gazebo-v0",
+    entry_point=GRASP_PLANETARY_RANDOMIZER,
+    max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
+    kwargs={
+        "env": "GraspPlanetary-DepthImage-v0",
+        **GRASP_PLANETARY_KWARGS_SIM,
+        **GRASP_PLANETARY_KWARGS_RANDOMIZER,
+        **GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA,
+        "camera_type": "depth_camera",
+        "camera_publish_depth": True,
+    },
+)
+register(
+    id="GraspPlanetary-DepthImageWithIntensity-Gazebo-v0",
+    entry_point=GRASP_PLANETARY_RANDOMIZER,
+    max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
+    kwargs={
+        "env": "GraspPlanetary-DepthImageWithIntensity-v0",
+        **GRASP_PLANETARY_KWARGS_SIM,
+        **GRASP_PLANETARY_KWARGS_RANDOMIZER,
+        **GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA,
+        "camera_type": "rgbd_camera",
+        "camera_publish_depth": True,
+        "camera_publish_color": True,
+    },
+)
+register(
+    id="GraspPlanetary-DepthImageWithColor-Gazebo-v0",
+    entry_point=GRASP_PLANETARY_RANDOMIZER,
+    max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
+    kwargs={
+        "env": "GraspPlanetary-DepthImageWithColor-v0",
+        **GRASP_PLANETARY_KWARGS_SIM,
+        **GRASP_PLANETARY_KWARGS_RANDOMIZER,
+        **GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA,
+        "camera_type": "rgbd_camera",
+        "camera_publish_depth": True,
+        "camera_publish_color": True,
+    },
+)
 register(
     id="GraspPlanetary-Octree-Gazebo-v0",
     entry_point=GRASP_PLANETARY_RANDOMIZER,

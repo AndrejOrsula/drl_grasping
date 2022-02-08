@@ -1,6 +1,10 @@
 # Reach task - hyperparameters are not tuned (but agent should learn regardless)
 # TODO: Autotune Reach task hyperparameters for TQC
 Reach-Gazebo-v0:
+  # callback:
+  #   - drl_grasping.utils.callbacks.ParallelTrainCallback:
+  #       gradient_steps: 100
+  #       sleep_time: 0.0
   policy: "MlpPolicy"
   policy_kwargs:
     n_quantiles: 25
@@ -158,10 +162,7 @@ Reach-OctreeWithColor-Gazebo-v0:
 # Grasp task - hyperparameters are semi-tuned
 Grasp-Octree-Gazebo-v0:
   callback:
-      - drl_grasping.utils.callbacks.CurriculumLoggerCallback
-  #   - drl_grasping.utils.callbacks.ParallelTrainCallback:
-  #       gradient_steps: 100
-  #       sleep_time: 0.0
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
@@ -201,10 +202,7 @@ Grasp-Octree-Gazebo-v0:
 
 Grasp-OctreeWithIntensity-Gazebo-v0:
   callback:
-      - drl_grasping.utils.callbacks.CurriculumLoggerCallback
-  #   - drl_grasping.utils.callbacks.ParallelTrainCallback:
-  #       gradient_steps: 100
-  #       sleep_time: 0.0
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
@@ -244,10 +242,7 @@ Grasp-OctreeWithIntensity-Gazebo-v0:
 
 Grasp-OctreeWithColor-Gazebo-v0:
   callback:
-      - drl_grasping.utils.callbacks.CurriculumLoggerCallback
-  #   - drl_grasping.utils.callbacks.ParallelTrainCallback:
-  #       gradient_steps: 100
-  #       sleep_time: 0.0
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
@@ -285,14 +280,122 @@ Grasp-OctreeWithColor-Gazebo-v0:
   use_sde: False
   optimize_memory_usage: True
 
-# GraspPlanetary task - hyperparameters are not tuned
-# TODO: Autotune GraspPlanetary task hyperparameters for TQC
+# GraspPlanetary task
+GraspPlanetary-DepthImage-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+  policy: "DepthImageCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      channels_in: 1
+      width: 128
+      height: 128
+      channel_multiplier: 40
+      full_depth_conv1d: True
+      full_depth_channels: 8
+      features_dim: 96
+      aux_obs_dim: 10
+      max_pool_kernel: 4
+    n_quantiles: 25
+    n_critics: 2
+    net_arch: [512, 512]
+    separate_networks_for_stacks: True
+    share_features_extractor: True
+  n_timesteps: 1000000
+  buffer_size: 10000
+  learning_starts: 0
+  batch_size: 32
+  learning_rate: lin_0.00015
+  gamma: 0.999
+  tau: 0.00005
+  ent_coef: "auto_0.1"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
+  noise_type: "normal"
+  noise_std: 0.025
+  use_sde: False
+  optimize_memory_usage: True
+
+GraspPlanetary-DepthImageWithIntensity-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+  policy: "DepthImageCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      channels_in: 2
+      width: 128
+      height: 128
+      channel_multiplier: 40
+      full_depth_conv1d: True
+      full_depth_channels: 8
+      features_dim: 96
+      aux_obs_dim: 10
+      max_pool_kernel: 4
+    n_quantiles: 25
+    n_critics: 2
+    net_arch: [512, 512]
+    separate_networks_for_stacks: True
+    share_features_extractor: True
+  n_timesteps: 1000000
+  buffer_size: 10000
+  learning_starts: 0
+  batch_size: 32
+  learning_rate: lin_0.00015
+  gamma: 0.999
+  tau: 0.00005
+  ent_coef: "auto_0.1"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
+  noise_type: "normal"
+  noise_std: 0.025
+  use_sde: False
+  optimize_memory_usage: True
+
+GraspPlanetary-DepthImageWithColor-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+  policy: "DepthImageCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      channels_in: 4
+      width: 128
+      height: 128
+      channel_multiplier: 40
+      full_depth_conv1d: True
+      full_depth_channels: 8
+      features_dim: 96
+      aux_obs_dim: 10
+      max_pool_kernel: 4
+    n_quantiles: 25
+    n_critics: 2
+    net_arch: [512, 512]
+    separate_networks_for_stacks: True
+    share_features_extractor: True
+  n_timesteps: 1000000
+  buffer_size: 10000
+  learning_starts: 0
+  batch_size: 32
+  learning_rate: lin_0.00015
+  gamma: 0.999
+  tau: 0.00005
+  ent_coef: "auto_0.1"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
+  noise_type: "normal"
+  noise_std: 0.025
+  use_sde: False
+  optimize_memory_usage: True
+
 GraspPlanetary-Octree-Gazebo-v0:
   callback:
-      - drl_grasping.utils.callbacks.CurriculumLoggerCallback
-      # - drl_grasping.utils.callbacks.ParallelTrainCallback:
-      #     gradient_steps: 200
-      #     sleep_time: 0.0
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
@@ -332,20 +435,17 @@ GraspPlanetary-Octree-Gazebo-v0:
 
 GraspPlanetary-OctreeWithIntensity-Gazebo-v0:
   callback:
-      - drl_grasping.utils.callbacks.CurriculumLoggerCallback
-      # - drl_grasping.utils.callbacks.ParallelTrainCallback:
-      #     gradient_steps: 100
-      #     sleep_time: 0.0
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
       depth: 4
       full_depth: 2
       channels_in: 5
-      channel_multiplier: 32
+      channel_multiplier: 64
       full_depth_conv1d: True
-      full_depth_channels: 16
-      features_dim: 160
+      full_depth_channels: 32
+      features_dim: 192
       aux_obs_dim: 10
       fast_conv: True
       batch_normalization: False
@@ -353,8 +453,8 @@ GraspPlanetary-OctreeWithIntensity-Gazebo-v0:
       bn_momentum: 0.01
     n_quantiles: 25
     n_critics: 2
-    net_arch: [512, 512]
-    separate_networks_for_stacks: True
+    net_arch: [1024, 1024]
+    separate_networks_for_stacks: False
     share_features_extractor: True
   n_timesteps: 1000000
   buffer_size: 50000
@@ -375,10 +475,7 @@ GraspPlanetary-OctreeWithIntensity-Gazebo-v0:
 
 GraspPlanetary-OctreeWithColor-Gazebo-v0:
   callback:
-      - drl_grasping.utils.callbacks.CurriculumLoggerCallback
-      # - drl_grasping.utils.callbacks.ParallelTrainCallback:
-      #     gradient_steps: 200
-      #     sleep_time: 0.0
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
