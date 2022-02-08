@@ -204,13 +204,13 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         if verbose:
             print(self)
 
-    def forward(self, octree):
+    def forward(self, obs):
         """
         Note: input octree must be batch of octrees (created with ocnn)
         """
 
-        aux_obs = octree["aux_obs"]
-        octree = octree["octree"]
+        octree = obs[0]
+        aux_obs = obs[1]
 
         if not self._separate_networks_for_stacks:
 

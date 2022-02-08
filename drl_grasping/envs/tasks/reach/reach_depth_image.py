@@ -8,8 +8,6 @@ from drl_grasping.envs.models.sensors import Camera
 from drl_grasping.envs.perception import CameraSubscriber
 from drl_grasping.envs.tasks.reach import Reach
 
-# TODO: ReachDepthImage environment currently does not currently have a working CnnPolicy
-
 
 class ReachDepthImage(Reach, abc.ABC):
     def __init__(

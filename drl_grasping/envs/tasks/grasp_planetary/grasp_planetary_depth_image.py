@@ -1,0 +1,177 @@
+import abc
+from collections import deque
+
+import gym
+import numpy as np
+from gym_ignition.utils.typing import Observation, ObservationSpace
+
+from drl_grasping.envs.models.sensors import Camera
+from drl_grasping.envs.perception import CameraSubscriber
+from drl_grasping.envs.tasks.grasp_planetary import GraspPlanetary
+from drl_grasping.envs.utils.conversions import orientation_quat_to_6d
+
+
+class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
+    def __init__(
+        self,
+        camera_width: int,
+        camera_height: int,
+        depth_max_distance: float,
+        image_include_color: bool,
+        image_include_intensity: bool,
+        image_n_stacked: int,
+        proprieceptive_observations: bool,
+        camera_type: str = "depth_camera",
+        **kwargs,
+    ):
+
+        # Initialize the Task base class
+        GraspPlanetary.__init__(
+            self,
+            **kwargs,
+        )
+
+        # Perception (depth map)
+        self.camera_sub = CameraSubscriber(
+            node=self,
+            topic=Camera.get_depth_topic(camera_type),
+            is_point_cloud=False,
+            callback_group=self._callback_group,
+        )
+        # Perception (RGB image)
+        if image_include_color or image_include_intensity:
+            assert camera_type == "rgbd_camera"
+            self.camera_sub_color = CameraSubscriber(
+                node=self,
+                topic=Camera.get_color_topic(camera_type),
+                is_point_cloud=False,
+                callback_group=self._callback_group,
+            )
+
+        # Additional parameters
+        self._camera_width = camera_width
+        self._camera_height = camera_height
+        self._depth_max_distance = depth_max_distance
+        self._image_n_stacked = image_n_stacked
+        self._image_include_color = image_include_color
+        self._image_include_intensity = image_include_intensity
+        self._proprieceptive_observations = proprieceptive_observations
+
+        self._num_pixels = camera_height * camera_width
+        # Queue of images
+        self.__stacked_images = deque([], maxlen=self._image_n_stacked)
+
+    def create_observation_space(self) -> ObservationSpace:
+
+        # Size of depth channel
+        # Note: Size is expressed in float32
+        size = self._num_pixels
+
+        if self._image_include_color:
+            # Add 3 channels (RGB)
+            size += 3 * self._num_pixels
+        elif self._image_include_intensity:
+            # Add 1 channel (intensity)
+            size += self._num_pixels
+
+        if self._proprieceptive_observations:
+            size += 11
+
+        return gym.spaces.Box(
+            low=-1.0,
+            high=1.0,
+            shape=(self._image_n_stacked, size),
+            dtype=np.float32,
+        )
+
+    def create_proprioceptive_observation_space(self) -> ObservationSpace:
+
+        # 0   - (gripper) Gripper state
+        #       - 1.0: opened
+        #       - -1.0: closed
+        # 1:4 - (x, y, z) displacement
+        #       - metric units, unbound
+        # 4:10 - (v1_x, v1_y, v1_z, v2_x, v2_y, v2_z) 3D orientation in "6D representation"
+        #       - normalised
+        return gym.spaces.Box(
+            low=np.array(
+                (-1.0, -np.inf, -np.inf, -np.inf, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0)
+            ),
+            high=np.array((1.0, np.inf, np.inf, np.inf, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)),
+            shape=(10,),
+            dtype=np.float32,
+        )
+
+    def get_observation(self) -> Observation:
+
+        # Get the latest depth map
+        depth_image = self.camera_sub.get_observation()
+
+        # Convert to ndarray
+        depth_image = np.ndarray(
+            buffer=depth_image.data, dtype=np.float32, shape=(self._num_pixels,)
+        )
+
+        # Replace nan and inf with zero
+        np.nan_to_num(depth_image, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # Normalize depth based on pre-defined max distance
+        depth_image[depth_image > self._depth_max_distance] = self._depth_max_distance
+        depth_image = depth_image / self._depth_max_distance
+
+        if self._image_include_color or self._image_include_intensity:
+            # Get the latest color image
+            color_image = self.camera_sub_color.get_observation()
+            # Convert to ndarray with 3 channels
+            color_image = np.ndarray(
+                buffer=color_image.data, dtype=np.uint8, shape=(3 * self._num_pixels,)
+            )
+
+            if self._image_include_intensity:
+                # Use only the first channel as the intensity observation
+                color_image = color_image.reshape(
+                    3, self._camera_height, self._camera_width
+                )[0, :, :].reshape(-1)
+
+            # Normalize color
+            color_image.astype(dtype=np.float32)
+            color_image = color_image / 255.0
+
+            depth_image = np.concatenate((depth_image, color_image))
+
+        if self._proprieceptive_observations:
+            # Pad image with zeros to have a place for proprioceptive observations
+            depth_image = np.pad(depth_image, (0, 11), "constant", constant_values=0)
+
+            # Add number of auxiliary observations to image structure
+            depth_image[-1] = np.array(10, dtype=np.float32)
+
+            # Gather proprioceptive observations
+            ee_position, ee_orientation = self.get_ee_pose()
+            ee_orientation = orientation_quat_to_6d(quat_xyzw=ee_orientation)
+            aux_obs = (
+                (1 if self.gripper.is_open else -1,)
+                + ee_position
+                + ee_orientation[0]
+                + ee_orientation[1]
+            )
+
+            # Add auxiliary observations into the image structure
+            depth_image[-11:-1] = np.array(aux_obs, dtype=np.float32)
+
+        self.__stacked_images.append(depth_image)
+        # For the first buffer after reset, fill with identical observations until deque is full
+        while not self._image_n_stacked == len(self.__stacked_images):
+            self.__stacked_images.append(depth_image)
+
+        # Create the observation
+        observation = Observation(np.array(self.__stacked_images))
+
+        self.get_logger().debug(f"\nobservation: {observation}")
+
+        # Return the observation
+        return observation
+
+    def reset_task(self):
+        self.__stacked_images.clear()
+        GraspPlanetary.reset_task(self)

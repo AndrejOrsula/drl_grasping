@@ -2,7 +2,7 @@
 # Note: needs to be included before `from stable_baselines3.common.off_policy_algorithm import OffPolicyAlgorithm` in the module that uses this
 
 # Note: Import monkey patch of ReplayBuffer before stable_baselines3 ReplayBuffer
-from drl_grasping.drl_octree.replay_buffer import octree_replay_buffer  # isort:skip
+from drl_grasping.drl_octree.replay_buffer import replay_buffer  # isort:skip
 from stable_baselines3.common.buffers import ReplayBuffer
 from stable_baselines3.common.off_policy_algorithm import OffPolicyAlgorithm
 
