@@ -1490,43 +1490,52 @@ class ManipulationGazeboEnvRandomizer(
 
         # Wait until robot gets in contact with terrain
         if self.robot.is_mobile:
-            robot_gazebo = self.robot.to_gazebo()
-            wheel_links = [
-                robot_gazebo.get_link(link_name=wheel_link_name)
-                for wheel_link_name in self.robot.wheel_link_names
-            ]
-            is_robot_in_contact_with_terrain = False
-            while (
-                not is_robot_in_contact_with_terrain
-                and attempts < self.POST_RANDOMIZATION_MAX_STEPS
-            ):
-                for wheel_link in wheel_links:
-                    wheel_contacts = wheel_link.contacts()
-                    if wheel_contacts:
-                        break
+            try:
+                robot_gazebo = self.robot.to_gazebo()
+                wheel_links = [
+                    robot_gazebo.get_link(link_name=wheel_link_name)
+                    for wheel_link_name in self.robot.wheel_link_names
+                ]
+                is_robot_in_contact_with_terrain = False
+                while (
+                    not is_robot_in_contact_with_terrain
+                    and attempts < self.POST_RANDOMIZATION_MAX_STEPS
+                ):
+                    for wheel_link in wheel_links:
+                        wheel_contacts = wheel_link.contacts()
+                        if wheel_contacts:
+                            break
 
-                for contact in wheel_contacts:
-                    if f"{task.terrain_name}::" in contact.body_b:
-                        is_robot_in_contact_with_terrain = True
-                        break
-                    elif "_collision_plane_B::" in contact.body_b:
-                        # Reset robot and object poses in case they passed through the terrain for some reason
-                        attempts += 1
-                        if self._terrain_enable:
-                            self.randomize_terrain(task=task, gazebo=gazebo)
-                        self.reset_robot_pose(
-                            task=task, gazebo=gazebo, randomize=self._robot_random_pose
-                        )
-                        if self._object_enable:
-                            if self._object_random_pose:
-                                self.object_random_pose(task=task, gazebo=gazebo)
-                            else:
-                                self.reset_default_object_pose(task=task, gazebo=gazebo)
-                        break
+                    for contact in wheel_contacts:
+                        if f"{task.terrain_name}::" in contact.body_b:
+                            is_robot_in_contact_with_terrain = True
+                            break
+                        elif "_collision_plane_B::" in contact.body_b:
+                            # Reset robot and object poses in case they passed through the terrain for some reason
+                            attempts += 1
+                            if self._terrain_enable:
+                                self.randomize_terrain(task=task, gazebo=gazebo)
+                            self.reset_robot_pose(
+                                task=task,
+                                gazebo=gazebo,
+                                randomize=self._robot_random_pose,
+                            )
+                            if self._object_enable:
+                                if self._object_random_pose:
+                                    self.object_random_pose(task=task, gazebo=gazebo)
+                                else:
+                                    self.reset_default_object_pose(
+                                        task=task, gazebo=gazebo
+                                    )
+                            break
 
-                object_overlapping_ok = self.check_object_overlapping(task=task)
-                if not gazebo.step():
-                    raise RuntimeError("Failed to execute an unpaused Gazebo step")
+                    object_overlapping_ok = self.check_object_overlapping(task=task)
+                    if not gazebo.step():
+                        raise RuntimeError("Failed to execute an unpaused Gazebo step")
+            except Exception as e:
+                task.get_logger().error(
+                    f"Wheel contacts could not be checked due to an unexpected error: {e}"
+                )
         if self.POST_RANDOMIZATION_MAX_STEPS == attempts:
             task.get_logger().error(
                 "Robot keeps falling through the terrain. There is something wrong..."
