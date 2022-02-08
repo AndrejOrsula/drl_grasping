@@ -801,7 +801,7 @@ register(
         **GRASP_PLANETARY_KWARGS_OCTREE,
         "octree_include_color": False,
         "octree_include_intensity": True,
-        "octree_max_size": 40000,
+        "octree_max_size": 45000,
     },
 )
 register(
