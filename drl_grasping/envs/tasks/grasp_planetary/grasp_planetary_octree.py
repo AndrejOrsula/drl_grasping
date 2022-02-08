@@ -24,7 +24,7 @@ class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
         octree_include_intensity: bool,
         octree_n_stacked: int,
         octree_max_size: int,
-        proprieceptive_observations: bool,
+        proprioceptive_observations: bool,
         camera_type: str = "rgbd_camera",
         **kwargs,
     ):
@@ -59,7 +59,7 @@ class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
         # Additional parameters
         self._octree_n_stacked = octree_n_stacked
         self._octree_max_size = octree_max_size
-        self._proprieceptive_observations = proprieceptive_observations
+        self._proprioceptive_observations = proprioceptive_observations
 
         # List of all octrees
         self.__stacked_octrees = deque([], maxlen=self._octree_n_stacked)
@@ -129,7 +129,7 @@ class GraspPlanetaryOctree(GraspPlanetary, abc.ABC):
         #                             dtype='uint32',
         #                             count=1)
 
-        if self._proprieceptive_observations:
+        if self._proprioceptive_observations:
             # Add number of auxiliary observations to octree structure
             octree[-8:-4] = np.ndarray(
                 buffer=np.array([10], dtype="uint32").tobytes(),

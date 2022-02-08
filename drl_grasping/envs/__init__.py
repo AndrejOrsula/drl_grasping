@@ -342,7 +342,7 @@ GRASP_KWARGS_OCTREE: Dict[str, any] = {
     "octree_depth": 4,
     "octree_full_depth": 2,
     "octree_n_stacked": 3,
-    "proprieceptive_observations": True,
+    "proprioceptive_observations": True,
 }
 GRASP_KWARGS_SIM: Dict[str, any] = {
     "physics_rate": 200.0,
@@ -609,7 +609,7 @@ GRASP_PLANETARY_KWARGS_OCTREE: Dict[str, any] = {
     "octree_depth": 4,
     "octree_full_depth": 2,
     "octree_n_stacked": 3,
-    "proprieceptive_observations": True,
+    "proprioceptive_observations": True,
 }
 GRASP_PLANETARY_KWARGS_SIM: Dict[str, any] = {
     "physics_rate": 200.0,

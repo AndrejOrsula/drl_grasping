@@ -20,7 +20,7 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
         image_include_color: bool,
         image_include_intensity: bool,
         image_n_stacked: int,
-        proprieceptive_observations: bool,
+        proprioceptive_observations: bool,
         camera_type: str = "depth_camera",
         **kwargs,
     ):
@@ -55,7 +55,7 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
         self._image_n_stacked = image_n_stacked
         self._image_include_color = image_include_color
         self._image_include_intensity = image_include_intensity
-        self._proprieceptive_observations = proprieceptive_observations
+        self._proprioceptive_observations = proprioceptive_observations
 
         self._num_pixels = camera_height * camera_width
         # Queue of images
@@ -74,7 +74,7 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
             # Add 1 channel (intensity)
             size += self._num_pixels
 
-        if self._proprieceptive_observations:
+        if self._proprioceptive_observations:
             size += 11
 
         return gym.spaces.Box(
@@ -139,7 +139,7 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
 
             depth_image = np.concatenate((depth_image, color_image))
 
-        if self._proprieceptive_observations:
+        if self._proprioceptive_observations:
             # Pad image with zeros to have a place for proprioceptive observations
             depth_image = np.pad(depth_image, (0, 11), "constant", constant_values=0)
 
