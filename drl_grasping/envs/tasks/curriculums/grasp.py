@@ -73,8 +73,8 @@ class GraspCurriculum(
 
         # Parameters
         self.__stages_base_reward = stages_base_reward
-        self.__reach_required_distance = reach_required_distance
-        self.__lift_required_height = lift_required_height
+        self.reach_required_distance = reach_required_distance
+        self.lift_required_height = lift_required_height
         self.__persistent_reward_each_step = persistent_reward_each_step
         self.__persistent_reward_terrain_collision = persistent_reward_terrain_collision
         self.__persistent_reward_all_objects_outside_workspace = (
@@ -242,9 +242,9 @@ class GraspCurriculum(
         self.__task.get_logger().debug(
             f"[Curriculum] Distance to nearest object: {nearest_object_distance}"
         )
-        if nearest_object_distance < self.__reach_required_distance:
+        if nearest_object_distance < self.reach_required_distance:
             self.__task.get_logger().info(
-                f"[Curriculum] An object is now closer than the required distance of {self.__reach_required_distance}"
+                f"[Curriculum] An object is now closer than the required distance of {self.reach_required_distance}"
             )
             self.stages_completed_this_episode[GraspStage.REACH] = True
             return self.__stages_base_reward
@@ -289,7 +289,7 @@ class GraspCurriculum(
             self.__task.get_logger().debug(
                 f"[Curriculum] Height of grasped object '{grasped_objects}': {grasped_object_height}"
             )
-            if grasped_object_height > self.__lift_required_height:
+            if grasped_object_height > self.lift_required_height:
                 self.__task.get_logger().info(
                     f"[Curriculum] Lifted object: {grasped_object}"
                 )

@@ -681,3 +681,7 @@ class AttributeCurriculum:
                 f"__{self.__attribute_name}",
                 self.__current_value,
             )
+        else:
+            raise Exception(
+                f"Attribute owner '{self.__attribute_owner}' does not have any attribute named {self.__attribute_name}."
+            )
