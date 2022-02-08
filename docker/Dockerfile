@@ -154,32 +154,23 @@ WORKDIR ${ASSETS_DIR}
 ARG DISABLE_DEFAULT_DATASETS
 RUN if [[ -z "${DISABLE_DEFAULT_DATASETS}" ]] ; then \
     echo "Downloading default datasets..." && \
-    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/ign_fuel_assets.git -b master && \
-    ./ign_fuel_assets/setup.bash && \
-    git clone https://github.com/AndrejOrsula/pbr_textures.git --depth 1 -b 1k_test && \
-    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
-    source ${WS_INSTALL_DIR}/local_setup.bash && \
-    export PATH=${WS_DIR}/O-CNN/octree/build:${PATH} && \
-    export PYTHONPATH=${WS_DIR}/O-CNN/octree/build/python:${PYTHONPATH} && \
-    ros2 run drl_grasping dataset_download_test.bash && \
-    ros2 run drl_grasping process_collection.py \
+    apt-get update && \
+    apt-get install -yq --no-install-recommends \
+    git-lfs && \
+    rm -rf /var/lib/apt/lists/* && \
+    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/ign_fuel_assets.git --depth 1 -b master && \
+    ./ign_fuel_assets/setup.bash \
+    # && \
+    # git clone https://github.com/AndrejOrsula/pbr_textures.git --depth 1 -b 1k_test && \
+    # source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+    # source ${WS_INSTALL_DIR}/local_setup.bash && \
+    # export PATH=${WS_DIR}/O-CNN/octree/build:${PATH} && \
+    # export PYTHONPATH=${WS_DIR}/O-CNN/octree/build/python:${PYTHONPATH} && \
+    # ros2 run drl_grasping dataset_download_test.bash && \
+    # ros2 run drl_grasping process_collection.py \
     ; else \
     echo "Default datasets are disabled. Downloading skipped." \
     ; fi
-
-### While drl_grasping is WIP (pull latest changes, then install ROS dependencies and build with colcon):
-ARG DRL_GRASPING_DOCKER_VERSION=2.x.x
-WORKDIR ${WS_SRC_DIR}/drl_grasping
-RUN git fetch origin && \
-    git reset --hard origin/${DRL_GRASPING_GIT_BRANCH} && \
-    git pull
-WORKDIR ${WS_DIR}
-RUN rosdep update && \
-    apt-get update && \
-    rosdep install -r --from-paths ${WS_SRC_DIR} -yi --rosdistro ${ROS2_DISTRO} && \
-    rm -rf /var/lib/apt/lists/* && \
-    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
-    colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 ### Go to the workspace root
 WORKDIR ${WS_DIR}
