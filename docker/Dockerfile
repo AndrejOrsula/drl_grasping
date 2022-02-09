@@ -88,8 +88,8 @@ ARG DRL_GRASPING_GIT_BRANCH=devel
 # TODO: Add `--recursive` arg once pretrained agents are ready to use
 RUN git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/drl_grasping.git -b ${DRL_GRASPING_GIT_BRANCH} && \
     vcs import < ${WS_SRC_DIR}/drl_grasping/drl_grasping.repos && \
-    pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r ${WS_SRC_DIR}/drl_grasping/python_requirements.txt
+    pip${PYTHON_VERSION} install --no-cache-dir --upgrade pip && \
+    pip${PYTHON_VERSION} install --no-cache-dir -r ${WS_SRC_DIR}/drl_grasping/python_requirements.txt
 
 ### Install ROS dependencies and build with colcon
 WORKDIR ${WS_DIR}
@@ -119,7 +119,7 @@ RUN apt-get update && \
     swig \
     libeigen3-dev && \
     rm -rf /var/lib/apt/lists/* && \
-    git clone https://github.com/robotology/idyntree --depth 1 -b v4.3.1 && \
+    git clone https://github.com/robotology/idyntree --depth 1 -b v4.4.0 && \
     touch ${WS_SRC_DIR}/idyntree/COLCON_IGNORE && \
     mkdir ${WS_SRC_DIR}/idyntree/build && \
     cd ${WS_SRC_DIR}/idyntree/build && \
@@ -140,7 +140,10 @@ RUN git clone https://github.com/AndrejOrsula/gym-ignition.git --depth 1 -b drl_
     cmake .. -DCMAKE_BUILD_TYPE=Release && \
     cmake --build . && \
     cmake --build . --target install && \
-    pip install --no-cache-dir -e ..
+    pip${PYTHON_VERSION} install --no-cache-dir --upgrade pip && \
+    pip${PYTHON_VERSION} install --no-cache-dir --upgrade numpy && \
+    pip${PYTHON_VERSION} install --no-cache-dir .. && \
+    pip${PYTHON_VERSION} install --no-cache-dir ../scenario
 
 ### Build O-CNN
 WORKDIR ${WS_SRC_DIR}
