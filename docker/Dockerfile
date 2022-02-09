@@ -175,7 +175,10 @@ RUN if [[ -z "${DISABLE_DEFAULT_DATASETS}" ]] ; then \
 ### Go to the workspace root
 WORKDIR ${WS_DIR}
 
-### Communicate within localhost only
+### Communicate within localhost only (Ignition)
+ENV IGN_RELAY=127.0.0.1
+ENV IGN_IP=127.0.0.1
+### Communicate within localhost only (ROS 2)
 ENV ROS_LOCALHOST_ONLY=1
 ### Set domain ID for ROS2 in order to not interfere with host
 ENV ROS_DOMAIN_ID=69
