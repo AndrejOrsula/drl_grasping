@@ -247,11 +247,9 @@ class ExperimentManager(object):
 
         try:
             model.learn(self.n_timesteps, **kwargs)
-        except KeyboardInterrupt:
-            # this allows to save the model when interrupting training
-            self.save_trained_model(model)
         except Exception as e:
             print(f"Caught an exception during training of the model: {e}")
+            self.save_trained_model(model)
         finally:
             # Release resources
             try:
