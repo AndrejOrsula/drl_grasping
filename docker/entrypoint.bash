@@ -23,3 +23,11 @@ fi
 
 ## Appending source command to ~/.bashrc enables autocompletion (ENTRYPOINT alone does not support that)
 grep -qxF ". ${WS_DIR}/entrypoint.bash" "${HOME}/.bashrc" || echo ". ${WS_DIR}/entrypoint.bash" >>"${HOME}/.bashrc"
+
+## Aliases
+alias _nano_envs='nano ${WS_SRC_DIR}/drl_grasping/drl_grasping/envs/__init__.py'
+alias _nano_td3='nano ${WS_SRC_DIR}/drl_grasping/hyperparams/td3.yml'
+alias _nano_sac='nano ${WS_SRC_DIR}/drl_grasping/hyperparams/sac.yml'
+alias _nano_tqc='nano ${WS_SRC_DIR}/drl_grasping/hyperparams/tqc.yml'
+alias _nano_ex_train='nano ${WS_SRC_DIR}/drl_grasping/examples/ex_train.bash'
+alias __train='ros2 run drl_grasping ex_train.bash'

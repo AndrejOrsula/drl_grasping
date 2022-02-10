@@ -61,8 +61,31 @@ VOLUMES="--volume ${PWD}/drl_grasping_training_docker:/root/drl_grasping_trainin
 if [[ -n ${DRL_GRASPING_PBR_TEXTURES_DIR} ]]; then
     VOLUMES="${VOLUMES} --volume ${DRL_GRASPING_PBR_TEXTURES_DIR}:/root/pbr_textures"
 fi
-## Use this volume for custom config and models that are stored locally on your machine
-# VOLUMES="${VOLUMES} --volume ${HOME}/.ignition:/root/.ignition"
+
+ENVS=""
+if [ -n "${RMW_IMPLEMENTATION}" ]; then
+    ENVS="${ENVS} --env RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION}"
+fi
+if [ -n "${CYCLONEDDS_URI}" ]; then
+    ENVS="${ENVS} --env CYCLONEDDS_URI=${CYCLONEDDS_URI}"
+    VOLUMES="${VOLUMES} --volume ${CYCLONEDDS_URI//file:\/\//}:${CYCLONEDDS_URI//file:\/\//}:ro"
+fi
+if [ -n "${FASTRTPS_DEFAULT_PROFILES_FILE}" ]; then
+    ENVS="${ENVS} --env FASTRTPS_DEFAULT_PROFILES_FILE=${FASTRTPS_DEFAULT_PROFILES_FILE}"
+    VOLUMES="${VOLUMES} --volume ${FASTRTPS_DEFAULT_PROFILES_FILE}:${FASTRTPS_DEFAULT_PROFILES_FILE}:ro"
+fi
+if [ -n "${ROS_DOMAIN_ID}" ]; then
+    ENVS="${ENVS} --env ROS_DOMAIN_ID=${ROS_DOMAIN_ID}"
+fi
+if [ -n "${ROS_LOCALHOST_ONLY}" ]; then
+    ENVS="${ENVS} --env ROS_LOCALHOST_ONLY=${ROS_LOCALHOST_ONLY}"
+fi
+if [ -n "${IGN_RELAY}" ]; then
+    ENVS="${ENVS} --env IGN_RELAY=${IGN_RELAY}"
+fi
+if [ -n "${IGN_IP}" ]; then
+    ENVS="${ENVS} --env IGN_IP=${IGN_IP}"
+fi
 
 DOCKER_RUN_CMD=(
     docker run
