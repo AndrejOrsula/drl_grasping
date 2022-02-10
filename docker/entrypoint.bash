@@ -8,7 +8,10 @@ source "${WS_INSTALL_DIR}/local_setup.bash"
 export PATH="${WS_SRC_DIR}/O-CNN/octree/build${PATH:+:${PATH}}"
 export PYTHONPATH="${WS_SRC_DIR}/O-CNN/octree/build/python${PYTHONPATH:+:${PYTHONPATH}}"
 
-## Robot models
+## Ignition plugins (ign_ros2_control)
+export IGN_GAZEBO_SYSTEM_PLUGIN_PATH=${WS_INSTALL_DIR}/lib${IGN_GAZEBO_SYSTEM_PLUGIN_PATH:+:${IGN_GAZEBO_SYSTEM_PLUGIN_PATH}}
+
+## Ignition models (robots)
 export IGN_GAZEBO_RESOURCE_PATH="${WS_SRC_DIR}/panda_ign_moveit2/panda_description${IGN_GAZEBO_RESOURCE_PATH:+:${IGN_GAZEBO_RESOURCE_PATH}}"
 export IGN_GAZEBO_RESOURCE_PATH="${WS_SRC_DIR}/lunalab_summit_xl_gen/lunalab_summit_xl_gen_description${IGN_GAZEBO_RESOURCE_PATH:+:${IGN_GAZEBO_RESOURCE_PATH}}"
 
