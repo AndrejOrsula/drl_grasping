@@ -368,6 +368,7 @@ class ManipulationGazeboEnvRandomizer(
         self.randomize_models(task=task, gazebo=gazebo)
 
         # Perform post-randomization steps
+        # TODO: Something in post-randomization causes GUI client to freeze during reset (the simulation server still works fine)
         self.post_randomization(task, gazebo)
 
     ###################
