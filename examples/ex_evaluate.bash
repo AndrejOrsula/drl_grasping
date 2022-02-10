@@ -5,8 +5,8 @@
 
 ### Global configuration
 ## OMP
-export OMP_DYNAMIC=True
-export OMP_NUM_THREADS=3
+export OMP_DYNAMIC=TRUE
+export OMP_NUM_THREADS=4
 
 
 ### Arguments
