@@ -67,9 +67,8 @@ GRAVITY_MARS_STD: Tuple[float, float, float] = (0.0, 0.0, 0.0191)
 # Reach #
 #########
 REACH_MAX_EPISODE_STEPS: int = 50
-REACH_AGENT_RATE: float = 4.0
 REACH_KWARGS: Dict[str, any] = {
-    "agent_rate": REACH_AGENT_RATE,
+    "agent_rate": 2.5,
     "robot_model": DRL_GRASPING_ROBOT_MODEL,
     "workspace_frame_id": "world",
     "workspace_centre": (0.45, 0.0, 0.25),
@@ -132,7 +131,7 @@ REACH_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
     "camera_enable": True,
     "camera_width": 128,
     "camera_height": 128,
-    "camera_update_rate": 1.2 * REACH_AGENT_RATE,
+    "camera_update_rate": 1.2 * REACH_KWARGS["agent_rate"],
     "camera_horizontal_fov": np.pi / 3.0,
     "camera_vertical_fov": np.pi / 3.0,
     "camera_noise_mean": 0.0,
@@ -300,7 +299,6 @@ register(
 # Grasp #
 #########
 GRASP_MAX_EPISODE_STEPS: int = 100
-GRASP_AGENT_RATE: float = 2.5
 # TODO: Include z offset in the task itself (will make it is easier to select robot) [also for the other tasks]
 GRASP_ROBOT_Z_OFFSET: float = (
     LUNALAB_SUMMIT_XL_GEN_Z_OFFSET
@@ -308,7 +306,7 @@ GRASP_ROBOT_Z_OFFSET: float = (
     else 0.0
 )
 GRASP_KWARGS: Dict[str, any] = {
-    "agent_rate": GRASP_AGENT_RATE,
+    "agent_rate": 2.5,
     "robot_model": DRL_GRASPING_ROBOT_MODEL,
     "workspace_frame_id": "arm_base_link",
     "workspace_centre": (0.5, 0.0, GRASP_ROBOT_Z_OFFSET + 0.32),
@@ -394,7 +392,7 @@ GRASP_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
     "camera_enable": True,
     "camera_width": 64,
     "camera_height": 64,
-    "camera_update_rate": 4.0 * GRASP_AGENT_RATE,
+    "camera_update_rate": 4.0 * GRASP_KWARGS["agent_rate"],
     "camera_horizontal_fov": np.pi / 5.0,
     "camera_vertical_fov": np.pi / 5.0,
     "camera_noise_mean": 0.0,
@@ -551,14 +549,13 @@ register(
 # GraspPlanetary #
 ##################
 GRASP_PLANETARY_MAX_EPISODE_STEPS: int = 100
-GRASP_PLANETARY_AGENT_RATE: float = 2.5
 GRASP_PLANETARY_ROBOT_Z_OFFSET: float = (
     LUNALAB_SUMMIT_XL_GEN_Z_OFFSET
     if "lunalab_summit_xl_gen" == DRL_GRASPING_ROBOT_MODEL_MOBILE
     else 0.0
 )
 GRASP_PLANETARY_KWARGS: Dict[str, any] = {
-    "agent_rate": GRASP_PLANETARY_AGENT_RATE,
+    "agent_rate": 2.5,
     "robot_model": DRL_GRASPING_ROBOT_MODEL_MOBILE,
     "workspace_frame_id": "arm_base_link",
     "workspace_centre": (0.45, 0.0, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.25),
@@ -577,24 +574,16 @@ GRASP_PLANETARY_KWARGS: Dict[str, any] = {
     "gripper_dead_zone": 0.0,
     "num_threads": 3,
 }
+GRASP_PLANETARY_KWARGS_DEPTH_IMAGE: Dict[str, any] = {
+    "depth_max_distance": 1.0,
+    "image_n_stacked": 2,
+    "proprioceptive_observations": True,
+}
 GRASP_PLANETARY_KWARGS_OCTREE: Dict[str, any] = {
     "octree_reference_frame_id": "arm_base_link",
     # ## Large volume around the robot
-    #  "octree_min_bound": (0.1 - 0.6, 0.0 - 0.6, 0.0 - 0.6),
+    # "octree_min_bound": (0.1 - 0.6, 0.0 - 0.6, 0.0 - 0.6),
     # "octree_max_bound": (0.1 + 0.6, 0.0 + 0.6, 0.0 + 0.6),
-    # "octree_min_bound": (0.1 - 0.6, 0.0 - 0.6, -0.1 - 0.3),
-    # "octree_max_bound": (0.1 + 0.6, 0.0 + 0.6, -0.1 + 0.3),
-    # ## Front-left of robot
-    # "octree_min_bound": (
-    #     0.15 - 0.16,
-    #     -0.5 - 0.16,
-    #     GRASP_PLANETARY_ROBOT_Z_OFFSET - 0.1 - 0.16,
-    # ),
-    # "octree_max_bound": (
-    #     0.15 + 0.16,
-    #     -0.5 + 0.16,
-    #     GRASP_PLANETARY_ROBOT_Z_OFFSET - 0.1 + 0.16,
-    # ),
     ## Front of robot
     "octree_min_bound": (
         0.5 - 0.2,
@@ -608,7 +597,7 @@ GRASP_PLANETARY_KWARGS_OCTREE: Dict[str, any] = {
     ),
     "octree_depth": 4,
     "octree_full_depth": 2,
-    "octree_n_stacked": 3,
+    "octree_n_stacked": 2,
     "proprioceptive_observations": True,
 }
 GRASP_PLANETARY_KWARGS_SIM: Dict[str, any] = {
@@ -675,9 +664,7 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
     "camera_enable": True,
     "camera_width": 128,
     "camera_height": 128,
-    "camera_update_rate": 4.0 * GRASP_PLANETARY_AGENT_RATE,
-    # "camera_horizontal_fov": np.pi / 4.0,
-    # "camera_vertical_fov": np.pi / 4.0,
+    "camera_update_rate": 4.0 * GRASP_PLANETARY_KWARGS["agent_rate"],
     "camera_horizontal_fov": np.pi / 2.0,
     "camera_vertical_fov": np.pi / 2.0,
     "camera_noise_mean": 0.0,
@@ -695,7 +682,7 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
     # "camera_relative_to": "end_effector",
     # "camera_spawn_position": (0, 0.07, -0.05),
     # "camera_spawn_quat_xyzw": (0, -0.707107, 0, 0.707107),
-    # TODO: Reduce rollout num of camera pose randomizer to 1 if object spawn position changes
+    # NOTE: Reduce rollout num of camera pose randomizer to 1 if object spawn position changes
     "camera_random_pose_rollouts_num": 4,
     "camera_random_pose_mode": "select_random",
     "camera_random_pose_orbit_distance": 1.0,
@@ -756,7 +743,7 @@ GRASP_PLANETARY_KWARGS_CURRICULUM: Dict[str, any] = {
     "enable_workspace_scale_curriculum": False,
     "enable_object_spawn_volume_scale_curriculum": False,
     "enable_object_count_curriculum": False,
-    "stage_reward_multiplier": 7.0,
+    "stage_reward_multiplier": 10.0,
     "dense_reward": False,
     "initial_success_rate": 0.0,
     "rolling_average_n": 100,
@@ -784,11 +771,9 @@ register(
         "task_cls": tasks.GraspPlanetaryDepthImage,
         **GRASP_PLANETARY_KWARGS,
         **GRASP_PLANETARY_KWARGS_CURRICULUM,
-        "depth_max_distance": 1.0,
+        **GRASP_PLANETARY_KWARGS_DEPTH_IMAGE,
         "image_include_color": False,
         "image_include_intensity": False,
-        "image_n_stacked": 3,
-        "proprioceptive_observations": True,
     },
 )
 register(
@@ -799,11 +784,9 @@ register(
         "task_cls": tasks.GraspPlanetaryDepthImage,
         **GRASP_PLANETARY_KWARGS,
         **GRASP_PLANETARY_KWARGS_CURRICULUM,
-        "depth_max_distance": 1.0,
+        **GRASP_PLANETARY_KWARGS_DEPTH_IMAGE,
         "image_include_color": False,
         "image_include_intensity": True,
-        "image_n_stacked": 3,
-        "proprioceptive_observations": True,
     },
 )
 register(
@@ -814,11 +797,9 @@ register(
         "task_cls": tasks.GraspPlanetaryDepthImage,
         **GRASP_PLANETARY_KWARGS,
         **GRASP_PLANETARY_KWARGS_CURRICULUM,
-        "depth_max_distance": 1.0,
+        **GRASP_PLANETARY_KWARGS_DEPTH_IMAGE,
         "image_include_color": True,
         "image_include_intensity": False,
-        "image_n_stacked": 3,
-        "proprioceptive_observations": True,
     },
 )
 register(
