@@ -30,6 +30,7 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         full_depth_channels: int = 8,
         features_dim: int = 128,
         aux_obs_dim: int = 0,
+        aux_obs_features_dim: int = 16,
         separate_networks_for_stacks: bool = True,
         fast_conv: bool = True,
         batch_normalization: bool = True,
@@ -70,7 +71,7 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
 
         # Chain up parent constructor
         super(OctreeCnnFeaturesExtractor, self).__init__(
-            observation_space, self._n_stacks * (features_dim + aux_obs_dim)
+            observation_space, self._n_stacks * (features_dim + aux_obs_features_dim)
         )
 
         # Channels ordered as [channels_in, depth, depth-1, ..., full_depth]
@@ -122,7 +123,9 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
 
             # One linear layer for auxiliary observations
             if self._aux_obs_dim != 0:
-                self.aux_obs_linear = LinearRelu(self._aux_obs_dim, self._aux_obs_dim)
+                self.aux_obs_linear = LinearRelu(
+                    self._aux_obs_dim, aux_obs_features_dim
+                )
 
         else:
 
@@ -189,7 +192,7 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
             if self._aux_obs_dim != 0:
                 self.aux_obs_linear = torch.nn.ModuleList(
                     [
-                        LinearRelu(self._aux_obs_dim, self._aux_obs_dim)
+                        LinearRelu(self._aux_obs_dim, aux_obs_features_dim)
                         for _ in range(self._n_stacks)
                     ]
                 )

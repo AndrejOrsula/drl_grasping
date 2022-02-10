@@ -28,6 +28,7 @@ class ImageCnnFeaturesExtractor(BaseFeaturesExtractor):
         full_depth_channels: int = 8,
         features_dim: int = 96,
         aux_obs_dim: int = 10,
+        aux_obs_features_dim: int = 16,
         max_pool_kernel: int = 4,
         separate_networks_for_stacks: bool = True,
         verbose: bool = False,
@@ -46,10 +47,8 @@ class ImageCnnFeaturesExtractor(BaseFeaturesExtractor):
 
         # Chain up parent constructor
         super(ImageCnnFeaturesExtractor, self).__init__(
-            observation_space, self._n_stacks * (features_dim + aux_obs_dim)
+            observation_space, self._n_stacks * (features_dim + aux_obs_features_dim)
         )
-
-        self._siize = self._n_stacks * (features_dim + aux_obs_dim)
 
         resolution = width * height
         flatten_dim = resolution // ((max_pool_kernel ** 2) ** 2) * full_depth_channels
@@ -74,7 +73,9 @@ class ImageCnnFeaturesExtractor(BaseFeaturesExtractor):
 
             # One linear layer for auxiliary observations
             if self._aux_obs_dim != 0:
-                self.aux_obs_linear = LinearRelu(self._aux_obs_dim, self._aux_obs_dim)
+                self.aux_obs_linear = LinearRelu(
+                    self._aux_obs_dim, aux_obs_features_dim
+                )
 
         else:
 
@@ -122,7 +123,7 @@ class ImageCnnFeaturesExtractor(BaseFeaturesExtractor):
             if self._aux_obs_dim != 0:
                 self.aux_obs_linear = torch.nn.ModuleList(
                     [
-                        LinearRelu(self._aux_obs_dim, self._aux_obs_dim)
+                        LinearRelu(self._aux_obs_dim, aux_obs_features_dim)
                         for _ in range(self._n_stacks)
                     ]
                 )
