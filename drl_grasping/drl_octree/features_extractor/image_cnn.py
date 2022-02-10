@@ -36,6 +36,7 @@ class ImageCnnFeaturesExtractor(BaseFeaturesExtractor):
 
         self._channels_in = channels_in
         self._aux_obs_dim = aux_obs_dim
+        self._aux_obs_features_dim = aux_obs_features_dim
         self._separate_networks_for_stacks = separate_networks_for_stacks
         self._verbose = verbose
         self._width = width
@@ -165,7 +166,9 @@ class ImageCnnFeaturesExtractor(BaseFeaturesExtractor):
                 # Feed the data through linear layer
                 aux_data = self.aux_obs_linear(aux_obs.view(-1, self._aux_obs_dim))
                 # Get a view that merges aux feature stacks into a single feature vector (original batches remain separated)
-                aux_data = aux_data.view(-1, self._n_stacks * self._aux_obs_dim)
+                aux_data = aux_data.view(
+                    -1, self._n_stacks * self._aux_obs_features_dim
+                )
                 # Concatenate auxiliary data
                 data = torch.cat((data, aux_data), dim=1)
 
