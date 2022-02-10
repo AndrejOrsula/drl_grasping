@@ -290,11 +290,12 @@ GraspPlanetary-DepthImage-Gazebo-v0:
       channels_in: 1
       width: 128
       height: 128
-      channel_multiplier: 40
+      channel_multiplier: 32
       full_depth_conv1d: True
       full_depth_channels: 8
-      features_dim: 96
+      features_dim: 240
       aux_obs_dim: 10
+      aux_obs_features_dim: 16
       max_pool_kernel: 4
     n_quantiles: 25
     n_critics: 2
@@ -302,17 +303,17 @@ GraspPlanetary-DepthImage-Gazebo-v0:
     separate_networks_for_stacks: True
     share_features_extractor: True
   n_timesteps: 1000000
-  buffer_size: 10000
+  buffer_size: 50000
   learning_starts: 0
   batch_size: 32
-  learning_rate: lin_0.00015
-  gamma: 0.999
-  tau: 0.00005
+  learning_rate: lin_0.0002
+  gamma: 0.995
+  tau: 0.0001
   ent_coef: "auto_0.1"
   target_entropy: "auto"
   top_quantiles_to_drop_per_net: 3
   train_freq: [1, "episode"]
-  gradient_steps: 100
+  gradient_steps: 200
   noise_type: "normal"
   noise_std: 0.025
   use_sde: False
@@ -327,11 +328,12 @@ GraspPlanetary-DepthImageWithIntensity-Gazebo-v0:
       channels_in: 2
       width: 128
       height: 128
-      channel_multiplier: 40
+      channel_multiplier: 32
       full_depth_conv1d: True
       full_depth_channels: 8
-      features_dim: 96
+      features_dim: 240
       aux_obs_dim: 10
+      aux_obs_features_dim: 16
       max_pool_kernel: 4
     n_quantiles: 25
     n_critics: 2
@@ -339,17 +341,17 @@ GraspPlanetary-DepthImageWithIntensity-Gazebo-v0:
     separate_networks_for_stacks: True
     share_features_extractor: True
   n_timesteps: 1000000
-  buffer_size: 10000
+  buffer_size: 50000
   learning_starts: 0
   batch_size: 32
-  learning_rate: lin_0.00015
-  gamma: 0.999
-  tau: 0.00005
+  learning_rate: lin_0.0002
+  gamma: 0.995
+  tau: 0.0001
   ent_coef: "auto_0.1"
   target_entropy: "auto"
   top_quantiles_to_drop_per_net: 3
   train_freq: [1, "episode"]
-  gradient_steps: 100
+  gradient_steps: 200
   noise_type: "normal"
   noise_std: 0.025
   use_sde: False
@@ -364,11 +366,12 @@ GraspPlanetary-DepthImageWithColor-Gazebo-v0:
       channels_in: 4
       width: 128
       height: 128
-      channel_multiplier: 40
+      channel_multiplier: 32
       full_depth_conv1d: True
       full_depth_channels: 8
-      features_dim: 96
+      features_dim: 240
       aux_obs_dim: 10
+      aux_obs_features_dim: 16
       max_pool_kernel: 4
     n_quantiles: 25
     n_critics: 2
@@ -376,17 +379,17 @@ GraspPlanetary-DepthImageWithColor-Gazebo-v0:
     separate_networks_for_stacks: True
     share_features_extractor: True
   n_timesteps: 1000000
-  buffer_size: 10000
+  buffer_size: 50000
   learning_starts: 0
   batch_size: 32
-  learning_rate: lin_0.00015
-  gamma: 0.999
-  tau: 0.00005
+  learning_rate: lin_0.0002
+  gamma: 0.995
+  tau: 0.0001
   ent_coef: "auto_0.1"
   target_entropy: "auto"
   top_quantiles_to_drop_per_net: 3
   train_freq: [1, "episode"]
-  gradient_steps: 100
+  gradient_steps: 200
   noise_type: "normal"
   noise_std: 0.025
   use_sde: False
@@ -395,7 +398,6 @@ GraspPlanetary-DepthImageWithColor-Gazebo-v0:
 GraspPlanetary-Octree-Gazebo-v0:
   callback:
     - drl_grasping.utils.callbacks.CurriculumLoggerCallback
-
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
@@ -405,8 +407,9 @@ GraspPlanetary-Octree-Gazebo-v0:
       channel_multiplier: 32
       full_depth_conv1d: True
       full_depth_channels: 16
-      features_dim: 160
+      features_dim: 240
       aux_obs_dim: 10
+      aux_obs_features_dim: 16
       fast_conv: True
       batch_normalization: False
       bn_eps: 0.00001
@@ -414,15 +417,15 @@ GraspPlanetary-Octree-Gazebo-v0:
     n_quantiles: 25
     n_critics: 2
     net_arch: [512, 512]
-    separate_networks_for_stacks: True
+    separate_networks_for_stacks: False
     share_features_extractor: True
-  n_timesteps: 500000
-  buffer_size: 30000
+  n_timesteps: 1000000
+  buffer_size: 50000
   learning_starts: 0
   batch_size: 32
-  learning_rate: lin_0.00015
-  gamma: 0.999
-  tau: 0.00005
+  learning_rate: lin_0.0002
+  gamma: 0.995
+  tau: 0.0001
   ent_coef: "auto_0.1"
   target_entropy: "auto"
   top_quantiles_to_drop_per_net: 3
@@ -442,32 +445,33 @@ GraspPlanetary-OctreeWithIntensity-Gazebo-v0:
       depth: 4
       full_depth: 2
       channels_in: 5
-      channel_multiplier: 64
+      channel_multiplier: 32
       full_depth_conv1d: True
-      full_depth_channels: 32
-      features_dim: 192
+      full_depth_channels: 16
+      features_dim: 240
       aux_obs_dim: 10
+      aux_obs_features_dim: 16
       fast_conv: True
       batch_normalization: False
       bn_eps: 0.00001
       bn_momentum: 0.01
     n_quantiles: 25
     n_critics: 2
-    net_arch: [1024, 1024]
+    net_arch: [512, 512]
     separate_networks_for_stacks: False
     share_features_extractor: True
   n_timesteps: 1000000
   buffer_size: 50000
   learning_starts: 0
   batch_size: 32
-  learning_rate: lin_0.00015
-  gamma: 0.999
-  tau: 0.00005
+  learning_rate: lin_0.0002
+  gamma: 0.995
+  tau: 0.0001
   ent_coef: "auto_0.1"
   target_entropy: "auto"
   top_quantiles_to_drop_per_net: 3
   train_freq: [1, "episode"]
-  gradient_steps: 100
+  gradient_steps: 200
   noise_type: "normal"
   noise_std: 0.025
   use_sde: False
@@ -482,27 +486,28 @@ GraspPlanetary-OctreeWithColor-Gazebo-v0:
       depth: 4
       full_depth: 2
       channels_in: 7
-      channel_multiplier: 48
-      full_depth_conv1d: False
-      full_depth_channels: 32
-      features_dim: 192
+      channel_multiplier: 32
+      full_depth_conv1d: True
+      full_depth_channels: 16
+      features_dim: 240
       aux_obs_dim: 10
+      aux_obs_features_dim: 16
       fast_conv: True
       batch_normalization: False
       bn_eps: 0.00001
       bn_momentum: 0.01
     n_quantiles: 25
     n_critics: 2
-    net_arch: [1024]
+    net_arch: [512, 512]
     separate_networks_for_stacks: False
     share_features_extractor: True
-  n_timesteps: 500000
-  buffer_size: 40000
+  n_timesteps: 1000000
+  buffer_size: 50000
   learning_starts: 0
-  batch_size: 64
-  learning_rate: lin_0.00015
-  gamma: 0.999
-  tau: 0.00005
+  batch_size: 32
+  learning_rate: lin_0.0002
+  gamma: 0.995
+  tau: 0.0001
   ent_coef: "auto_0.1"
   target_entropy: "auto"
   top_quantiles_to_drop_per_net: 3
