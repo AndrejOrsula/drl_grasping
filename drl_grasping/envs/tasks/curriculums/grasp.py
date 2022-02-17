@@ -168,8 +168,10 @@ class GraspCurriculum(
                 grasped_objects=self.__task.get_grasped_objects(),
             )
         else:
-            # If curriculum is disabled, compute reward only for the last stage
-            return self.get_reward_LIFT(
+            # If curriculum for stages is disabled, compute reward only for the last stage
+            return StageRewardCurriculum.get_reward(
+                self,
+                only_last_stage=True,
                 object_positions=self.__task.get_object_positions(),
                 grasped_objects=self.__task.get_grasped_objects(),
             )

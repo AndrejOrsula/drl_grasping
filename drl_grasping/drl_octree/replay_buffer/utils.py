@@ -116,7 +116,7 @@ def preprocess_stacked_depth_image_batch(
                     depth_image = np.empty(
                         (2 * number_of_pixels,), dtype=_depth_image.dtype
                     )
-                    depth_image[0::2] = color_image
+                    depth_image[0::2] = color_image[:number_of_pixels]
                     depth_image[1::2] = _depth_image
                 else:
                     depth_image = np.empty(

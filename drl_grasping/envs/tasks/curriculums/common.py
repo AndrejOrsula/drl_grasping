@@ -97,15 +97,18 @@ class StageRewardCurriculum:
         self.__episode_succeeded: bool = False
         self.__episode_failed: bool = False
 
-    def get_reward(self, **kwargs) -> Reward:
+    def get_reward(self, only_last_stage: bool = False, **kwargs) -> Reward:
 
         reward = 0.0
 
         # Determine the stage at which to start computing reward [performance - done stages give no reward]
-        for stage in iter(self._stage_type):
-            if not self.stages_completed_this_episode[stage]:
-                first_stage_to_process = stage
-                break
+        if only_last_stage:
+            first_stage_to_process = self._stage_type.last()
+        else:
+            for stage in iter(self._stage_type):
+                if not self.stages_completed_this_episode[stage]:
+                    first_stage_to_process = stage
+                    break
 
         # Iterate over all stages that might need to be processed
         for stage in range(first_stage_to_process.value, len(self._stage_type) + 1):
@@ -128,8 +131,10 @@ class StageRewardCurriculum:
         self.__episode_succeeded = self.stages_completed_this_episode[
             self._stage_type.last()
         ]
+        if self.__episode_succeeded:
+            return reward
 
-        # Add persistent reward that is added regardless of the episode
+        # Add persistent reward that is added regardless of the episode (unless task already succeeded)
         persistent_reward = self.get_persistent_reward(**kwargs)
         # Add to the total step reward
         reward += persistent_reward
@@ -179,6 +184,13 @@ class StageRewardCurriculum:
                 for stage in iter(self._stage_type)
             }
         )
+        info.update(
+            {
+                f"{self.INFO_CURRICULUM_PREFIX}{INFO_MEAN_EPISODE_KEY}ep_rew_mean_{self.PERSISTENT_ID.lower()}": self.__stages_rewards_this_episode[
+                    self.PERSISTENT_ID
+                ]
+            }
+        )
 
         return info
 
@@ -195,6 +207,7 @@ class StageRewardCurriculum:
         self.__stages_rewards_this_episode = dict.fromkeys(
             self.__stages_rewards_this_episode, 0.0
         )
+        self.__stages_rewards_this_episode[self.PERSISTENT_ID] = 0.0
         self.__episode_succeeded = False
         self.__episode_failed = False
 

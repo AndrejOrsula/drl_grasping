@@ -19,7 +19,7 @@ class RandomLunarSurface(model_wrapper.ModelWrapper):
         name: str = "lunar_surface",
         position: List[float] = (0, 0, 0),
         orientation: List[float] = (1, 0, 0, 0),
-        friction_range: Tuple[float, float] = (5.0, 10.0),
+        friction_range: Tuple[float, float] = (7.5, 15.0),
         include_pebbles: bool = True,
         np_random: Optional[RandomState] = None,
         **kwargs,

@@ -105,12 +105,33 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
     def get_observation(self) -> Observation:
 
         # Get the latest depth map
-        depth_image = self.camera_sub.get_observation()
+        depth_image_msg = self.camera_sub.get_observation()
 
-        # Convert to ndarray
-        depth_image = np.ndarray(
-            buffer=depth_image.data, dtype=np.float32, shape=(self._num_pixels,)
-        )
+        if (
+            depth_image_msg.width != self._camera_width
+            or depth_image_msg.height != self._camera_height
+        ):
+            # TODO: Add cv2 to requirements or find a better alternative for quick resizing of images
+            import cv2
+
+            # Convert to ndarray
+            depth_image = np.ndarray(
+                buffer=depth_image_msg.data,
+                dtype=np.float32,
+                shape=(depth_image_msg.width, depth_image_msg.height),
+            )
+            # Resize to the desired resolution
+            depth_image = cv2.resize(
+                depth_image,
+                dsize=(self._camera_width, self._camera_height),
+                interpolation=cv2.INTER_CUBIC,
+            ).reshape(self._num_pixels)
+
+        else:
+            # Convert to ndarray
+            depth_image = np.ndarray(
+                buffer=depth_image_msg.data, dtype=np.float32, shape=(self._num_pixels,)
+            )
 
         # Replace nan and inf with zero
         np.nan_to_num(depth_image, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
@@ -121,11 +142,34 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
 
         if self._image_include_color or self._image_include_intensity:
             # Get the latest color image
-            color_image = self.camera_sub_color.get_observation()
-            # Convert to ndarray with 3 channels
-            color_image = np.ndarray(
-                buffer=color_image.data, dtype=np.uint8, shape=(3 * self._num_pixels,)
-            )
+            color_image_msg = self.camera_sub_color.get_observation()
+
+            if (
+                color_image_msg.width != self._camera_width
+                or color_image_msg.height != self._camera_height
+            ):
+                import cv2
+
+                # Convert to ndarray
+                color_image = np.ndarray(
+                    buffer=color_image_msg.data,
+                    dtype=np.float32,
+                    shape=(color_image_msg.width, color_image_msg.height),
+                )
+                # Resize to the desired resolution
+                color_image = cv2.resize(
+                    color_image,
+                    dsize=(3, self._camera_width, self._camera_height),
+                    interpolation=cv2.INTER_CUBIC,
+                ).reshape(3 * self._num_pixels)
+
+            else:
+                # Convert to ndarray
+                color_image = np.ndarray(
+                    buffer=color_image_msg.data,
+                    dtype=np.uint8,
+                    shape=(3 * self._num_pixels,),
+                )
 
             if self._image_include_intensity:
                 # Use only the first channel as the intensity observation

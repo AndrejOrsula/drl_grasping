@@ -64,8 +64,8 @@ LAUNCH_ARGS=(
     "save_freq:=10000"
     "save_replay_buffer:=true"
     "log_interval:=-1"
-    "eval_freq:=-1"
-    "eval_episodes:=5"
+    "eval_freq:=10000"
+    "eval_episodes:=20"
     "enable_rviz:=false"
     "log_level:=fatal"
 )

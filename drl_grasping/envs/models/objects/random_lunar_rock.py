@@ -18,8 +18,8 @@ class RandomLunarRock(model_wrapper.ModelWrapper):
         name: str = "rock",
         position: List[float] = (0, 0, 0),
         orientation: List[float] = (1, 0, 0, 0),
-        mass_range: Tuple[float, float] = (0.05, 0.25),
-        friction_range: Tuple[float, float] = (2.5, 7.5),
+        mass_range: Tuple[float, float] = (0.2, 0.4),
+        friction_range: Tuple[float, float] = (5.0, 10.0),
         np_random: Optional[RandomState] = None,
         **kwargs,
     ):
