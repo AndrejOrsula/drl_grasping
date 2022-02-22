@@ -14,14 +14,14 @@ from drl_grasping.envs.utils.conversions import orientation_quat_to_6d
 class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
     def __init__(
         self,
-        camera_width: int,
-        camera_height: int,
         depth_max_distance: float,
         image_include_color: bool,
         image_include_intensity: bool,
         image_n_stacked: int,
         proprioceptive_observations: bool,
-        camera_type: str = "depth_camera",
+        camera_type: str = "rgbd_camera",
+        camera_width: int = 128,
+        camera_height: int = 128,
         **kwargs,
     ):
 
@@ -107,9 +107,15 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
         # Get the latest depth map
         depth_image_msg = self.camera_sub.get_observation()
 
+        img_res = depth_image_msg.height * depth_image_msg.width
+        if 2 * img_res == len(depth_image_msg.data):
+            depth_data_type = np.float16
+        else:
+            depth_data_type = np.float32
+
         if (
-            depth_image_msg.width != self._camera_width
-            or depth_image_msg.height != self._camera_height
+            depth_image_msg.height != self._camera_width
+            or depth_image_msg.width != self._camera_height
         ):
             # TODO: Add cv2 to requirements or find a better alternative for quick resizing of images
             import cv2
@@ -117,21 +123,36 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
             # Convert to ndarray
             depth_image = np.ndarray(
                 buffer=depth_image_msg.data,
-                dtype=np.float32,
-                shape=(depth_image_msg.width, depth_image_msg.height),
+                dtype=depth_data_type,
+                shape=(depth_image_msg.height, depth_image_msg.width),
             )
-            # Resize to the desired resolution
-            depth_image = cv2.resize(
-                depth_image,
-                dsize=(self._camera_width, self._camera_height),
-                interpolation=cv2.INTER_CUBIC,
-            ).reshape(self._num_pixels)
+
+            # Crop and resize to the desired resolution
+            if depth_image_msg.height > depth_image_msg.width:
+                diff = depth_image_msg.height - depth_image_msg.width
+                diff_2 = diff // 2
+                depth_image = depth_image[diff_2:-diff_2, :]
+            elif depth_image_msg.height < depth_image_msg.width:
+                diff = depth_image_msg.width - depth_image_msg.height
+                diff_2 = diff // 2
+                depth_image = depth_image[:, diff_2:-diff_2]
+            depth_image = (
+                cv2.resize(
+                    depth_image,
+                    dsize=(self._camera_height, self._camera_width),
+                    interpolation=cv2.INTER_CUBIC,
+                )
+                .reshape(self._num_pixels)
+                .astype(dtype=np.float32)
+            )
 
         else:
             # Convert to ndarray
             depth_image = np.ndarray(
-                buffer=depth_image_msg.data, dtype=np.float32, shape=(self._num_pixels,)
-            )
+                buffer=depth_image_msg.data,
+                dtype=depth_data_type,
+                shape=(self._num_pixels,),
+            ).astype(dtype=np.float32)
 
         # Replace nan and inf with zero
         np.nan_to_num(depth_image, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
@@ -145,21 +166,30 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
             color_image_msg = self.camera_sub_color.get_observation()
 
             if (
-                color_image_msg.width != self._camera_width
-                or color_image_msg.height != self._camera_height
+                color_image_msg.height != self._camera_width
+                or color_image_msg.width != self._camera_height
             ):
                 import cv2
 
                 # Convert to ndarray
                 color_image = np.ndarray(
                     buffer=color_image_msg.data,
-                    dtype=np.float32,
-                    shape=(color_image_msg.width, color_image_msg.height),
+                    dtype=np.uint8,
+                    shape=(color_image_msg.height, color_image_msg.width, 3),
                 )
-                # Resize to the desired resolution
+
+                # Crop and resize to the desired resolution
+                if color_image_msg.height > color_image_msg.width:
+                    diff = color_image_msg.height - color_image_msg.width
+                    diff_2 = diff // 2
+                    color_image = color_image[diff_2:-diff_2, :, :]
+                elif color_image_msg.height < color_image_msg.width:
+                    diff = color_image_msg.width - color_image_msg.height
+                    diff_2 = diff // 2
+                    color_image = color_image[:, diff_2:-diff_2, :]
                 color_image = cv2.resize(
                     color_image,
-                    dsize=(3, self._camera_width, self._camera_height),
+                    dsize=(self._camera_width, self._camera_height),
                     interpolation=cv2.INTER_CUBIC,
                 ).reshape(3 * self._num_pixels)
 
@@ -174,8 +204,22 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
             if self._image_include_intensity:
                 # Use only the first channel as the intensity observation
                 color_image = color_image.reshape(
-                    3, self._camera_height, self._camera_width
-                )[0, :, :].reshape(-1)
+                    self._camera_width, self._camera_height, 3
+                )[:, :, 0].reshape(-1)
+
+            # # Debug save images
+            # from PIL import Image
+            # img_intensity = Image.fromarray(
+            #     color_image.reshape(self._camera_width, self._camera_height), "L"
+            # )
+            # img_intensity.save("img_intensity.png")
+            # img_depth = Image.fromarray(
+            #     (depth_image * 255)
+            #     .astype(np.uint8)
+            #     .reshape(self._camera_width, self._camera_height),
+            #     "L",
+            # )
+            # img_depth.save("img_depth.png")
 
             # Normalize color
             color_image.astype(dtype=np.float32)
