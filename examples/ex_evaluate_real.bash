@@ -105,7 +105,9 @@ NODE_ARGS+=(
     "--ros-args"
     "--log-level" "warn"
     "--param" "use_sim_time:=false"
-    "--remap" "/rgbd_camera/points:=/lunalab_summit_xl_gen_d455/depth/color/points"
+    "--remap" "/rgbd_camera/points:=/lunalab_summit_xl_gen_d435/depth/color/points"
+    "--remap" "/rgbd_camera/image:=/lunalab_summit_xl_gen_d435/color/image_raw"
+    "--remap" "/rgbd_camera/depth_image:=/lunalab_summit_xl_gen_d435/depth/image_rect_raw"
 )
 
 ### Run the node
