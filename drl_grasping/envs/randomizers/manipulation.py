@@ -128,6 +128,7 @@ class ManipulationGazeboEnvRandomizer(
         object_dimensions: List[float] = [0.05, 0.05, 0.05],
         object_mass: float = 0.1,
         object_count: int = 1,
+        object_randomize_count: bool = False,
         object_spawn_position: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         object_random_pose: bool = True,
         object_random_spawn_position_segments: List[Tuple[float, float, float]] = [],
@@ -257,6 +258,7 @@ class ManipulationGazeboEnvRandomizer(
         self._object_dimensions = object_dimensions
         self._object_mass = object_mass
         self._object_count = object_count
+        self._object_randomize_count = object_randomize_count
         self._object_spawn_position = object_spawn_position
         self._object_random_pose = object_random_pose
         self._object_random_spawn_position_segments = (
@@ -293,6 +295,10 @@ class ManipulationGazeboEnvRandomizer(
         self.__is_object_type_randomizable = models.is_object_type_randomizable(
             object_type
         )
+
+        # If object count is randomized, set max allowed count based on passed arg
+        if self._object_randomize_count:
+            self.__object_max_count = self._object_count
 
         # Variable initialisation #
         # Rollout counters
@@ -352,6 +358,9 @@ class ManipulationGazeboEnvRandomizer(
         if "gazebo" not in kwargs:
             raise ValueError("Randomizer does not have access to the gazebo interface")
         gazebo = kwargs["gazebo"]
+
+        # Perform internal overrides of parameters
+        self.internal_overrides(task=task)
 
         # Perform external overrides (e.g. from curriculum)
         self.external_overrides(task=task)
@@ -1416,10 +1425,21 @@ class ManipulationGazeboEnvRandomizer(
 
         return object_position, quat
 
+    # Internal overrides #
+    def internal_overrides(self, task: SupportedTasks):
+        """
+        Perform internal overrides if parameters
+        """
+
+        if self._object_randomize_count:
+            self._object_count = task.np_random.randint(
+                low=1, high=self.__object_max_count + 1
+            )
+
     # External overrides #
     def external_overrides(self, task: SupportedTasks):
         """
-        Perform external overrides from either task level or environment before initialising/randomising the task
+        Perform external overrides from either task level or environment before initialising/randomising the task.
         """
 
         self.__consume_parameter_overrides(task=task)
