@@ -30,7 +30,7 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         full_depth_channels: int = 8,
         features_dim: int = 128,
         aux_obs_dim: int = 0,
-        aux_obs_features_dim: int = 16,
+        aux_obs_features_dim: int = 10,
         separate_networks_for_stacks: bool = True,
         fast_conv: bool = True,
         batch_normalization: bool = True,
