@@ -125,7 +125,7 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
                 buffer=depth_image_msg.data,
                 dtype=depth_data_type,
                 shape=(depth_image_msg.height, depth_image_msg.width),
-            )
+            ).astype(dtype=np.float32)
 
             # Crop and resize to the desired resolution
             if depth_image_msg.height > depth_image_msg.width:
@@ -136,15 +136,11 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
                 diff = depth_image_msg.width - depth_image_msg.height
                 diff_2 = diff // 2
                 depth_image = depth_image[:, diff_2:-diff_2]
-            depth_image = (
-                cv2.resize(
-                    depth_image,
-                    dsize=(self._camera_height, self._camera_width),
-                    interpolation=cv2.INTER_CUBIC,
-                )
-                .reshape(self._num_pixels)
-                .astype(dtype=np.float32)
-            )
+            depth_image = cv2.resize(
+                depth_image,
+                dsize=(self._camera_height, self._camera_width),
+                interpolation=cv2.INTER_CUBIC,
+            ).reshape(self._num_pixels)
 
         else:
             # Convert to ndarray
