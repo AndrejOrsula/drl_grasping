@@ -25,7 +25,6 @@ def generate_launch_description() -> LaunchDescription:
     prefix = LaunchConfiguration("prefix")
     env = LaunchConfiguration("env")
     env_kwargs = LaunchConfiguration("env_kwargs")
-    n_timesteps = LaunchConfiguration("n_timesteps")
     seed = LaunchConfiguration("seed")
     log_folder = LaunchConfiguration("log_folder")
     eval_freq = LaunchConfiguration("eval_freq")
@@ -76,8 +75,6 @@ def generate_launch_description() -> LaunchDescription:
                 # Make sure `robot_model` is specified (with priority)
                 "--env-kwargs",
                 ['robot_model:"', robot_model, '"'],
-                "--n-timesteps",
-                n_timesteps,
                 "--seed",
                 seed,
                 "--log-folder",

@@ -30,7 +30,7 @@ def main(args: Dict):
     if args.seed < 0:
         args.seed = np.random.randint(2 ** 32 - 1, dtype="int64").item()
 
-    config = dv2.defaults.update(
+    config, _ = dv2.defaults.update(
         {
             "logdir": args.log_folder,
             "eval_every": args.eval_freq,
@@ -47,7 +47,7 @@ def main(args: Dict):
             "actor_ent": 1e-4,
             "kl": {"free": 1.0},
         }
-    ).parse_flags()
+    ).parse_flags(known_only=True)
 
     # Set the random seed across platforms
     np.random.seed(args.seed)
@@ -55,7 +55,7 @@ def main(args: Dict):
     print("=" * 10, args.env, "=" * 10)
     print(f"Seed: {args.seed}")
 
-    env = gym.make(args.env, args.env_kwargs)
+    env = gym.make(args.env, **args.env_kwargs)
     env.seed(args.seed)
 
     dv2.train(env, config)
