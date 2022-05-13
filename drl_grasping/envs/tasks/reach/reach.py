@@ -43,6 +43,10 @@ class Reach(Manipulation, abc.ABC):
         # Distance to target in the previous step (or after reset)
         self._previous_distance: float = None
 
+        self.initial_gripper_joint_positions = (
+            self.robot_model_class.CLOSED_GRIPPER_JOINT_POSITIONS
+        )
+
     def create_action_space(self) -> ActionSpace:
 
         # 0:3 - (x, y, z) displacement
@@ -61,7 +65,8 @@ class Reach(Manipulation, abc.ABC):
         self.get_logger().debug(f"action: {action}")
 
         if self._use_servo:
-            self.servo(linear=action[0:3])
+            linear = action[0:3]
+            self.servo(linear=linear)
         else:
             position = self.get_relative_ee_position(action[0:3])
             quat_xyzw = (1.0, 0.0, 0.0, 0.0)

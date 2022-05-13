@@ -6,10 +6,10 @@ from gym_ignition.utils.typing import Observation, ObservationSpace
 
 from drl_grasping.envs.models.sensors import Camera
 from drl_grasping.envs.perception import CameraSubscriber
-from drl_grasping.envs.tasks.reach import Reach
+from drl_grasping.envs.tasks.grasp_planetary import GraspPlanetary
 
 
-class ReachColorImage(Reach, abc.ABC):
+class GraspPlanetaryColorImage(GraspPlanetary, abc.ABC):
     def __init__(
         self,
         camera_width: int,
@@ -20,7 +20,7 @@ class ReachColorImage(Reach, abc.ABC):
     ):
 
         # Initialize the Task base class
-        Reach.__init__(
+        GraspPlanetary.__init__(
             self,
             **kwargs,
         )

@@ -66,19 +66,19 @@ GRAVITY_MARS_STD: Tuple[float, float, float] = (0.0, 0.0, 0.0191)
 #########
 # Reach #
 #########
-REACH_MAX_EPISODE_STEPS: int = 50
+REACH_MAX_EPISODE_STEPS: int = 100
 REACH_KWARGS: Dict[str, any] = {
-    "agent_rate": 2.5,
+    "agent_rate": 4.0,
     "robot_model": DRL_GRASPING_ROBOT_MODEL,
     "workspace_frame_id": "world",
     "workspace_centre": (0.45, 0.0, 0.25),
     "workspace_volume": (0.5, 0.5, 0.5),
     "ignore_new_actions_while_executing": True,
     "use_servo": True,
-    "scaling_factor_translation": 0.2,
+    "scaling_factor_translation": 0.4,
     "scaling_factor_rotation": np.pi / 4.0,
     "restrict_position_goal_to_workspace": True,
-    "enable_gripper": False,
+    "enable_gripper": True,
     "sparse_reward": False,
     "act_quick_reward": -0.01,
     "required_accuracy": 0.05,
@@ -105,41 +105,48 @@ REACH_KWARGS_RANDOMIZER: Dict[str, any] = {
     "plugin_user_commands": False,
     "plugin_sensors_render_engine": "ogre2",
     "robot_random_pose": False,
-    "robot_random_joint_positions": True,
+    "robot_random_joint_positions": False,
     "robot_random_joint_positions_std": 0.1,
     "robot_random_joint_positions_above_object_spawn": False,
     "robot_random_joint_positions_above_object_spawn_elevation": 0.0,
     "robot_random_joint_positions_above_object_spawn_xy_randomness": 0.2,
     "terrain_enable": True,
+    "light_type": "sun",
+    "light_direction": (0.5, 0.4, -0.2),
+    "light_random_minmax_elevation": (-0.15, -0.5),
+    "light_distance": 1000.0,
+    "light_visual": False,
+    "light_radius": 25.0,
+    "light_model_rollouts_num": 1,
     "object_enable": True,
     "object_type": "sphere",
-    "objects_relative_to": "world",
+    "objects_relative_to": "base_link",
     "object_static": True,
     "object_collision": False,
     "object_visual": True,
     "object_color": (0.0, 0.0, 1.0, 1.0),
     "object_dimensions": [0.025, 0.025, 0.025],
     "object_count": 1,
-    "object_spawn_position": (0.45, 0, 0.25),
+    "object_spawn_position": (0.55, 0, 0.4),
     "object_random_pose": True,
     "object_random_spawn_position_segments": [],
-    "object_random_spawn_volume": (0.4, 0.4, 0.4),
+    "object_random_spawn_volume": (0.3, 0.3, 0.3),
     "object_models_rollouts_num": 0,
     "underworld_collision_plane": False,
 }
 REACH_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
     "camera_enable": True,
-    "camera_width": 128,
-    "camera_height": 128,
+    "camera_width": 64,
+    "camera_height": 64,
     "camera_update_rate": 1.2 * REACH_KWARGS["agent_rate"],
     "camera_horizontal_fov": np.pi / 3.0,
     "camera_vertical_fov": np.pi / 3.0,
     "camera_noise_mean": 0.0,
     "camera_noise_stddev": 0.001,
     "camera_relative_to": "base_link",
-    "camera_spawn_position": (1.1, -0.75, 0.45),
+    "camera_spawn_position": (0.85, -0.4, 0.45),
     "camera_spawn_quat_xyzw": (-0.0402991, -0.0166924, 0.9230002, 0.3823192),
-    "camera_random_pose_rollouts_num": 1,
+    "camera_random_pose_rollouts_num": 0,
     "camera_random_pose_mode": "orbit",
     "camera_random_pose_orbit_distance": 1.0,
     "camera_random_pose_orbit_height_range": (0.1, 0.7),
@@ -236,7 +243,7 @@ register(
         **REACH_KWARGS_SIM,
         **REACH_KWARGS_RANDOMIZER,
         **REACH_KWARGS_RANDOMIZER_CAMERA,
-        "camera_type": "camera",
+        "camera_type": "rgbd_camera",
         "camera_publish_color": True,
     },
 )
@@ -613,8 +620,8 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict[str, any] = {
     "gravity_std": GRAVITY_EARTH_STD,
     # "gravity": GRAVITY_MOON,
     # "gravity_std": GRAVITY_MOON_STD,
-    "plugin_scene_broadcaster": True,
-    "plugin_user_commands": True,
+    "plugin_scene_broadcaster": False,
+    "plugin_user_commands": False,
     "plugin_sensors_render_engine": "ogre2",
     "robot_spawn_position": (0, 0, 0.1),
     "robot_spawn_quat_xyzw": (0, 0, 0, 1),
@@ -746,6 +753,28 @@ GRASP_PLANETARY_KWARGS_CURRICULUM: Dict[str, any] = {
 
 # Task
 register(
+    id="GraspPlanetary-ColorImage-v0",
+    entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
+    max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
+    kwargs={
+        "task_cls": tasks.GraspPlanetaryColorImage,
+        **GRASP_PLANETARY_KWARGS,
+        **GRASP_PLANETARY_KWARGS_CURRICULUM,
+        "monochromatic": False,
+    },
+)
+register(
+    id="GraspPlanetary-MonoImage-v0",
+    entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
+    max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
+    kwargs={
+        "task_cls": tasks.GraspPlanetaryColorImage,
+        **GRASP_PLANETARY_KWARGS,
+        **GRASP_PLANETARY_KWARGS_CURRICULUM,
+        "monochromatic": True,
+    },
+)
+register(
     id="GraspPlanetary-DepthImage-v0",
     entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
     max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
@@ -827,6 +856,32 @@ register(
     },
 )
 # Gazebo wrapper
+register(
+    id="GraspPlanetary-ColorImage-Gazebo-v0",
+    entry_point=GRASP_PLANETARY_RANDOMIZER,
+    max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
+    kwargs={
+        "env": "GraspPlanetary-ColorImage-v0",
+        **GRASP_PLANETARY_KWARGS_SIM,
+        **GRASP_PLANETARY_KWARGS_RANDOMIZER,
+        **GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA,
+        "camera_type": "rgbd_camera",
+        "camera_publish_color": True,
+    },
+)
+register(
+    id="GraspPlanetary-MonoImage-Gazebo-v0",
+    entry_point=GRASP_PLANETARY_RANDOMIZER,
+    max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
+    kwargs={
+        "env": "GraspPlanetary-MonoImage-v0",
+        **GRASP_PLANETARY_KWARGS_SIM,
+        **GRASP_PLANETARY_KWARGS_RANDOMIZER,
+        **GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA,
+        "camera_type": "rgbd_camera",
+        "camera_publish_color": True,
+    },
+)
 register(
     id="GraspPlanetary-DepthImage-Gazebo-v0",
     entry_point=GRASP_PLANETARY_RANDOMIZER,
