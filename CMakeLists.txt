@@ -37,6 +37,7 @@ install(PROGRAMS
     ${SCRIPTS_DIR}/preload_replay_buffer.py
     ${SCRIPTS_DIR}/random_agent.py
     ${SCRIPTS_DIR}/train.py
+    ${SCRIPTS_DIR}/train_dreamerv2.py
     ${SCRIPTS_DIR}/utils/dataset/dataset_download_test.bash
     ${SCRIPTS_DIR}/utils/dataset/dataset_download_train.bash
     ${SCRIPTS_DIR}/utils/dataset/dataset_set_test.bash
@@ -55,6 +56,7 @@ install(PROGRAMS
     ${EXAMPLES_DIR}/ex_evaluate_real.bash
     ${EXAMPLES_DIR}/ex_optimize.bash
     ${EXAMPLES_DIR}/ex_train.bash
+    ${EXAMPLES_DIR}/ex_train_dreamerv2.bash
     DESTINATION lib/${PROJECT_NAME}
 )
 
