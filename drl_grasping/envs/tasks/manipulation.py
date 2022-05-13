@@ -188,29 +188,29 @@ class Manipulation(Task, Node, abc.ABC):
                 callback_group=self._callback_group,
             )
         # Gripper interface
-        if self._enable_gripper:
-            self.gripper = MoveIt2Gripper(
-                node=self,
-                gripper_joint_names=self.robot_gripper_joint_names,
-                open_gripper_joint_positions=self.robot_model_class.OPEN_GRIPPER_JOINT_POSITIONS,
-                closed_gripper_joint_positions=self.robot_model_class.CLOSED_GRIPPER_JOINT_POSITIONS,
-                skip_planning=True,
-                ignore_new_calls_while_executing=ignore_new_actions_while_executing,
-                callback_group=self._callback_group,
-                # TODO: Expose action server as arg (and test with launch script)
-            )
-            # TODO: Expose selection of MoveIt2Gripper/GripperCommand as argument
-            # self.gripper = GripperCommand(
-            #     node=self,
-            #     gripper_joint_names=self.robot_gripper_joint_names,
-            #     open_gripper_joint_positions=self.robot_model_class.OPEN_GRIPPER_JOINT_POSITIONS,
-            #     closed_gripper_joint_positions=self.robot_model_class.CLOSED_GRIPPER_JOINT_POSITIONS,
-            #     max_effort=10.0,
-            #     ignore_new_calls_while_executing=ignore_new_actions_while_executing,
-            #     callback_group=self._callback_group,
-            #     # TODO: Expose as arg (and test with launch script)node: Node,
-            #     gripper_command_action_name="/robot_j2s7s300_gripper/gripper_command",
-            # )
+        # if self._enable_gripper:
+        self.gripper = MoveIt2Gripper(
+            node=self,
+            gripper_joint_names=self.robot_gripper_joint_names,
+            open_gripper_joint_positions=self.robot_model_class.OPEN_GRIPPER_JOINT_POSITIONS,
+            closed_gripper_joint_positions=self.robot_model_class.CLOSED_GRIPPER_JOINT_POSITIONS,
+            skip_planning=True,
+            ignore_new_calls_while_executing=ignore_new_actions_while_executing,
+            callback_group=self._callback_group,
+            # TODO: Expose action server as arg (and test with launch script)
+        )
+        # TODO: Expose selection of MoveIt2Gripper/GripperCommand as argument
+        # self.gripper = GripperCommand(
+        #     node=self,
+        #     gripper_joint_names=self.robot_gripper_joint_names,
+        #     open_gripper_joint_positions=self.robot_model_class.OPEN_GRIPPER_JOINT_POSITIONS,
+        #     closed_gripper_joint_positions=self.robot_model_class.CLOSED_GRIPPER_JOINT_POSITIONS,
+        #     max_effort=10.0,
+        #     ignore_new_calls_while_executing=ignore_new_actions_while_executing,
+        #     callback_group=self._callback_group,
+        #     # TODO: Expose as arg (and test with launch script)node: Node,
+        #     gripper_command_action_name="/robot_j2s7s300_gripper/gripper_command",
+        # )
 
         # Initialize task and randomizer overrides (e.g. from curriculum)
         # Both of these are consumed at the beginning of reset
