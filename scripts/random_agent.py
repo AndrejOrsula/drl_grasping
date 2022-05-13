@@ -6,7 +6,7 @@ from typing import Dict
 import gym
 from stable_baselines3.common.env_checker import check_env
 
-from drl_grasping.utils import import_envs
+from drl_grasping import envs as drl_grasping_envs
 from drl_grasping.utils.utils import StoreDict, str2bool
 
 
