@@ -1585,7 +1585,7 @@ class ManipulationGazeboEnvRandomizer(
             task.gripper.reset_new_joint_state_checker()
         if hasattr(task, "camera_sub"):
             task.camera_sub.reset_new_observation_checker()
-        while observations_ready:
+        while not observations_ready:
             attempts += 1
             if 0 == attempts % self.POST_RANDOMIZATION_MAX_STEPS:
                 task.get_logger().warn(
