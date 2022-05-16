@@ -78,26 +78,68 @@ ENV WS_SRC_DIR=${WS_DIR}/src
 ENV WS_INSTALL_DIR=${WS_DIR}/install
 ENV ASSETS_DIR=${WS_DIR}/assets
 
+### Install Python requirements (Torch, SB3, ...)
+COPY ./python_requirements.txt ${WS_DIR}/python_requirements.txt
+RUN pip${PYTHON_VERSION} install --no-cache-dir --upgrade pip && \
+    pip${PYTHON_VERSION} install --no-cache-dir -r ${WS_DIR}/python_requirements.txt
+
 ### Setup token for accessing private UNILU GitLab repositories
 ARG UNILU_GITLAB_ACCESS_TOKEN
 RUN git config --global url."https://oauth2:${UNILU_GITLAB_ACCESS_TOKEN}@gitlab.uni.lu".insteadOf "https://gitlab.uni.lu"
 
-### Clone drl_grasping and all colcon-enabled dependencies, then install Python requirements (Torch, SB3, ...)
+### Clone all colcon-enabled repositories (dependencies)
+COPY ./drl_grasping.repos ${WS_SRC_DIR}/drl_grasping.repos
 WORKDIR ${WS_SRC_DIR}
-ARG DRL_GRASPING_GIT_BRANCH=devel
-# TODO: Add `--recursive` arg once pretrained agents are ready to use
-RUN git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/drl_grasping.git -b ${DRL_GRASPING_GIT_BRANCH} && \
-    vcs import < ${WS_SRC_DIR}/drl_grasping/drl_grasping.repos && \
-    pip${PYTHON_VERSION} install --no-cache-dir --upgrade pip && \
-    pip${PYTHON_VERSION} install --no-cache-dir -r ${WS_SRC_DIR}/drl_grasping/python_requirements.txt
+RUN vcs import < ${WS_SRC_DIR}/drl_grasping.repos
 
 ### Install ROS dependencies and build with colcon
 WORKDIR ${WS_DIR}
 RUN rosdep update && \
     apt-get update && \
     rosdep install -r --from-paths ${WS_SRC_DIR} -yi --rosdistro ${ROS2_DISTRO} && \
-    rm -rf /var/lib/apt/lists/* && \
-    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+    rm -rf /var/lib/apt/lists/*
+### Install ROS dependencies that cannot be installed via rosdep
+### TODO: Remove manual install once rosdep works again for rolling on focal (or once upgraded to humble)
+RUN apt-get update && \
+    apt-get install -yq --no-install-recommends \
+    ros-${ROS2_DISTRO}-ament-cmake \
+    ros-${ROS2_DISTRO}-angles \
+    ros-${ROS2_DISTRO}-backward-ros \
+    ros-${ROS2_DISTRO}-control-msgs \
+    ros-${ROS2_DISTRO}-control-toolbox \
+    ros-${ROS2_DISTRO}-cv-bridge \
+    ros-${ROS2_DISTRO}-geometric-shapes \
+    ros-${ROS2_DISTRO}-interactive-markers \
+    ros-${ROS2_DISTRO}-moveit-msgs \
+    ros-${ROS2_DISTRO}-moveit-resources-fanuc-description \
+    ros-${ROS2_DISTRO}-moveit-resources-fanuc-moveit-config \
+    ros-${ROS2_DISTRO}-moveit-resources-panda-moveit-config \
+    ros-${ROS2_DISTRO}-ompl \
+    ros-${ROS2_DISTRO}-pluginlib \
+    ros-${ROS2_DISTRO}-rclcpp \
+    ros-${ROS2_DISTRO}-rclcpp-action \
+    ros-${ROS2_DISTRO}-realtime-tools \
+    ros-${ROS2_DISTRO}-ros-testing \
+    ros-${ROS2_DISTRO}-ros2param \
+    ros-${ROS2_DISTRO}-ros2run \
+    ros-${ROS2_DISTRO}-rosidl-default-runtime \
+    ros-${ROS2_DISTRO}-ruckig \
+    ros-${ROS2_DISTRO}-rviz2 \
+    ros-${ROS2_DISTRO}-sensor-msgs \
+    ros-${ROS2_DISTRO}-srdfdom \
+    ros-${ROS2_DISTRO}-std-msgs \
+    ros-${ROS2_DISTRO}-std-srvs \
+    ros-${ROS2_DISTRO}-tf2-eigen \
+    ros-${ROS2_DISTRO}-tf2-msgs \
+    ros-${ROS2_DISTRO}-tf2-ros \
+    ros-${ROS2_DISTRO}-tinyxml2-vendor \
+    ros-${ROS2_DISTRO}-trajectory-msgs \
+    ros-${ROS2_DISTRO}-urdf \
+    ros-${ROS2_DISTRO}-warehouse-ros \
+    ros-${ROS2_DISTRO}-xacro && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN source /opt/ros/${ROS2_DISTRO}/setup.bash && \
     colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 ### Build iDynTree
@@ -175,10 +217,31 @@ RUN if [[ -z "${DISABLE_DEFAULT_DATASETS}" ]] ; then \
     echo "Default datasets are disabled. Downloading skipped." \
     ; fi
 
+WORKDIR ${WS_SRC_DIR}
+RUN git clone https://github.com/danijar/dreamerv2.git --depth 1 && \
+    touch ${WS_SRC_DIR}/dreamerv2/COLCON_IGNORE && \
+    cd ${WS_SRC_DIR}/dreamerv2 && \
+    pip${PYTHON_VERSION} install --no-cache-dir .
+
+# Downgrade `markupsafe` else it does not work
+# TODO: Revent once fixed
+RUN pip${PYTHON_VERSION} install --no-cache-dir markupsafe==2.0.1
+
+# Copy over drl_grasping repository and build it
+COPY ./ ${WS_SRC_DIR}/drl_grasping/
+WORKDIR ${WS_DIR}
+RUN rosdep update && \
+    apt-get update && \
+    rosdep install -r --from-paths ${WS_SRC_DIR} -yi --rosdistro ${ROS2_DISTRO} && \
+    rm -rf /var/lib/apt/lists/* && \
+    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+    colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+
 ### Go to the workspace root
 WORKDIR ${WS_DIR}
 
 ### Set entrypoint and default command
-COPY ./entrypoint.bash ${WS_DIR}/entrypoint.bash
+RUN ln -sr ${WS_SRC_DIR}/drl_grasping/.docker/entrypoint.bash ${WS_DIR}/entrypoint.bash
 ENTRYPOINT ["/bin/bash", "-c", "source ${WS_DIR}/entrypoint.bash && ${@}", "-s"]
 CMD ["/bin/bash"]

@@ -1,0 +1,15 @@
+# Git
+**/.git
+**/.gitignore
+
+# Pre-commit
+**/.git_hooks
+**/.pre-commit-config.yaml
+
+# Colcon
+**/build
+**/install
+**/log
+
+# Python
+**/__pycache__
