@@ -217,11 +217,18 @@ RUN if [[ -z "${DISABLE_DEFAULT_DATASETS}" ]] ; then \
     echo "Default datasets are disabled. Downloading skipped." \
     ; fi
 
+# Install Dreamer v2
 WORKDIR ${WS_SRC_DIR}
 RUN git clone https://github.com/danijar/dreamerv2.git --depth 1 && \
     touch ${WS_SRC_DIR}/dreamerv2/COLCON_IGNORE && \
     cd ${WS_SRC_DIR}/dreamerv2 && \
     pip${PYTHON_VERSION} install --no-cache-dir .
+
+# Install FFmpeg to enable dreamerv2 creating GIFs
+RUN apt-get update && \
+    apt-get install -yq --no-install-recommends \
+    ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
 
 # Downgrade `markupsafe` else it does not work
 # TODO: Revent once fixed
