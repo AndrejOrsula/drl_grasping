@@ -45,6 +45,7 @@ def main(args: Dict):
             "actor_opt": {"lr": 1e-5},
             "critic_opt": {"lr": 1e-5},
             "actor_ent": 1e-4,
+            "render_size": [128, 128],
             "kl": {"free": 1.0},
         }
     ).parse_flags(known_only=True)
@@ -67,7 +68,10 @@ if __name__ == "__main__":
 
     # Environment and its parameters
     parser.add_argument(
-        "--env", type=str, default="Reach-ColorImage-Gazebo-v0", help="Environment ID"
+        "--env",
+        type=str,
+        default="GraspPlanetary-ColorImage-Gazebo-v0",
+        help="Environment ID",
     )
     parser.add_argument(
         "--env-kwargs",

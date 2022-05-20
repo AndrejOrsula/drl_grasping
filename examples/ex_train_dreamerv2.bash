@@ -18,8 +18,8 @@ SEED="42"
 ROBOT_MODEL="lunalab_summit_xl_gen"
 
 ## ID of the environment
-ENV="Reach-ColorImage-Gazebo-v0"
-# ENV="GraspPlanetary-ColorImage-Gazebo-v0"
+# ENV="Reach-ColorImage-Gazebo-v0"
+ENV="GraspPlanetary-ColorImage-Gazebo-v0"
 # ENV="GraspPlanetary-MonoImage-Gazebo-v0"
 
 ## Path to logs directory
