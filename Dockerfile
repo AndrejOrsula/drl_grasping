@@ -230,9 +230,10 @@ RUN apt-get update && \
     ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
+# Downgrade `tensorflow` else it does not work (dreamerv2)
 # Downgrade `markupsafe` else it does not work
 # TODO: Revent once fixed
-RUN pip${PYTHON_VERSION} install --no-cache-dir markupsafe==2.0.1
+RUN pip${PYTHON_VERSION} install --no-cache-dir tensorflow==2.8.0 markupsafe==2.0.1
 
 # Copy over drl_grasping repository and build it
 COPY ./ ${WS_SRC_DIR}/drl_grasping/
