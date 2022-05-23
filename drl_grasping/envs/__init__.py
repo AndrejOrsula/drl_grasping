@@ -1,6 +1,16 @@
-# Note: These two modules must be imported prior to gym_ignition (open3d and stable_baselines3)
+# Note: The `open3d` and `stable_baselines3` modules must be imported prior to `gym_ignition`
 import open3d  # isort:skip
 import stable_baselines3  # isort:skip
+
+# Note: If installed, `tensorflow` module must be imported before `gym_ignition`/`scenario`
+# Otherwise, protobuf version incompatibility will cause an error
+try:
+    from importlib.util import find_spec
+
+    if find_spec("tensorflow") is not None:
+        import tensorflow
+except:
+    pass
 
 from os import environ, path
 from typing import Dict, Tuple
