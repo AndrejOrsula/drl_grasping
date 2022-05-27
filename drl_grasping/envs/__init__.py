@@ -679,8 +679,8 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict[str, any] = {
 }
 GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
     "camera_enable": True,
-    "camera_width": 128,
-    "camera_height": 128,
+    "camera_width": 64,
+    "camera_height": 64,
     "camera_update_rate": 4.0 * GRASP_PLANETARY_KWARGS["agent_rate"],
     "camera_horizontal_fov": np.pi / 2.0,
     "camera_vertical_fov": np.pi / 2.0,

@@ -38,14 +38,21 @@ def main(args: Dict):
             "pretrain": 100,
             "clip_rewards": "identity",
             "pred_discount": False,
-            "replay": {"prioritize_ends": False},
+            "replay": {
+                "capacity": 1e6,
+                "ongoing": False,
+                "minlen": 10,
+                "maxlen": 10,
+                "prioritize_ends": True,
+            },
+            "dataset": {"batch": 16, "length": 10},
             "grad_heads": ["decoder", "reward"],
             "rssm": {"hidden": 200, "deter": 200},
             "model_opt": {"lr": 1e-4},
             "actor_opt": {"lr": 1e-5},
             "critic_opt": {"lr": 1e-5},
             "actor_ent": 1e-4,
-            "render_size": [128, 128],
+            "render_size": [64, 64],
             "kl": {"free": 1.0},
         }
     ).parse_flags(known_only=True)
