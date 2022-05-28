@@ -34,7 +34,7 @@ class RandomGround(model_wrapper.ModelWrapper):
 
         # Get textures from ENV variable if not directly specified
         if not texture_dir:
-            texture_dir = os.environ.get("DRL_GRASPING_PBR_TEXTURES_DIR", default="")
+            texture_dir = os.environ.get("TEXTURE_DIRS", default="")
 
         # Find random PBR texture
         albedo_map = None
@@ -42,20 +42,16 @@ class RandomGround(model_wrapper.ModelWrapper):
         roughness_map = None
         metalness_map = None
         if texture_dir:
-            # Get list of the available textures
-            textures = os.listdir(texture_dir)
-            # Keep only texture directories if texture_dir is a git repo (ugly fix)
-            try:
-                textures.remove(".git")
-            except:
-                pass
-            try:
-                textures.remove("README.md")
-            except:
-                pass
+            if ":" in texture_dir:
+                textures = []
+                for d in texture_dir.split(":"):
+                    textures.extend([os.path.join(d, f) for f in os.listdir(d)])
+            else:
+                # Get list of the available textures
+                textures = os.listdir(texture_dir)
 
             # Choose a random texture from these
-            random_texture_dir = os.path.join(texture_dir, np_random.choice(textures))
+            random_texture_dir = str(np_random.choice(textures))
 
             # List all files
             texture_files = os.listdir(random_texture_dir)
