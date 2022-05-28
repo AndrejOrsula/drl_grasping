@@ -197,22 +197,16 @@ RUN git clone https://github.com/AndrejOrsula/O-CNN.git --depth 1 -b master && \
 ### Configure default datasets
 WORKDIR ${ASSETS_DIR}
 ARG DISABLE_DEFAULT_DATASETS
+COPY ./scripts/utils/ ${ASSETS_DIR}/scripts/utils
 RUN if [[ -z "${DISABLE_DEFAULT_DATASETS}" ]] ; then \
     echo "Downloading default datasets..." && \
     apt-get update && \
     apt-get install -yq --no-install-recommends \
     git-lfs && \
     rm -rf /var/lib/apt/lists/* && \
-    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/ign_fuel_assets.git --depth 1 -b master && \
-    ./ign_fuel_assets/setup.bash \
-    # && \
-    # git clone https://github.com/AndrejOrsula/pbr_textures.git --depth 1 -b 1k_test && \
-    # source /opt/ros/${ROS2_DISTRO}/setup.bash && \
-    # source ${WS_INSTALL_DIR}/local_setup.bash && \
-    # export PATH=${WS_DIR}/O-CNN/octree/build:${PATH} && \
-    # export PYTHONPATH=${WS_DIR}/O-CNN/octree/build/python:${PYTHONPATH} && \
-    # ros2 run drl_grasping dataset_download_test.bash && \
-    # ros2 run drl_grasping process_collection.py \
+    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/assets/textures.git --depth 1 -b master && \
+    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/assets/sdf_models.git --depth 1 -b master && \
+    ${ASSETS_DIR}/scripts/utils/dataset/dataset_download_test.bash \
     ; else \
     echo "Default datasets are disabled. Downloading skipped." \
     ; fi
