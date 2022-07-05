@@ -55,6 +55,7 @@ install(PROGRAMS
     ${EXAMPLES_DIR}/ex_evaluate_pretrained_agent.bash
     ${EXAMPLES_DIR}/ex_evaluate_real.bash
     ${EXAMPLES_DIR}/ex_optimize.bash
+    ${EXAMPLES_DIR}/ex_random_agent.bash
     ${EXAMPLES_DIR}/ex_train.bash
     ${EXAMPLES_DIR}/ex_train_dreamerv2.bash
     DESTINATION lib/${PROJECT_NAME}
