@@ -129,7 +129,7 @@ class OctreeCreator:
         normals_max_nn: int,
     ) -> open3d.geometry.PointCloud:
 
-        # Check if any points remain in the area after cropping
+        # Check if point cloud has any points
         if not open3d_point_cloud.has_points():
             self._node.get_logger().warn(
                 "Point cloud has no points. Pre-processing skipped."
