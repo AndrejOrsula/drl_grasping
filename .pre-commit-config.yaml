@@ -1,0 +1,64 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: check-xml
+      - id: check-yaml
+      - id: debug-statements
+      - id: destroyed-symlinks
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  - repo: https://github.com/psf/black
+    rev: 21.10b0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/lovesegfault/beautysh
+    rev: v6.2.1
+    hooks:
+      - id: beautysh
+
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.10
+    hooks:
+      - id: mdformat
+
+  - repo: https://github.com/AleksaC/hadolint-py
+    rev: v2.8.0
+    hooks:
+      - id: hadolint
+        args:
+          [
+            --ignore,
+            DL3003,
+            --ignore,
+            DL3008,
+            --ignore,
+            DL3013,
+            --ignore,
+            DL4006,
+            --ignore,
+            SC1091,
+          ]
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.1.0
+    hooks:
+    - id: codespell

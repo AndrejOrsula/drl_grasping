@@ -1,76 +1,83 @@
-from drl_grasping.envs.tasks.reach import Reach
-from drl_grasping.perception import CameraSubscriber
-from gym_ignition.utils.typing import Observation
-from gym_ignition.utils.typing import ObservationSpace
-from typing import Tuple
 import abc
+
 import gym
 import numpy as np
+from gym_ignition.utils.typing import Observation, ObservationSpace
+
+from drl_grasping.envs.models.sensors import Camera
+from drl_grasping.envs.perception import CameraSubscriber
+from drl_grasping.envs.tasks.reach import Reach
 
 
 class ReachColorImage(Reach, abc.ABC):
-
-    # Overwrite parameters for ManipulationGazeboEnvRandomizer
-    _camera_enable: bool = True
-    _camera_type: str = 'camera'
-    _camera_width: int = 128
-    _camera_height: int = 128
-    _camera_update_rate: int = 10
-    _camera_horizontal_fov: float = 1.0
-    _camera_vertical_fov: float = 1.0
-    _camera_position: Tuple[float, float, float] = (1.1, -0.75, 0.45)
-    _camera_quat_xyzw: Tuple[float, float,
-                             float, float] = (-0.0402991, -0.0166924, 0.9230002, 0.3823192)
-    _camera_ros2_bridge_color: bool = True
-
-    def __init__(self,
-                 agent_rate: float,
-                 robot_model: str,
-                 restrict_position_goal_to_workspace: bool,
-                 sparse_reward: bool,
-                 act_quick_reward: float,
-                 required_accuracy: float,
-                 verbose: bool,
-                 **kwargs):
+    def __init__(
+        self,
+        camera_width: int,
+        camera_height: int,
+        camera_type: str = "camera",
+        monochromatic: bool = False,
+        **kwargs,
+    ):
 
         # Initialize the Task base class
-        Reach.__init__(self,
-                       agent_rate=agent_rate,
-                       robot_model=robot_model,
-                       restrict_position_goal_to_workspace=restrict_position_goal_to_workspace,
-                       sparse_reward=sparse_reward,
-                       act_quick_reward=act_quick_reward,
-                       required_accuracy=required_accuracy,
-                       verbose=verbose,
-                       **kwargs)
+        Reach.__init__(
+            self,
+            **kwargs,
+        )
+
+        # Store parameters for later use
+        self._camera_width = camera_width
+        self._camera_height = camera_height
+        self._monochromatic = monochromatic
 
         # Perception (RGB camera)
-        self.camera_sub = CameraSubscriber(topic=f'/{self._camera_type}',
-                                           is_point_cloud=False,
-                                           node_name=f'drl_grasping_rgb_camera_sub_{self.id}')
+        self.camera_sub = CameraSubscriber(
+            node=self,
+            topic=Camera.get_color_topic(camera_type),
+            is_point_cloud=False,
+            callback_group=self._callback_group,
+        )
 
     def create_observation_space(self) -> ObservationSpace:
 
         # 0:3*height*width - rgb image
-        return gym.spaces.Box(low=0,
-                              high=255,
-                              shape=(self._camera_height,
-                                     self._camera_width, 3),
-                              dtype=np.uint8)
+        # 0:1*height*width - monochromatic (intensity) image
+        return gym.spaces.Box(
+            low=0,
+            high=255,
+            shape=(
+                self._camera_height,
+                self._camera_width,
+                1 if self._monochromatic else 3,
+            ),
+            dtype=np.uint8,
+        )
 
     def get_observation(self) -> Observation:
 
         # Get the latest image
         image = self.camera_sub.get_observation()
 
+        assert (
+            image.width == self._camera_width and image.height == self._camera_height
+        ), f"Error: Resolution of the input image does not match the configured observation space. ({image.width}x{image.height} instead of {self._camera_width}x{self._camera_height})"
+
         # Reshape and create the observation
-        color_image = np.array(image.data, dtype=np.uint8).reshape(self._camera_height,
-                                                                   self._camera_width, 3)
+        color_image = np.array(image.data, dtype=np.uint8).reshape(
+            self._camera_height, self._camera_width, 3
+        )
 
-        observation = Observation(color_image)
+        # # Debug save images
+        # from PIL import Image
+        # img_color = Image.fromarray(color_image)
+        # img_color.save("img_color.png")
 
-        if self._verbose:
-            print(f"\nobservation: {observation}")
+        if self._monochromatic:
+            observation = Observation(color_image[:, :, 0])
+        else:
+            observation = Observation(color_image)
+
+        self.get_logger().debug(f"\nobservation: {observation}")
 
         # Return the observation
         return observation

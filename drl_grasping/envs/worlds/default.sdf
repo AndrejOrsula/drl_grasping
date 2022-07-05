@@ -1,101 +1,14 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <sdf version="1.9">
-    <world name="default">
+  <world name="drl_grasping_world">
 
-        <!--              -->
-        <!-- Illumination -->
-        <!--              -->
-        <light type="directional" name="sun">
-            <cast_shadows>true</cast_shadows>
-            <pose>0 0 100 0 0 0</pose>
-            <diffuse>0.8 0.8 0.8 1</diffuse>
-            <specular>0.2 0.2 0.2 1</specular>
-            <attenuation>
-                <range>1000</range>
-                <constant>0.9</constant>
-                <linear>0.01</linear>
-                <quadratic>0.001</quadratic>
-            </attenuation>
-            <direction>0.5 -0.25 -0.75</direction>
-        </light>
+    <!--       -->
+    <!-- Scene -->
+    <!--       -->
+    <scene>
+      <ambient>1.0 1.0 1.0</ambient>
+      <grid>false</grid>
+    </scene>
 
-        <!--       -->
-        <!-- Scene -->
-        <!--       -->
-        <scene>
-            <ambient>1.0 1.0 1.0</ambient>
-            <grid>false</grid>
-        </scene>
-
-        <!--     -->
-        <!-- GUI -->
-        <!--     -->
-        <gui>
-            <plugin filename="GzScene3D" name="3d_view">
-                <ignition-gui>
-                    <title>3d_view</title>
-                    <property key="enabled" type="bool">true</property>
-                    <property key="visible" type="bool">true</property>
-                    <property key="state" type="string">docked</property>
-                    <property key="showTitleBar" type="bool">false</property>
-                    <property key="resizable" type="bool">false</property>
-                    <property key="standalone" type="bool">false</property>
-                </ignition-gui>
-                <engine>ogre2</engine>
-                <scene>scene</scene>
-                <background_color>1.0 1.0 1.0 1.0</background_color>
-                <camera_pose>1.0 -0.75 1.0 0 0.78539816 2.3561945</camera_pose>
-                <service>/world/default/scene/info</service>
-                <pose_topic>/world/default/pose/info</pose_topic>
-            </plugin>
-
-
-            <plugin filename="WorldControl" name="world_control">
-                <ignition-gui>
-                    <title>world_control</title>
-                    <anchors target="3d_view">
-                        <line own="bottom" target="bottom"/>
-                        <line own="left" target="left"/>
-                    </anchors>
-                    <property key="enabled" type="bool">true</property>
-                    <property key="visible" type="bool">true</property>
-                    <property key="state" type="string">floating</property>
-                    <property key="showTitleBar" type="bool">false</property>
-                    <property key="resizable" type="bool">false</property>
-                    <property key="standalone" type="bool">false</property>
-                    <property type="double" key="height">50</property>
-                    <property type="double" key="width">100</property>
-                </ignition-gui>
-                <play_pause>1</play_pause>
-                <step>1</step>
-                <start_paused>0</start_paused>
-                <service>/world/default/control</service>
-                <stats_topic>/world/default/stats</stats_topic>
-            </plugin>
-
-            <plugin filename="WorldStats" name="world_stats">
-                <ignition-gui>
-                    <title>world_stats</title>
-                    <anchors target="3d_view">
-                        <line own="bottom" target="bottom"/>
-                        <line own="right" target="right"/>
-                    </anchors>
-                    <property key="width" type="double">275</property>
-                    <property key="height" type="double">110</property>
-                    <property key="enabled" type="bool">true</property>
-                    <property key="visible" type="bool">true</property>
-                    <property key="state" type="string">floating</property>
-                    <property key="showTitleBar" type="bool">false</property>
-                    <property key="resizable" type="bool">false</property>
-                    <property key="standalone" type="bool">false</property>
-                </ignition-gui>
-                <sim_time>1</sim_time>
-                <real_time>1</real_time>
-                <real_time_factor>1</real_time_factor>
-                <iterations>1</iterations>
-                <topic>/world/default/stats</topic>
-            </plugin>
-        </gui>
-
-    </world>
+  </world>
 </sdf>

@@ -1,15 +1,14 @@
-# Reach task - hyperparameters are not tuned (but agent should learn regardless)
-# TODO: Autotune Reach task hyperparameters for TQC
+# Reach
 Reach-Gazebo-v0:
+  # callback:
+  #   - drl_grasping.utils.callbacks.ParallelTrainCallback:
+  #       gradient_steps: 100
+  #       sleep_time: 0.0
   policy: "MlpPolicy"
   policy_kwargs:
     n_quantiles: 25
     n_critics: 2
     net_arch: [128, 64]
-  env_wrapper:
-    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
-        robot_random_joint_positions: True
-        robot_random_joint_positions_std: 0.1
   n_timesteps: 50000
   buffer_size: 25000
   learning_starts: 0
@@ -32,13 +31,6 @@ Reach-ColorImage-Gazebo-v0:
     n_quantiles: 25
     n_critics: 2
     net_arch: [128, 128]
-  env_wrapper:
-    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
-        robot_random_joint_positions: True
-        robot_random_joint_positions_std: 0.1
-        camera_pose_rollouts_num: 1
-        camera_noise_mean: 0
-        camera_noise_stddev: 0.001
   n_timesteps: 50000
   buffer_size: 25000
   learning_starts: 0
@@ -76,13 +68,43 @@ Reach-Octree-Gazebo-v0:
     net_arch: [128, 128]
     separate_networks_for_stacks: False
     share_features_extractor: True
-  env_wrapper:
-    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
-        robot_random_joint_positions: True
-        robot_random_joint_positions_std: 0.1
-        camera_pose_rollouts_num: 1
-        camera_noise_mean: 0
-        camera_noise_stddev: 0.001
+  n_timesteps: 50000
+  buffer_size: 25000
+  learning_starts: 0
+  batch_size: 32
+  learning_rate: lin_0.0003
+  gamma: 0.95
+  tau: 0.01
+  ent_coef: "auto_0.1"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 2
+  train_freq: 1
+  gradient_steps: 1
+  noise_type: "normal"
+  noise_std: 0.025
+  optimize_memory_usage: True
+
+Reach-OctreeWithIntensity-Gazebo-v0:
+  policy: "OctreeCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      depth: 4
+      full_depth: 2
+      channels_in: 5
+      channel_multiplier: 8
+      full_depth_conv1d: True
+      full_depth_channels: 2
+      features_dim: 64
+      aux_obs_dim: 0
+      fast_conv: True
+      batch_normalization: False
+      bn_eps: 0.00001
+      bn_momentum: 0.01
+    n_quantiles: 25
+    n_critics: 2
+    net_arch: [128, 128]
+    separate_networks_for_stacks: False
+    share_features_extractor: True
   n_timesteps: 50000
   buffer_size: 25000
   learning_starts: 0
@@ -120,13 +142,6 @@ Reach-OctreeWithColor-Gazebo-v0:
     net_arch: [128, 128]
     separate_networks_for_stacks: False
     share_features_extractor: True
-  env_wrapper:
-    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
-        robot_random_joint_positions: True
-        robot_random_joint_positions_std: 0.1
-        camera_pose_rollouts_num: 1
-        camera_noise_mean: 0
-        camera_noise_stddev: 0.001
   n_timesteps: 50000
   buffer_size: 25000
   learning_starts: 0
@@ -143,8 +158,10 @@ Reach-OctreeWithColor-Gazebo-v0:
   noise_std: 0.025
   optimize_memory_usage: True
 
-# Grasp task - hyperparameters are semi-tuned
+# Grasp
 Grasp-Octree-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
@@ -163,28 +180,56 @@ Grasp-Octree-Gazebo-v0:
     n_quantiles: 25
     n_critics: 2
     net_arch: [512, 512]
-    separate_networks_for_stacks: True
+    separate_networks_for_stacks: False
     share_features_extractor: True
-  env_wrapper:
-    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
-        robot_random_joint_positions: True
-        robot_random_joint_positions_std: 0.1
-        camera_pose_rollouts_num: 1
-        camera_noise_mean: 0
-        camera_noise_stddev: 0.001
-        ground_model_rollouts_num: 0
-        object_random_pose: True
-        object_random_use_mesh_models: True
-        object_models_rollouts_num: 1
-        object_random_model_count: 4
   n_timesteps: 500000
-  buffer_size: 40000
+  buffer_size: 50000
   learning_starts: 0
   batch_size: 32
-  learning_rate: lin_0.00015
-  gamma: 0.999
-  tau: 0.00005
-  ent_coef: "auto_0.1_0.05"
+  learning_rate: lin_0.0002
+  gamma: 0.99
+  tau: 0.00004
+  ent_coef: "auto_0.5"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
+  noise_type: "normal"
+  noise_std: 0.025
+  use_sde: False
+  optimize_memory_usage: True
+
+Grasp-OctreeWithIntensity-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+  policy: "OctreeCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      depth: 4
+      full_depth: 2
+      channels_in: 5
+      channel_multiplier: 32
+      full_depth_conv1d: True
+      full_depth_channels: 16
+      features_dim: 160
+      aux_obs_dim: 10
+      fast_conv: True
+      batch_normalization: False
+      bn_eps: 0.00001
+      bn_momentum: 0.01
+    n_quantiles: 25
+    n_critics: 2
+    net_arch: [512, 512]
+    separate_networks_for_stacks: False
+    share_features_extractor: True
+  n_timesteps: 500000
+  buffer_size: 50000
+  learning_starts: 0
+  batch_size: 32
+  learning_rate: lin_0.0002
+  gamma: 0.99
+  tau: 0.00004
+  ent_coef: "auto_0.5"
   target_entropy: "auto"
   top_quantiles_to_drop_per_net: 3
   train_freq: [1, "episode"]
@@ -195,6 +240,8 @@ Grasp-Octree-Gazebo-v0:
   optimize_memory_usage: True
 
 Grasp-OctreeWithColor-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
   policy: "OctreeCnnPolicy"
   policy_kwargs:
     features_extractor_kwargs:
@@ -213,28 +260,254 @@ Grasp-OctreeWithColor-Gazebo-v0:
     n_quantiles: 25
     n_critics: 2
     net_arch: [512, 512]
-    separate_networks_for_stacks: True
+    separate_networks_for_stacks: False
     share_features_extractor: True
-  env_wrapper:
-    - drl_grasping.envs.randomizers.ManipulationGazeboEnvRandomizer:
-        robot_random_joint_positions: True
-        robot_random_joint_positions_std: 0.1
-        camera_pose_rollouts_num: 1
-        camera_noise_mean: 0
-        camera_noise_stddev: 0.001
-        ground_model_rollouts_num: 1
-        object_random_pose: True
-        object_random_use_mesh_models: True
-        object_models_rollouts_num: 1
-        object_random_model_count: 4
   n_timesteps: 500000
-  buffer_size: 40000
+  buffer_size: 50000
   learning_starts: 0
   batch_size: 32
-  learning_rate: lin_0.00015
-  gamma: 0.999
-  tau: 0.00005
-  ent_coef: "auto_0.1_0.05"
+  learning_rate: lin_0.0002
+  gamma: 0.99
+  tau: 0.00004
+  ent_coef: "auto_0.5"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
+  noise_type: "normal"
+  noise_std: 0.025
+  use_sde: False
+  optimize_memory_usage: True
+
+# GraspPlanetary
+GraspPlanetary-DepthImage-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+  policy: "DepthImageCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      channels_in: 1
+      width: 128
+      height: 128
+      channel_multiplier: 56
+      full_depth_conv1d: True
+      full_depth_channels: 16
+      features_dim: 248
+      aux_obs_dim: 10
+      aux_obs_features_dim: 8
+      max_pool_kernel: 4
+    n_quantiles: 25
+    n_critics: 2
+    net_arch: [512, 512]
+    separate_networks_for_stacks: False
+    share_features_extractor: True
+  n_timesteps: 500000
+  buffer_size: 50000
+  learning_starts: 0
+  batch_size: 64
+  learning_rate: lin_0.0002
+  gamma: 0.99
+  tau: 0.00004
+  ent_coef: "auto_1.0"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
+  noise_type: "normal"
+  noise_std: 0.025
+  use_sde: False
+  optimize_memory_usage: True
+
+GraspPlanetary-DepthImageWithIntensity-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+  policy: "DepthImageCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      channels_in: 2
+      width: 128
+      height: 128
+      channel_multiplier: 56
+      full_depth_conv1d: True
+      full_depth_channels: 16
+      features_dim: 248
+      aux_obs_dim: 10
+      aux_obs_features_dim: 8
+      max_pool_kernel: 4
+    n_quantiles: 25
+    n_critics: 2
+    net_arch: [512, 512]
+    separate_networks_for_stacks: False
+    share_features_extractor: True
+  n_timesteps: 500000
+  buffer_size: 50000
+  learning_starts: 0
+  batch_size: 64
+  learning_rate: lin_0.0002
+  gamma: 0.99
+  tau: 0.00004
+  ent_coef: "auto_1.0"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
+  noise_type: "normal"
+  noise_std: 0.025
+  use_sde: False
+  optimize_memory_usage: True
+
+GraspPlanetary-DepthImageWithColor-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+  policy: "DepthImageCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      channels_in: 4
+      width: 128
+      height: 128
+      channel_multiplier: 56
+      full_depth_conv1d: True
+      full_depth_channels: 16
+      features_dim: 248
+      aux_obs_dim: 10
+      aux_obs_features_dim: 8
+      max_pool_kernel: 4
+    n_quantiles: 25
+    n_critics: 2
+    net_arch: [512, 512]
+    separate_networks_for_stacks: False
+    share_features_extractor: True
+  n_timesteps: 500000
+  buffer_size: 50000
+  learning_starts: 0
+  batch_size: 64
+  learning_rate: lin_0.0002
+  gamma: 0.99
+  tau: 0.00004
+  ent_coef: "auto_1.0"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
+  noise_type: "normal"
+  noise_std: 0.025
+  use_sde: False
+  optimize_memory_usage: True
+
+GraspPlanetary-Octree-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+  policy: "OctreeCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      depth: 4
+      full_depth: 2
+      channels_in: 4
+      channel_multiplier: 32
+      full_depth_conv1d: True
+      full_depth_channels: 16
+      features_dim: 248
+      aux_obs_dim: 10
+      aux_obs_features_dim: 8
+      fast_conv: True
+      batch_normalization: False
+      bn_eps: 0.00001
+      bn_momentum: 0.01
+    n_quantiles: 25
+    n_critics: 2
+    net_arch: [512, 512]
+    separate_networks_for_stacks: False
+    share_features_extractor: True
+  n_timesteps: 500000
+  buffer_size: 50000
+  learning_starts: 0
+  batch_size: 64
+  learning_rate: lin_0.0002
+  gamma: 0.99
+  tau: 0.00004
+  ent_coef: "auto_1.0"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
+  noise_type: "normal"
+  noise_std: 0.025
+  use_sde: False
+  optimize_memory_usage: True
+
+GraspPlanetary-OctreeWithIntensity-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+  policy: "OctreeCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      depth: 4
+      full_depth: 2
+      channels_in: 5
+      channel_multiplier: 32
+      full_depth_conv1d: True
+      full_depth_channels: 16
+      features_dim: 248
+      aux_obs_dim: 10
+      aux_obs_features_dim: 8
+      fast_conv: True
+      batch_normalization: False
+      bn_eps: 0.00001
+      bn_momentum: 0.01
+    n_quantiles: 25
+    n_critics: 2
+    net_arch: [512, 512]
+    separate_networks_for_stacks: False
+    share_features_extractor: True
+  n_timesteps: 500000
+  buffer_size: 50000
+  learning_starts: 0
+  batch_size: 64
+  learning_rate: lin_0.0002
+  gamma: 0.99
+  tau: 0.00004
+  ent_coef: "auto_1.0"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
+  noise_type: "normal"
+  noise_std: 0.025
+  use_sde: False
+  optimize_memory_usage: True
+
+GraspPlanetary-OctreeWithColor-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+  policy: "OctreeCnnPolicy"
+  policy_kwargs:
+    features_extractor_kwargs:
+      depth: 4
+      full_depth: 2
+      channels_in: 7
+      channel_multiplier: 32
+      full_depth_conv1d: True
+      full_depth_channels: 16
+      features_dim: 248
+      aux_obs_dim: 10
+      aux_obs_features_dim: 8
+      fast_conv: True
+      batch_normalization: False
+      bn_eps: 0.00001
+      bn_momentum: 0.01
+    n_quantiles: 25
+    n_critics: 2
+    net_arch: [512, 512]
+    separate_networks_for_stacks: False
+    share_features_extractor: True
+  n_timesteps: 500000
+  buffer_size: 50000
+  learning_starts: 0
+  batch_size: 64
+  learning_rate: lin_0.0002
+  gamma: 0.99
+  tau: 0.00004
+  ent_coef: "auto_1.0"
   target_entropy: "auto"
   top_quantiles_to_drop_per_net: 3
   train_freq: [1, "episode"]

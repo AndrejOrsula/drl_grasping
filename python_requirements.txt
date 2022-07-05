@@ -1,1 +1,16 @@
-docker/python_requirements.txt
+numpy==1.21.4
+open3d==0.13.0
+optuna==2.10.0
+pcg-gazebo==0.7.12
+pynput==1.7.6
+sb3-contrib==1.4.0
+scipy==1.7.2
+seaborn==0.11.2
+stable-baselines3[extra]==1.4.0
+--find-links https://download.pytorch.org/whl/cu113/torch_stable.html
+torch==1.10.1+cu113
+torchaudio==0.10.1+cu113
+torchvision==0.11.2+cu113
+tqdm==4.62.3
+trimesh==3.9.35
+yacs==0.1.8

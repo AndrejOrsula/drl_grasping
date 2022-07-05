@@ -1,3 +1,15 @@
+from gym_ignition.scenario.model_wrapper import ModelWrapper
+
+from .lunalab_summit_xl_gen import LunalabSummitXlGen
 from .panda import Panda
-from .ur5_rg2 import UR5RG2
-from .kinova_j2s7s300 import KinovaJ2s7s300
+
+# TODO: When adding new a robot, create abstract classes to simplify such process
+
+
+def get_robot_model_class(robot_model: str) -> ModelWrapper:
+    # TODO: Refactor into enum
+
+    if "panda" == robot_model:
+        return Panda
+    elif "lunalab_summit_xl_gen" == robot_model:
+        return LunalabSummitXlGen

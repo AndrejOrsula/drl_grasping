@@ -1,311 +1,427 @@
 # Deep Reinforcement Learning for Robotic Grasping from Octrees
 
-The focus of this project is to apply Deep Reinforcement Learning to acquire a robust policy that allows robots to grasp diverse objects from compact 3D observations in form of octrees. It is part of my [Master's Thesis](https://github.com/AndrejOrsula/master_thesis) conducted at Aalborg University, Denmark.
+This project focuses on applying deep reinforcement learning to acquire a robust policy that allows robots to grasp diverse objects from compact 3D observations in the form of octrees.
 
-Below are some animations of employing learned policies on novel scenes for Panda and UR5 robots.
 <p align="center" float="middle">
-  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim_panda.webp" alt="Evaluation of a trained policy on novel scenes for Panda robot"/>
-</p>
-<p align="center" float="middle">
-  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim_ur5_rg2.webp" alt="Evaluation of a trained policy on novel scenes for UR5 robot"/>
+  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim_panda.webp"/>
+  <em>[Franka Emika Panda] Evaluation of a trained policy on novel scenes (previously unseen camera poses, objects, terrain textures, ...).</em>
 </p>
 
-Example of Sim2Real transfer on UR5 can be seen below (trained inside simulation, no re-training in real world).
 <p align="center" float="middle">
-  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim2real.webp" alt="Sim2Real evaluation of a trained policy on a real UR5 robot"/>
+  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim2real.webp"/>
+  <em>[UR5 with RG2 gripper] Sim-to-Real transfer of a policy trained solely inside a simulation (zero-shot transfer). Credit: Aalborg University</em>
 </p>
+
+## Overview
+
+<p align="center">
+  <a href="https://docs.ros.org/en/galactic">
+    <img src="https://img.shields.io/badge/Middleware-ROS%202%20Galactic-38469E"/>
+  </a>
+  <a href="https://gazebosim.org">
+    <img src="https://img.shields.io/badge/Robotics%20Simulator-Gazebo%20Fortress-F58113"/>
+  </a>
+  <a href="https://moveit.ros.org">
+    <img src="https://img.shields.io/badge/Motion%20Planning-MoveIt%202-0A58F7"/>
+  </a>
+  <a href="https://www.gymlibrary.ml">
+    <img src="https://img.shields.io/badge/RL%20Environment%20API-OpenAI%20Gym-CBCBCC"/>
+  </a>
+  <a href="https://stable-baselines3.readthedocs.io">
+    <img src="https://img.shields.io/badge/Primary%20RL%20Framework-Stable--Baselines3-BDF25E"/>
+  </a>
+</p>
+
+This repository contains multiple RL environments for robotic manipulation, focusing on robotic grasping using continuous actions in Cartesian space. All environments have several observation variants that enable direct comparison (RGB images, depth maps, octrees, ...). Each task is coupled with a simulation environment that can be used to train RL agents. These agents can subsequently be evaluated on real robots that integrate [ros2_control](https://control.ros.org) (or [ros_control](https://wiki.ros.org/ros_control) via [ros1_bridge](https://github.com/ros2/ros1_bridge)).
+
+End-to-end model-free actor-critic algorithms have been tested on these environments ([TD3](https://arxiv.org/abs/1802.09477), [SAC](https://arxiv.org/abs/1801.01290) and [TQC](https://arxiv.org/abs/2005.04269) | [SB3 PyTorch implementation](https://github.com/DLR-RM/stable-baselines3)). A setup for experimenting with model-based algorithm ([DreamerV2](https://arxiv.org/abs/2010.02193) | [original TensorFlow implementation](https://github.com/danijar/dreamerv2)) is also provided, however, it is currently limited to RGB image observations. Interoperability of environments with most algorithms and their implementations should be possible due to compatibility with the [Gym](https://www.gymlibrary.ml) API.
+
+<details open><summary><b>List of Environments</b></summary>
+
+Below is the list of implemented environments. Each environment (observation variant) has two alternatives, `Task-Obs-vX` and `Task-Obs-Gazebo-vX` (omitted from the table). Here, `Task-Obs-vX` implements the logic of the environment and can be used on real robots, whereas `Task-Obs-Gazebo-vX` combines this logic with the simulation environment inside Gazebo. Robots should be interchangeable for most parts, with some limitations (e.g. `GraspPlanetary` task requires a mobile manipulator to randomize the environment fully).
+
+If you are interested in configuring these environments, first take a look at the list of their parameters inside [Gym registration](./drl_grasping/envs/__init__.py) and then at their individual source code.
+
+<div align="center" class="tg-wrap">
+<table>
+<thead>
+  <tr align="center" valign="bottom">
+    <th>
+      <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177349186-978fa919-c2ab-40f2-b667-830c42c83ce8.png"/>
+      <em>Reach the end-effector goal.</em>
+    </th>
+    <th>
+      <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177349182-09a0202f-37b1-4240-82c1-3c00e5c17293.png"/>
+      <em>Grasp and lift a random object.</em>
+    </th>
+    <th>
+      <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177349185-037a1ed6-f46a-44e1-bba2-e1557d1b894c.png"/>
+      <em>Grasp and lift a Moon rock.</em>
+    </th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>Reach-v0 (state obs)</td>
+    <td align="center">—</td>
+    <td align="center">—</td>
+  </tr>
+  <tr>
+    <td align="center">—</td>
+    <td align="center">—</td>
+    <td>GraspPlanetary-MonoImage-v0</td>
+  </tr>
+  <tr>
+    <td>Reach-ColorImage-v0</td>
+    <td align="center">—</td>
+    <td>GraspPlanetary-ColorImage-v0</td>
+  </tr>
+  <tr>
+    <td>Reach-DepthImage-v0</td>
+    <td align="center">—</td>
+    <td>GraspPlanetary-DepthImage-v0</td>
+  </tr>
+  <tr>
+    <td align="center">—</td>
+    <td align="center">—</td>
+    <td>GraspPlanetary-DepthImageWithIntensity-v0</td>
+  </tr>
+  <tr>
+    <td align="center">—</td>
+    <td align="center">—</td>
+    <td>GraspPlanetary-DepthImageWithColor-v0</td>
+  </tr>
+  <tr>
+    <td>Reach-Octree-v0</td>
+    <td>Grasp-Octree-v0</td>
+    <td>GraspPlanetary-Octree-v0</td>
+  </tr>
+  <tr>
+    <td>Reach-OctreeWithIntensity-v0</td>
+    <td>Grasp-OctreeWithIntensity-v0</td>
+    <td>GraspPlanetary-OctreeWithIntensity-v0</td>
+  </tr>
+  <tr>
+    <td>Reach-OctreeWithColor-v0</td>
+    <td>Grasp-OctreeWithColor-v0</td>
+    <td>GraspPlanetary-OctreeWithColor-v0</td>
+  </tr>
+</tbody>
+</table>
+</div>
+
+By default, `Grasp` and `GraspPlanetary` tasks utilize [`GraspCurriculum`](./drl_grasping/envs/tasks/curriculums/grasp.py) that shapes their reward function and environment difficulty.
+
+</details>
+
+<details><summary><b>Domain Randomization</b></summary>
+
+To facilitate the sim-to-real transfer of trained agents, simulation environments introduce domain randomization with the aim of improving the generalization of learned policies. This randomization is accomplished via [`ManipulationGazeboEnvRandomizer`](./drl_grasping/envs/randomizers/manipulation.py) that populates the virtual world and enables randomizing of several properties at each reset of the environment. As this randomizer is configurable with numerous parameters, please take a look at the source code to see what environments you can create.
+
+<p align="center" float="middle">
+  <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177401924-134095c6-2b30-4529-8f81-d3c9e4d9144b.png"/>
+  <em>Examples of domain randomization for the <code>Grasp</code> task.</em>
+</p>
+
+<p align="center" float="middle">
+  <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177400741-73e98b4e-d3a7-40f2-a09d-57f126cfddd9.png"/>
+  <em>Examples of domain randomization for the <code>GraspPlanetary</code> task.</em>
+</p>
+
+#### Model Datasets
+
+Simulation environments in this repository can utilize datasets of any [SDF](http://sdformat.org) models, e.g. models from [Fuel](https://app.gazebosim.org). By default, the `Grasp` task uses [Google Scanned Objects collection](https://app.gazebosim.org/GoogleResearch/fuel/collections/Scanned%20Objects%20by%20Google%20Research) together with a set of PBR textures pointed to by `TEXTURE_DIRS` environment variable. On the contrary, the `GraspPlanetary` task employs custom models that are procedurally generated via [Blender](https://blender.org). However, this can be adjusted if desired.
+
+All external models can be automatically configured and randomized in several ways via [`ModelCollectionRandomizer`](./drl_grasping/envs/models/utils/model_collection_randomizer.py) before their insertion into the world, e.g. optimization of collision geometry, estimation of (randomized) inertial properties and randomization of parameters such as geometry scale or surface friction. When processing large collections, model filtering can also be enabled based on several aspects, such as the complexity of the geometry or the existence of disconnected components. A few scripts for managing datasets can be found under [scripts/utils/](./scripts/utils/) directory.
+
+</details>
+
+<details><summary><b>End-to-End Learning from 3D Octree Observations</b></summary>
+
+This project initially investigated how 3D visual observations can be leveraged to improve end-to-end learning of manipulation skills. Octrees were selected for this purpose due to their efficiently organized structure compared to other 3D representations.
+
+To enable the extraction of abstract features from 3D octree observations, an octree-based 3D CNN is employed. The network module that accomplishes such feature extraction is implemented in the form of [`OctreeCnnFeaturesExtractor`](./drl_grasping/drl_octree/features_extractor/octree_cnn.py) (PyTorch). This features extractor is part of the `OctreeCnnPolicy` policy implemented for TD3, SAC and TQC algorithms. Internally, the feature extractor utilizes [O-CNN](https://github.com/microsoft/O-CNN) implementation to benefit from hardware acceleration on NVIDIA GPUs.
+
+<p align="center" float="middle">
+  <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/176558147-600646ce-ff9c-4660-8300-532acb6df0e4.svg"/>
+  <em>Illustration of the end-to-end actor-critic network architecture with octree-based 3D CNN feature extractor.</em>
+</p>
+
+</details>
+
+<details><summary><b>Limitations</b></summary>
+
+The known limitations of this repository are listed below for your convenience.
+
+- **No parallel environments –** It is currently not possible to run multiple instances of the environment simultaneously.
+- **Slow training –** The simulation environments are computationally complex (physics, rendering, underlying low-level control, ...). This significantly impacts the ability to train agents with time and computational constraints. The performance of some of these aspects can be improved at the cost of accuracy and realism (e.g. `physics_rate`/`step_size`).
+- **Suboptimal hyperparameters –** Although a hyperparameter optimization framework was employed for some combinations of environments and algorithms, it is a prolonged process. This problem is exacerbated by the vast quantity of hyperparameters and their general brittleness. Therefore, the default hyperparameters provided in this repository might not be optimal.
+- **Nondeterministic –** Experiments are not fully repeatable, and even the same seed of the pseudorandom generator can lead to different results. This is caused by several aspects, such as the nondeterministic nature of network-based communication and non-determinism in the underlying deep learning frameworks and hardware.
+
+</details>
 
 ## Instructions
 
-<details><summary>Local Installation (click to expand)</summary>
+Setup-wise, there are two options when using this repository. **Option A – Docker** is recommended when trying this repository due to its simplicity. Otherwise, **Option B – Local Installation** can be used if a local setup is preferred. Both of these options are equal for the usage of this repository; however, pre-built Docker images come with all the required datasets while enabling isolation of runs.
 
-> If you just want to try this project without lengthy installation, consider using Docker instead.
+<details><summary><b>Option A – Docker</b></summary>
 
-### Requirements
+### Hardware Requirements
 
-- **OS:** Ubuntu 20.04 (Focal)
-  - Others might work, but they were not tested. 
-- **GPU:** CUDA is required to process octree observations on GPU.
-  - Everything else should function normally on CPU, i.e. environments with other observation types.
+- **CUDA GPU –** CUDA-enabled GPU is required for hardware-accelerated processing of octree observations. Everything else should also be functional on the CPU.
+
+### Install Docker
+
+First, ensure your system has a setup for using Docker with NVIDIA GPUs. You can follow [`install_docker_with_nvidia.bash`](./.docker/host/install_docker_with_nvidia.bash) installation script for Debian-based distributions. Alternatively, consult the [NVIDIA Container Toolkit Installation Guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) for other Linux distributions.
+
+```bash
+.docker/host/install_docker_with_nvidia.bash
+```
+
+### Clone a Prebuilt Docker Image
+
+Prebuilt Docker images of `drl_grasping` can be pulled directly from [Docker Hub](https://hub.docker.com/repository/docker/andrejorsula/drl_grasping) without needing to build them locally. You can use the following command to manually pull the latest image or one of the previous tagged [Releases](https://github.com/AndrejOrsula/drl_grasping/releases).
+
+```bash
+# Size is ~25GB (including datasets)
+docker pull andrejorsula/drl_grasping:${TAG:-latest}
+```
+
+### (Optional) Build a New Image
+
+It is also possible to build the Docker image locally using the included [Dockerfile](./Dockerfile). To do this, [`build.bash`](./.docker/build.bash) script can be executed as shown below (arguments are optional). This script will always print the corresponding low-level `docker build ...` command for your reference.
+
+```bash
+.docker/build.bash ${TAG:-latest} ${BUILD_ARGS}
+```
+
+### Run a Docker Container
+
+For simplicity, please run `drl_grasping` Docker containers using the included [`run.bash`](./.docker/run.bash) script shown below (arguments are optional). It enables NVIDIA GPUs and GUI interface while automatically mounting the necessary volumes (e.g. persistent logging) and setting environment variables (e.g. synchronization of middleware communication with the host). This script will always print the corresponding low-level `docker run ...` command for your reference.
+
+```bash
+.docker/run.bash ${TAG:-latest} ${CMD}
+```
+
+The network communication of `drl_grasping` within this Docker container is configured based on the ROS 2 [`ROS_DOMAIN_ID`](https://docs.ros.org/en/galactic/Concepts/About-Domain-ID.html) environment variable, which can be set via `ROS_DOMAIN_ID={0...101} .docker/run.bash ${TAG:-latest} ${CMD}`. By default (`ROS_DOMAIN_ID=0`), external communication is restricted and multicast is disabled. With `ROS_DOMAIN_ID=42`, the communication remains restricted to `localhost` with multicast enabled, enabling monitoring of communication outside the container but within the same system. Using `ROS_DOMAIN_ID=69` will use the default network interface and multicast settings, which can enable monitoring of communication within the same LAN. All other `ROS_DOMAIN_ID`s share the default behaviour and can be employed to enable communication partitioning for running of multiple `drl_grasping` instances.
+
+</details>
+
+<details><summary><b>Option B – Local Installation</b></summary>
+
+### Hardware Requirements
+
+- **CUDA GPU –** CUDA-enabled GPU is required for hardware-accelerated processing of octree observations. Everything else should also be functional on the CPU.
 
 ### Dependencies
 
-These are the primary dependencies required to use this project.
+> Ubuntu 20.04 (Focal Fossa) is the recommended OS for local installation. Other Linux distributions might work but require most dependencies to be built from the source.
 
-- [Python 3.8](https://www.python.org/downloads)
-- ROS 2 [Foxy](https://docs.ros.org/en/foxy/Installation.html) OR [Rolling (recommended)](https://docs.ros.org/en/rolling/Installation.html)
-- Ignition [Dome](https://ignitionrobotics.org/docs/dome/install) OR [Fortress (recommended)](https://ignitionrobotics.org/docs/fortress)
-- [MoveIt 2](https://moveit.ros.org/install-moveit2/binary)
-  - Install/build a version based on the selected ROS 2 release
-- [ros_ign](https://github.com/ignitionrobotics/ros_ign/tree/ros2)
-  - Install/build a version based on the selected combination of ROS 2 release and Ignition version
-- [gym-ignition](https://github.com/robotology/gym-ignition)
-  - [AndrejOrsula/gym-ignition](https://github.com/AndrejOrsula/gym-ignition) fork is currently required
+These are the primary dependencies required to use this project that must be installed on your system.
+
+- [Python 3.8](https://python.org/downloads)
+- ROS 2 [Galactic](https://docs.ros.org/en/galactic/Installation.html)
+- Gazebo [Fortress](https://gazebosim.org/docs/fortress)
+- [Gym-Ignition](https://github.com/robotology/gym-ignition)
+  - Please use [AndrejOrsula/gym-ignition](https://github.com/AndrejOrsula/gym-ignition) fork in order to ensure compatibility (default branch – [`drl_grasping`](https://github.com/AndrejOrsula/gym-ignition/tree/drl_grasping)).
 - [O-CNN](https://github.com/microsoft/O-CNN)
-  - [AndrejOrsula/O-CNN](https://github.com/AndrejOrsula/O-CNN) fork is currently required
-- [PyTorch](https://pytorch.org/get-started/locally) (last tested on 1.9.1)
-- [Stable-Baselines3](https://stable-baselines3.readthedocs.io/en/master/guide/install.html) (last tested on 1.2.0) and [sb3-contrib](https://stable-baselines3.readthedocs.io/en/master/guide/sb3_contrib.html#installation)
+  - Please use [AndrejOrsula/O-CNN](https://github.com/AndrejOrsula/O-CNN) fork in order to ensure compatibility (default branch – [`master`](https://github.com/AndrejOrsula/O-CNN/tree/master)).
 
-Python dependencies are listed under [python_requirements.txt](./docker/python_requirements.txt). All of these (including Pytorch and Stable-Baselines3) can be installed via `pip`.
-
-```bash
-pip3 install -r python_requirements.txt
-```
-
-Dependencies for robot models (e.g. [panda_ign](https://github.com/AndrejOrsula/panda_ign)/[panda_moveit2_config](https://github.com/AndrejOrsula/panda_moveit2_config)) and interaction between MoveIt 2 and Ignition ([ign_moveit2](https://github.com/AndrejOrsula/ign_moveit2)) are pulled from git and built together with this repository, see [drl_grasping.repos](drl_grasping.repos) for more details.
-
-> In case you run into any problems with dependencies along the way, please check [Dockerfile](docker/Dockerfile) that includes the full instructions.
+All additional dependencies are either pulled via [vcstool](https://wiki.ros.org/vcstool) ([drl_grasping.repos](./drl_grasping.repos)) or installed via [pip](https://pip.pypa.io/en/stable/installation) ([python_requirements.txt](./python_requirements.txt)) and [rosdep](https://wiki.ros.org/rosdep) during the building process below.
 
 ### Building
 
-Clone this repository and import VCS dependencies. Then build with [colcon](https://colcon.readthedocs.io).
+Clone this repository recursively and import VCS dependencies. Then install dependencies and build with [colcon](https://colcon.readthedocs.io).
 
 ```bash
-# Create workspace for the project
-mkdir -p drl_grasping/src && cd drl_grasping/src
-# Clone this repository
-git clone https://github.com/AndrejOrsula/drl_grasping.git
-# Import and install dependencies
-vcs import < drl_grasping/drl_grasping.repos && cd ..
-rosdep install -r --from-paths src -i --rosdistro ${ROS_DISTRO}
-# Build with colcon
+# Clone this repository into your favourite ROS 2 workspace
+git clone --recursive https://github.com/AndrejOrsula/drl_grasping.git
+# Install Python requirements
+pip3 install -r drl_grasping/python_requirements.txt
+# Import dependencies
+vcs import < drl_grasping/drl_grasping.repos
+# Install dependencies
+IGNITION_VERSION=fortress rosdep install -y -r -i --rosdistro ${ROS_DISTRO} --from-paths .
+# Build
 colcon build --merge-install --symlink-install --cmake-args "-DCMAKE_BUILD_TYPE=Release"
 ```
 
-> Use `git clone --recursive https://github.com/AndrejOrsula/drl_grasping.git` if you wish to use one of the pre-trained agents.
-
-</details>
-
-<details><summary>Docker (click to expand)</summary>
-
-### Requirements
-
-- **OS:** Any system that supports [Docker](https://docs.docker.com/get-docker) should work (Linux, Windows, macOS).
-  - Only Ubuntu 20.04 was tested.
-- **GPU:** CUDA is required to process octree observations on GPU. Therefore, only Docker images with CUDA support are currently available, however, it should be possible to use the pre-built image even on systems without a dedicated GPU. 
-
-### Dependencies
-
-Before starting, make sure your system has a setup for using [Nvidia Docker](https://github.com/NVIDIA/nvidia-docker), e.g.:
-
-```bash
-# Docker
-curl https://get.docker.com | sh \
-  && sudo systemctl --now enable docker
-# Nvidia Docker
-distribution=$(. /etc/os-release; echo $ID$VERSION_ID) \
-  && curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add - \
-  && curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-sudo apt-get update && sudo apt-get install -y nvidia-docker2
-sudo systemctl restart docker
-```
-
-### Pre-built Docker Image
-
-The easiest way to try out this project is by using a pre-built Docker image that can be pulled from [Docker Hub](https://hub.docker.com/repository/docker/andrejorsula/drl_grasping). Currently, there is only a development image available that also contains the default testing datasets (huge, but it is easy to use and allows editing and recompiling). You can pull the `latest` tag with the following command. Alternatively, each release has also its associated tag, e.g. `1.0.0`.
-
-```bash
-docker pull andrejorsula/drl_grasping:latest
-```
-
-For running of the container, please use the included [docker/run.bash](docker/run.bash) script that is included with this repo. It significantly simplifies the setup with volumes and allows use of graphical interfaces for Ignition Gazebo GUI client and RViZ.
-
-```bash
-<drl_grasping dir>/docker/run.bash andrejorsula/drl_grasping:latest /bin/bash
-```
-
-If desired, you can also run examples and scripts directly with this setup, e.g. enjoying of pre-trained agents discussed below.
-
-```bash
-<drl_grasping dir>/docker/run.bash andrejorsula/drl_grasping:latest ros2 run drl_grasping ex_enjoy_pretrained_agent.bash
-```
-
-> If you are struggling to get CUDA working on your system with Nvidia GPU (no `nvidia-smi` output), you might need to use a different version of CUDA base image that supports the version of your driver. If that is the case, you need to build yourself a new Docker image.
-
-### Building a New Image
-
-[Dockerfile](docker/Dockerfile) is included with this repo but all source code is pulled from GitHub when building an image. There is nothing special about it, so just build it as any other Dockerfile (`docker build . -t ...`) and adjust arguments or the recipe itself if needed.
-
-</details>
-
-<details><summary>Sourcing of the Workspace Overlay (click to expand)</summary>
-
 ### Sourcing
 
-Before running any commands, remember to source the ROS 2 workspace overlay. You can skip this step for Docker build as it is done automatically inside the entrypoint.
+Before utilizing this project via local installation, remember to source the ROS 2 workspace.
 
 ```bash
-source <drl_grasping dir>/install/local_setup.bash
+source install/local_setup.bash
 ```
 
 This enables:
+
 - Use of `drl_grasping` Python module
-- Execution of scripts and examples via `ros2 run drl_grasping <executable>`
+- Execution of binaries, scripts and examples via `ros2 run drl_grasping <executable>`
 - Launching of setup scripts via `ros2 launch drl_grasping <launch_script>`
-
-### Debug Level
-
-Environment variable `DRL_GRASPING_DEBUG_LEVEL` can be set `DEBUG`/`INFO`/`WARN`/`ERROR`/`DISABLED` to affect the level of logging for environments.
+- Discoverability of shared resources
 
 </details>
 
-<details><summary>Using Pre-trained Agents (click to expand)</summary>
+<details><summary><b>Test Random Agents</b></summary>
 
-### Enjoy Pre-trained Agents
-
-The [pretrained_agents](https://github.com/AndrejOrsula/drl_grasping_pretrained_agents) submodule contains a selection of few agents that are already trained and ready to be enjoyed (remember to `git clone --recursive`/`git submodule update --init` if you wish to use these). To use them, you can use [`ex_enjoy_pretrained_agent.bash`](examples/ex_enjoy_pretrained_agent.bash). You should see RViZ 2 and Ignition Gazebo GUI client with an agent trying to grasp one of four objects in a fully randomised novel environment, while the performance of the agent is logged in your terminal.
+A good starting point is to simulate some episodes using random agents where actions are sampled from the defined action space. This is also useful when modifying environments because it lets you analyze the consequences of actions and resulting observations without deep learning pipelines running in the background. To get started, run the following example. It should open RViz 2 and Gazebo client instances that provide you with visual feedback.
 
 ```bash
-ros2 run drl_grasping ex_enjoy_pretrained_agent.bash
+ros2 run drl_grasping ex_random_agent.bash
 ```
 
-The default agent is for `Grasp-OctreeWithColor-Gazebo-v0` environment with Panda robot and TQC. You can modify these to any of the other pre-trained agent directly in the example script according to the support matrix from [AndrejOrsula/drl_grasping_pretrained_agents](https://github.com/AndrejOrsula/drl_grasping_pretrained_agents).
+After running the example script, the underlying `ros2 launch drl_grasping random_agent.launch.py ...` command with all arguments will always be printed for your reference (example shown below). If desired, you can launch this command directly with custom arguments.
 
-> Under the hood, all examples launch a setup ROS 2 script for interfacing MoveIt 2 and Ignition, and a corresponding Python script for enjoying or training. All examples print these commands out if you are interested in running the commands separately.
+```bash
+ros2 launch drl_grasping random_agent.launch.py seed:=42 robot_model:=lunalab_summit_xl_gen env:=GraspPlanetary-Octree-Gazebo-v0 check_env:=false render:=true enable_rviz:=true log_level:=warn
+```
 
 </details>
 
-<details><summary>Training New Agents (click to expand)</summary>
+<details><summary><b>[WIP] Try Pre-trained Agents</b></summary>
 
-### Training of Agent
+**Note:** Submodule `pretrained_agents` is currently incompatible with `drl_grasping` version `2.0.0`. Previously released versions using the Docker setup are functional if you want to test this feature.
 
-To train your own agent, you can start with the [`ex_train.bash`](examples/ex_train.bash) example. You can customise this example script,  configuration of the environment and all hyperparameters to your needs (see below). By default, headless mode is used during training to reduce computational load. If you want to see what is going on, use `ign gazebo -g` or `ROS_DOMAIN_ID=69 rviz2` (`ROS_DOMAIN_ID=69` is default for Docker image).
+> Submodule [pretrained_agents](https://github.com/AndrejOrsula/drl_grasping_pretrained_agents) contains a selection of agents that are already trained and ready. To try them out, run the following example. It should open RViz 2 and Gazebo client instances that provide you with visual feedback, while the agent's performance will be logged and printed to `STDOUT`.
+>
+> ```bash
+> ros2 run drl_grasping ex_evaluate_pretrained_agent.bash
+> ```
+>
+> After running the example script, the underlying `ros2 launch drl_grasping evaluate.launch.py ...` command with all arguments will always be printed for your reference (example shown below). If desired, you can launch this command directly with custom arguments. For example, you can select what agent to try according to the support matrix from [AndrejOrsula/drl_grasping_pretrained_agents](./pretrained_agents/README.md).
+>
+> ```bash
+> ros2 launch drl_grasping evaluate.launch.py seed:=77 robot_model:=panda env:=Grasp-Octree-Gazebo-v0 algo:=tqc log_folder:=/root/ws/install/share/drl_grasping/pretrained_agents reward_log:=/root/drl_grasping_training/evaluate/Grasp-Octree-Gazebo-v0 stochastic:=false n_episodes:=200 load_best:=false enable_rviz:=true log_level:=error
+> ```
+
+</details>
+
+<details><summary><b>Train New Agents</b></summary>
+
+You can also train your agents from scratch. To begin the training, run the following example. By default, headless mode is used during the training to reduce computational load.
 
 ```bash
 ros2 run drl_grasping ex_train.bash
 ```
 
-Depending on your hardware and hyperparameter configuration, the training can be a very lengthy process. It takes nearly three days to train an agent for 500k steps on a 130W laptop with a dedicated GPU.
-
-### Enjoying of Trained Agents
-
-To enjoy an agent that you have trained yourself, look into [`ex_enjoy.bash`](examples/ex_enjoy.bash) example. Similar to training, change the environment ID, algorithm and robot model. Furthermore, select a specific checkpoint that you want to run. RViZ 2 and Ignition Gazebo GUI client are enabled by default.
+After running the example script, the underlying `ros2 launch drl_grasping train.launch.py ...` command with all arguments will always be printed for your reference (example shown below). If desired, you can launch this command directly with custom arguments.
 
 ```bash
-ros2 run drl_grasping ex_enjoy.bash
+ros2 launch drl_grasping train.launch.py seed:=42 robot_model:=panda env:=Grasp-OctreeWithColor-Gazebo-v0 algo:=tqc log_folder:=/root/drl_grasping_training/train/Grasp-OctreeWithColor-Gazebo-v0/logs tensorboard_log:=/root/drl_grasping_training/train/Grasp-OctreeWithColor-Gazebo-v0/tensorboard_logs save_freq:=10000 save_replay_buffer:=true log_interval:=-1 eval_freq:=10000 eval_episodes:=20 enable_rviz:=false log_level:=fatal
+```
+
+#### Remote Visualization
+
+To visualize the agent while training, separate RViz 2 and Gazebo client instances can be opened. For the Docker setup, these commands can be executed in a new `drl_grasping` container with the same `ROS_DOMAIN_ID`.
+
+```bash
+# RViz 2 (Note: Visualization of robot model will not be loaded using this approach)
+rviz2 -d $(ros2 pkg prefix --share drl_grasping)/rviz/drl_grasping.rviz
+# Gazebo client
+ign gazebo -g
+```
+
+#### TensorBoard
+
+TensorBoard logs will be generated during training in a directory specified by the `tensorboard_log:=${TENSORBOARD_LOG}` argument. You can open them in your web browser using the following command.
+
+```bash
+tensorboard --logdir ${TENSORBOARD_LOG}
+```
+
+#### (Experimental) Train with Dreamer V2
+
+You can also try to train some agents using the model-based Dreamer V2 algorithm. To begin the training, run the following example. By default, headless mode is used during the training to reduce computational load.
+
+```bash
+ros2 run drl_grasping ex_train_dreamerv2.bash
+```
+
+After running the example script, the underlying `ros2 launch drl_grasping train_dreamerv2.launch.py ...` command with all arguments will always be printed for your reference (example shown below). If desired, you can launch this command directly with custom arguments.
+
+```bash
+ros2 launch drl_grasping train_dreamerv2.launch.py seed:=42 robot_model:=lunalab_summit_xl_gen env:=GraspPlanetary-ColorImage-Gazebo-v0 log_folder:=/root/drl_grasping_training/train/GraspPlanetary-ColorImage-Gazebo-v0/logs eval_freq:=10000 enable_rviz:=false log_level:=fatal
 ```
 
 </details>
 
-## Environments
+<details><summary><b>Evaluate New Agents</b></summary>
 
-This repository contains environments for robotic manipulation that are compatible with [OpenAI Gym](https://github.com/openai/gym). All of these make use of [Ignition Gazebo](https://ignitionrobotics.org) robotic simulator, which is interfaced via [Gym-Ignition](https://github.com/robotology/gym-ignition).
-
-Currently, the following environments are included inside this repository. Take a look at their [gym environment registration](drl_grasping/envs/tasks/__init__.py) and source code if you are interested in configuring them. There is a lot of parameters trying different RL approaches and techniques, so it is currently a bit messy (might get cleaned up if I have some free time for it).
-
-- [Grasp](drl_grasping/envs/tasks/grasp) task (the focus of this project)
-  - Observation variants
-    - [GraspOctree](drl_grasping/envs/tasks/grasp/grasp_octree.py), with and without color features
-    - GraspColorImage (RGB image) and GraspRgbdImage (RGB-D image) are implemented on [image_obs](https://github.com/AndrejOrsula/drl_grasping/tree/image_obs) branch. However, their implementation is currently only for testing and comparative purposes.
-  - Curriculum Learning: Task includes [GraspCurriculum](drl_grasping/envs/tasks/grasp/curriculum.py), which can be used to progressively increase difficulty of the task by automatically adjusting the following environment parameters based on the current success rate.
-    - Workspace size
-    - Number of objects
-    - Termination state (task is divided into hierarchical sub-tasks with aim to further guide the agent).
-      - This part does not bring any improvements based on experimental results, so do not bother using it.
-  - Demonstrations: Task contains a simple scripted policy that can be applied to collect demonstrations, which can then be used to pre-load a replay buffer for training with off-policy RL algorithms.
-    - It provides a slight increase for early learning, however, experiments indicate that it degrades the final success rate (probably due to introduction of bias early on). Therefore, do not use demonstrations if possible, at least not with this environment.
-- [Reach](drl_grasping/envs/tasks/reach) task (a simplistic environment for testing stuff)
-  - Observation variants
-    - [Reach](drl_grasping/envs/tasks/reach/reach.py) - simulation states
-    - [ReachColorImage](drl_grasping/envs/tasks/reach/reach_color_image.py)
-    - [ReachDepthImage](drl_grasping/envs/tasks/reach/reach_depth_image.py)
-    - [ReachOctree](drl_grasping/envs/tasks/reach/reach_octree.py), with and without color features
-
-### Domain Randomization
-
-These environments can be wrapped by a randomizer in order to introduce domain randomization and improve generalization of the trained policies, which is especially beneficial for Sim2Real transfer.
-
-<p align="center" float="middle">
-  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/graphics/implementation/domain_randomisation.png" alt="Examples of domain randomization for the Grasp task"/>
-</p>
-
-The included [ManipulationGazeboEnvRandomizer](drl_grasping/envs/randomizers/manipulation.py) allows randomization of the following properties at each reset of the environment.
-
-- Object model - primitive geometry
-  - Random type (box, sphere and cylinder are currently supported)
-  - Random color, scale, mass, friction
-- Object model - mesh geometry
-  - Random type (see [Object Model Database](#object-model-database)) 
-  - Random scale, mass, friction
-- Object pose
-- Ground plane texture
-- Initial robot configuration
-- Camera pose
-
-#### Dataset of Object Models
-
-For dataset of objects with mesh geometry and material texture, this project utilizes [Google Scanned Objects collection](https://app.ignitionrobotics.org/GoogleResearch/fuel/collections/Google%20Scanned%20Objects) from [Ignition Fuel](https://app.ignitionrobotics.org). You can also try to use a different Fuel collection or just a couple of models stored locally (although some tweaks might be required to support certain models).
-
-All models are automatically configured in several ways before their insertion into the world:
-
-- Inertial properties are automatically estimated (uniform density is assumed)
-- Collision geometry is decimated in order to improve performance
-- Models can be filtered and automatically blacklisted based on several aspects, e.g too much geometry or disconnected components
-
-This repository includes few scripts that can be used to simplify interaction with the dataset and splitting into training/testing subsets. By default they include 80 training and 20 testing models.
-- [`dataset_download_train`](scripts/utils/dataset/dataset_download_train.bash) / [`dataset_download_test`](scripts/utils/dataset/dataset_download_test.bash) - Download models from Fuel
-- [`dataset_unset_train`](scripts/utils/dataset/dataset_unset_train.bash) / [`dataset_unset_test`](scripts/utils/dataset/dataset_unset_test.bash) - Unset current train/test dataset
-- [`dataset_set_train`](scripts/utils/dataset/dataset_set_train.bash) / [`dataset_set_test`](scripts/utils/dataset/dataset_set_test.bash) - Set dataset to use train/test subset
-- [`process_collection`](scripts/utils/process_collection.py) - Process the collection with the steps mentioned above
-
-#### Texture Dataset
-
-`DRL_GRASPING_PBR_TEXTURES_DIR` environment variable can be exported if ground plane texture should be randomized. It should lead to a directory with the following structure.
+Once you train your agents, you can evaluate them. Start by looking at [ex_evaluate.bash](./examples/ex_evaluate.bash), which can be modified to fit your trained agent. It should open RViz 2 and Gazebo client instances that provide you with visual feedback, while the agent's performance will be logged and printed to `STDOUT`.
 
 ```bash
-├── ./ # Directory pointed to by `DRL_GRASPING_PBR_TEXTURES_DIR`
-├── texture_0
-  ├── *albedo*.png || *basecolor*.png
-  ├── *normal*.png
-  ├── *roughness*.png
-  └── *specular*.png || *metalness*.png
-├── ...
-└── texture_n
+ros2 run drl_grasping ex_evaluate.bash
 ```
 
-There are several databases with free PBR textures that you can use. Alternatively, you can clone [AndrejOrsula/pbr_textures](https://github.com/AndrejOrsula/pbr_textures) with 80 training and 20 testing textures.
+After running the example script, the underlying `ros2 launch drl_grasping evaluate.launch.py ...` command with all arguments will always be printed for your reference (example shown below). If desired, you can launch this command directly with custom arguments. For example, you can select a specific checkpoint with the `load_checkpoint:=${LOAD_CHECKPOINT}` argument instead of running the final model.
 
-### Supported Robots
+```bash
+ros2 launch drl_grasping evaluate.launch.py seed:=77 robot_model:=panda env:=Grasp-Octree-Gazebo-v0 algo:=tqc log_folder:=/root/drl_grasping_training/train/Grasp-Octree-Gazebo-v0/logs reward_log:=/root/drl_grasping_training/evaluate/Grasp-Octree-Gazebo-v0 stochastic:=false n_episodes:=200 load_best:=false enable_rviz:=true log_level:=warn
+```
 
-Only [Franka Emika Panda](https://github.com/AndrejOrsula/panda_ign), [UR5 with RG2 gripper](https://github.com/AndrejOrsula/ur5_rg2_ign) and [Kinova Gen2 (j2s7s300)](https://github.com/AndrejOrsula/kinova_j2s7s300_ign) are supported. This project currently lacks a more generic solution that would allow to easily utilize arbitrary models, e.g. full-on [MoveIt 2](https://github.com/ros-planning/moveit2) with [ros2_control](https://github.com/ros-controls/ros2_control) implementation. Adding new models is not complicated though, just time-consuming.
+</details>
 
+<details><summary><b>Optimize Hyperparameters</b></summary>
 
-## Reinforcement Learning
+The default hyperparameters for training agents with TD3, SAC and TQC can be found under the [hyperparams](./hyperparams) directory. [Optuna](https://optuna.org) can be employed to autotune some of these parameters. To get started, run the following example. By default, headless mode is used during hyperparameter optimization to reduce computational load.
 
-This project makes direct use of [stable-baselines3](https://github.com/DLR-RM/stable-baselines3) as well as [sb3_contrib](https://github.com/Stable-Baselines-Team/stable-baselines3-contrib). Furthermore, scripts for training and evaluation are largely inspired by [rl-baselines3-zoo](https://github.com/DLR-RM/rl-baselines3-zoo).
+```bash
+ros2 run drl_grasping ex_optimize.bash
+```
 
-### Octree CNN Features Extractor
+After running the example script, the underlying `ros2 launch drl_grasping train.launch.py ...` command with all arguments will always be printed for your reference (example shown below). If desired, you can launch this command directly with custom arguments.
 
-The [OctreeCnnFeaturesExtractor](drl_grasping/algorithms/common/features_extractor/octree_cnn.py) makes use of [O-CNN](https://github.com/microsoft/O-CNN) implementation to enable training on GPU. This features extractor is part of `OctreeCnnPolicy` policy that is currently implemented for TD3, SAC and TQC algorithms. Network architecture of this feature extractor is illustrated below.
+```bash
+ros2 launch drl_grasping optimize.launch.py seed:=69 robot_model:=panda env:=Grasp-Octree-Gazebo-v0 algo:=tqc log_folder:=/root/drl_grasping_training/optimize/Grasp-Octree-Gazebo-v0/logs tensorboard_log:=/root/drl_grasping_training/optimize/Grasp-Octree-Gazebo-v0/tensorboard_logs n_timesteps:=1000000 sampler:=tpe pruner:=median n_trials:=20 n_startup_trials:=5 n_evaluations:=4 eval_episodes:=20 log_interval:=-1 enable_rviz:=true log_level:=fatal
+```
 
-<p align="center" float="middle">
-  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/svg/feature_extractor.svg" alt="Architecture of octree-based 3D CNN feature extractor"/>
-</p>
+</details>
 
-### Hyperparameters
+<!-- ## Citation
+TODO: Add citation once available
 
-Hyperparameters for training of RL agents can be found in [hyperparams](hyperparams) directory. [Optuna](https://github.com/optuna/optuna) was used to autotune some of them, but certain algorithm/environment combinations require far more tuning (especially TD3). If needed, you can try running Optuna yourself, see [`ex_optimize`](examples/ex_optimize.bash) example.
+Please use the following citation if you use `drl_grasping` in your work.
+
+```bibtex
+@inproceedings{author_title_year,
+ author    = {},
+ title     = {},
+ booktitle = {},
+ series    = {},
+ year      = {},
+ isbn      = {},
+ location  = {},
+ pages     = {},
+ numpages  = {},
+ publisher = {},
+ address   = {},
+ keywords  = {},
+}
+``` -->
 
 ## Directory Structure
 
 ```bash
-├── drl_grasping        # Primary Python module of this project
-    ├── algorithms      # Definitions of policies and slight modifications to RL algorithms
-    ├── envs            # Environments for grasping (compatible with OpenAI Gym)
-        ├── tasks       # Tasks for the agent that are identical for simulation
-        ├── randomizers # Domain randomization of the tasks, which also populates the world
-        └── models      # Functional models for the environment (Ignition Gazebo)
-    ├── control         # Control for the agent
-    ├── perception      # Perception for the agent
-    └── utils           # Other utilities, used across the module
-├── examples            # Examples for training and enjoying RL agents
-├── hyperparams         # Hyperparameters for training RL agents
-├── scripts             # Helpful scripts for training, evaluating, ... 
-├── launch              # ROS 2 launch scripts that can be used to help with setup
-├── docker              # Dockerfile for this project
-└── drl_grasping.repos  # List of other dependencies created for `drl_grasping`
+.
+├── drl_grasping/        # [dir] Primary Python module of this project
+│   ├── drl_octree/      # [dir] Submodule for end-to-end learning from 3D octree observations
+│   ├── envs/            # [dir] Submodule for environments
+│   │   ├── control/     # [dir] Interfaces for the control of agents
+│   │   ├── models/      # [dir] Functional models for simulation environments
+│   │   ├── perception/  # [dir] Interfaces for the perception of agents
+│   │   ├── randomizers/ # [dir] Domain randomization of the simulated environments
+│   │   ├── runtimes/    # [dir] Runtime implementations of the task (sim/real)
+│   │   ├── tasks/       # [dir] Implementation of tasks
+│   │   ├── utils/       # [dir] Environment-specific utilities used across the submodule
+│   │   └── worlds/      # [dir] Minimal templates of worlds for simulation environments
+│   └── utils/           # [dir] Submodule for training and evaluation scripts boilerplate (using SB3)
+├── examples/            # [dir] Examples for training and evaluating RL agents
+├── hyperparams/         # [dir] Default hyperparameters for training RL agents
+├── launch/              # [dir] ROS 2 launch scripts that can be used to interact with this repository
+├── pretrained_agents/   # [dir] Collection of pre-trained agents
+├── rviz/                # [dir] RViz2 config for visualization
+├── scripts/             # [dir] Helpful scripts for training, evaluation and other utilities
+├── CMakeLists.txt       # Colcon-enabled CMake recipe
+└── package.xml          # ROS 2 package metadata
 ```
-
----
-
-In case you have any problems or questions, feel free to open an [Issue](https://github.com/AndrejOrsula/drl_grasping/issues/new) or a [Discussion](https://github.com/AndrejOrsula/drl_grasping/discussions/new).
