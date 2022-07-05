@@ -2,32 +2,31 @@ repositories:
   pymoveit2:
     type: git
     url: https://github.com/AndrejOrsula/pymoveit2.git
-    version: devel
+    version: master
   panda_ign_moveit2:
     type: git
     url: https://github.com/AndrejOrsula/panda_ign_moveit2.git
     version: master
   lunalab_summit_xl_gen:
     type: git
+    # TODO: Update URL for lunalab_summit_xl_gen repository
+    # url: https://github.com/snt-spacer/lunalab_summit_xl_gen.git
     url: https://gitlab.uni.lu/spacer/phd/AndrejOrsula/lunalab_summit_xl_gen.git
-    version: ros2_devel
-  ros2_control:
-    type: git
-    url: https://github.com/ros-controls/ros2_control.git
-    version: 2.0.0
-  ros2_controllers:
-    type: git
-    url: https://github.com/AndrejOrsula/ros2_controllers.git
-    version: jtc_effort
-  moveit2:
-    type: git
-    url: https://github.com/AndrejOrsula/moveit2.git
-    version: ign_sim_time
+    version: ros2
   ros_ign:
     type: git
     url: https://github.com/ignitionrobotics/ros_ign.git
-    version: ros2
+    version: galactic
   ign_ros2_control:
     type: git
     url: https://github.com/AndrejOrsula/ign_ros2_control.git
     version: devel
+  ros2_controllers:
+    type: git
+    url: https://github.com/AndrejOrsula/ros2_controllers.git
+    version: jtc_effort
+  # TODO: Use upstream moveit2 (e.g. binary installation) once https://github.com/ros-planning/moveit2/pull/899 is merged
+  moveit2:
+    type: git
+    url: https://github.com/AndrejOrsula/moveit2.git
+    version: ign_sim_time

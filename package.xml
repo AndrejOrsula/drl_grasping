@@ -1,33 +1,36 @@
 <?xml version="1.0"?>
 <package format="3">
-    <name>drl_grasping</name>
-    <version>2.0.0</version>
-    <description>Application of Deep Reinforcement Learning for acquiring a robust policy that allows robots to grasp diverse objects from compact 3D observations in form of octrees.</description>
-    <maintainer email="orsula.andrej@gmail.com">Andrej Orsula</maintainer>
-    <author>Andrej Orsula</author>
-    <license>BSD</license>
+  <name>drl_grasping</name>
+  <version>2.0.0</version>
+  <description>Application of Deep Reinforcement Learning to acquire a robust policy that allows robots to grasp diverse objects from compact 3D observations in the form of octrees.</description>
+  <maintainer email="orsula.andrej@gmail.com">Andrej Orsula</maintainer>
+  <author>Andrej Orsula</author>
+  <license>BSD</license>
 
-    <buildtool_depend>ament_cmake</buildtool_depend>
-    <buildtool_depend>ament_cmake_python</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
-    <exec_depend>ign_ros2_control</exec_depend>
-    <exec_depend>pymoveit2</exec_depend>
-    <exec_depend>rclpy</exec_depend>
-    <exec_depend>ros_ign_bridge</exec_depend>
-    <exec_depend>ros_ign_gazebo</exec_depend>
-    <exec_depend>rviz2</exec_depend>
-    <exec_depend>xacro</exec_depend>
+  <exec_depend>ign_ros2_control</exec_depend>
+  <exec_depend>lunalab_summit_xl_gen_description</exec_depend>
+  <exec_depend>lunalab_summit_xl_gen_ign</exec_depend>
+  <exec_depend>lunalab_summit_xl_gen_moveit_config</exec_depend>
+  <exec_depend>moveit</exec_depend>
+  <exec_depend>panda_description</exec_depend>
+  <exec_depend>panda_moveit_config</exec_depend>
+  <exec_depend>pymoveit2</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>ros_ign_bridge</exec_depend>
+  <exec_depend>ros_ign_gazebo</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>urdf</exec_depend>
+  <exec_depend>xacro</exec_depend>
 
-    <exec_depend>lunalab_summit_xl_gen_description</exec_depend>
-    <exec_depend>lunalab_summit_xl_gen_ign</exec_depend>
-    <exec_depend>lunalab_summit_xl_gen_moveit_config</exec_depend>
-    <exec_depend>panda_description</exec_depend>
-    <exec_depend>panda_moveit_config</exec_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 
-    <test_depend>ament_lint_auto</test_depend>
-    <test_depend>ament_lint_common</test_depend>
-
-    <export>
-        <build_type>ament_cmake</build_type>
-    </export>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>
