@@ -55,6 +55,8 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
     )
     DEFAULT_GRIPPER_JOINT_POSITIONS: List[float] = OPEN_GRIPPER_JOINT_POSITIONS
 
+    BASE_LINK_Z_OFFSET: float = 0.0
+
     def __init__(
         self,
         world: scenario.World,

@@ -84,8 +84,15 @@ class Manipulation(Task, Node, abc.ABC):
         self._executor_thread = Thread(target=executor.spin, daemon=True, args=())
         self._executor_thread.start()
 
+        # Get class of the robot model based on passed argument
+        self.robot_model_class = get_robot_model_class(robot_model)
+
         # Store passed arguments for later use
-        self.workspace_centre = workspace_centre
+        self.workspace_centre = (
+            workspace_centre[0],
+            workspace_centre[1],
+            workspace_centre[2] + self.robot_model_class.BASE_LINK_Z_OFFSET,
+        )
         self.workspace_volume = workspace_volume
         self._restrict_position_goal_to_workspace = restrict_position_goal_to_workspace
         self._use_servo = use_servo
@@ -109,9 +116,6 @@ class Manipulation(Task, Node, abc.ABC):
             self.workspace_centre[1] + workspace_volume_half[1],
             self.workspace_centre[2] + workspace_volume_half[2],
         )
-
-        # Get class of the robot model based on passed argument
-        self.robot_model_class = get_robot_model_class(robot_model)
 
         # Determine robot name and prefix based on current ID of the task
         self.robot_prefix = self.robot_model_class.DEFAULT_PREFIX

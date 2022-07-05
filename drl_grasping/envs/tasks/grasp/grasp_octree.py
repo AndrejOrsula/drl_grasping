@@ -43,6 +43,18 @@ class GraspOctree(Grasp, abc.ABC):
             callback_group=self._callback_group,
         )
 
+        # Offset octree bounds by the robot base offset
+        octree_min_bound = (
+            octree_min_bound[0],
+            octree_min_bound[1],
+            octree_min_bound[2] + self.robot_model_class.BASE_LINK_Z_OFFSET,
+        )
+        octree_max_bound = (
+            octree_max_bound[0],
+            octree_max_bound[1],
+            octree_max_bound[2] + self.robot_model_class.BASE_LINK_Z_OFFSET,
+        )
+
         # Octree creator
         self.octree_creator = OctreeCreator(
             node=self,

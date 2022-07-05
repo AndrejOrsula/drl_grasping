@@ -40,15 +40,11 @@ else:
 ###################
 # Robot Specifics #
 ###################
-## Fully supported robots: "panda", "lunalab_summit_xl_gen"
+## Fully supported robots: "panda", "lunalab_summit_xl_gen" (mobile)
 # Default robot model to use in the tasks where robot can be static
-DRL_GRASPING_ROBOT_MODEL: str = "lunalab_summit_xl_gen"
+DRL_GRASPING_ROBOT_MODEL: str = "panda"
 # Default robot model to use in the tasks where robot needs to be mobile
 DRL_GRASPING_ROBOT_MODEL_MOBILE: str = "lunalab_summit_xl_gen"
-
-# Offset of "lunalab_summit_xl_gen" from `base_arm_link` to it base footprint
-LUNALAB_SUMMIT_XL_GEN_Z_OFFSET: float = -0.22
-
 
 ######################
 # Datasets and paths #
@@ -71,6 +67,14 @@ GRAVITY_MOON_STD: Tuple[float, float, float] = (0.0, 0.0, 0.0084)
 # Gravity preset for Mars
 GRAVITY_MARS: Tuple[float, float, float] = (0.0, 0.0, -3.72076)
 GRAVITY_MARS_STD: Tuple[float, float, float] = (0.0, 0.0, 0.0191)
+
+
+############################
+# Additional Configuration #
+############################
+BROADCAST_GUI: bool = str2bool(
+    environ.get("DRL_GRASPING_BROADCAST_INTERACTIVE_GUI", default=True)
+)
 
 
 #########
@@ -111,8 +115,8 @@ REACH_RANDOMIZER: str = "drl_grasping.envs.randomizers:ManipulationGazeboEnvRand
 REACH_KWARGS_RANDOMIZER: Dict[str, any] = {
     "gravity": GRAVITY_EARTH,
     "gravity_std": GRAVITY_EARTH_STD,
-    "plugin_scene_broadcaster": False,
-    "plugin_user_commands": False,
+    "plugin_scene_broadcaster": BROADCAST_GUI,
+    "plugin_user_commands": BROADCAST_GUI,
     "plugin_sensors_render_engine": "ogre2",
     "robot_random_pose": False,
     "robot_random_joint_positions": False,
@@ -316,17 +320,11 @@ register(
 # Grasp #
 #########
 GRASP_MAX_EPISODE_STEPS: int = 100
-# TODO: Include z offset in the task itself (will make it is easier to select robot) [also for the other tasks]
-GRASP_ROBOT_Z_OFFSET: float = (
-    LUNALAB_SUMMIT_XL_GEN_Z_OFFSET
-    if "lunalab_summit_xl_gen" == DRL_GRASPING_ROBOT_MODEL
-    else 0.0
-)
 GRASP_KWARGS: Dict[str, any] = {
     "agent_rate": 2.5,
     "robot_model": DRL_GRASPING_ROBOT_MODEL,
     "workspace_frame_id": "arm_base_link",
-    "workspace_centre": (0.5, 0.0, GRASP_ROBOT_Z_OFFSET + 0.32),
+    "workspace_centre": (0.5, 0.0, 0.32),
     "workspace_volume": (0.24, 0.24, 0.64),
     "ignore_new_actions_while_executing": True,
     # "use_servo": True,
@@ -347,12 +345,12 @@ GRASP_KWARGS_OCTREE: Dict[str, any] = {
     "octree_min_bound": (
         0.5 - 0.12,
         0.0 - 0.12,
-        GRASP_ROBOT_Z_OFFSET + 0.11 - 0.12,
+        0.11 - 0.12,
     ),
     "octree_max_bound": (
         0.5 + 0.12,
         0.0 + 0.12,
-        GRASP_ROBOT_Z_OFFSET + 0.11 + 0.12,
+        0.11 + 0.12,
     ),
     "octree_depth": 4,
     "octree_full_depth": 2,
@@ -368,8 +366,8 @@ GRASP_RANDOMIZER: str = "drl_grasping.envs.randomizers:ManipulationGazeboEnvRand
 GRASP_KWARGS_RANDOMIZER: Dict[str, any] = {
     "gravity": GRAVITY_EARTH,
     "gravity_std": GRAVITY_EARTH_STD,
-    "plugin_scene_broadcaster": False,
-    "plugin_user_commands": False,
+    "plugin_scene_broadcaster": BROADCAST_GUI,
+    "plugin_user_commands": BROADCAST_GUI,
     "plugin_sensors_render_engine": "ogre2",
     "robot_spawn_position": (0, 0, 0),
     "robot_spawn_quat_xyzw": (0, 0, 0, 1),
@@ -393,14 +391,14 @@ GRASP_KWARGS_RANDOMIZER: Dict[str, any] = {
     "light_radius": 25.0,
     "light_model_rollouts_num": 1,
     "object_enable": True,
-    "object_type": "random_lunar_rock",
+    "object_type": "random_mesh",
     "objects_relative_to": "arm_base_link",
-    "object_count": 4,
-    "object_spawn_position": (0.5, 0.0, GRASP_ROBOT_Z_OFFSET + 0.1),
+    "object_count": 3,
+    "object_spawn_position": (0.5, 0.0, 0.1),
     "object_random_pose": True,
     "object_random_spawn_position_segments": [],
     "object_random_spawn_position_update_workspace_centre": False,
-    "object_random_spawn_volume": (0.18, 0.18, 0.075),
+    "object_random_spawn_volume": (0.2, 0.2, 0.075),
     "object_models_rollouts_num": 2,
     "underworld_collision_plane": True,
     "boundary_collision_walls": True,
@@ -426,21 +424,20 @@ GRASP_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
         0.7714710414897703,
         0.5352021971762847,
     ),
-    # TODO: Re-enable camera pose randomization
-    "camera_random_pose_rollouts_num": 0,
+    "camera_random_pose_rollouts_num": 1,
     "camera_random_pose_mode": "orbit",
     "camera_random_pose_orbit_distance": 1.0,
     "camera_random_pose_orbit_height_range": (0.1, 0.7),
     "camera_random_pose_orbit_ignore_arc_behind_robot": np.pi / 6,
     "camera_random_pose_select_position_options": [],
-    "camera_random_pose_focal_point_z_offset": GRASP_ROBOT_Z_OFFSET,
+    "camera_random_pose_focal_point_z_offset": 0.0,
 }
 GRASP_KWARGS_CURRICULUM: Dict[str, any] = {
     "stages_base_reward": 1.0,
     "reach_required_distance": 0.1,
-    "lift_required_height": GRASP_ROBOT_Z_OFFSET + 0.05,
-    "lift_required_height_max": GRASP_ROBOT_Z_OFFSET + 0.25,
-    "lift_required_height_max_threshold": 0.6,
+    "lift_required_height": 0.1,
+    "lift_required_height_max": 0.25,
+    "lift_required_height_max_threshold": 0.4,
     "persistent_reward_each_step": -0.005,
     "persistent_reward_terrain_collision": -1.0,
     # Checking for objects outside of workspace must currently be disabled `object_random_spawn_position_update_workspace_centre` is enabled
@@ -454,10 +451,10 @@ GRASP_KWARGS_CURRICULUM: Dict[str, any] = {
     "dense_reward": False,
     "initial_success_rate": 0.0,
     "rolling_average_n": 100,
-    "min_workspace_scale": 0.5,
+    "min_workspace_scale": 0.7,
     "max_workspace_volume": GRASP_KWARGS["workspace_volume"],
     "max_workspace_scale_success_rate_threshold": 0.6,
-    "min_object_spawn_volume_scale": 0.1,
+    "min_object_spawn_volume_scale": 0.5,
     "max_object_spawn_volume": GRASP_KWARGS_RANDOMIZER["object_random_spawn_volume"],
     "max_object_spawn_volume_scale_success_rate_threshold": 0.6,
     "object_count_min": 1,
@@ -536,8 +533,8 @@ register(
         **GRASP_KWARGS_RANDOMIZER_CAMERA,
         # Note: "random_flat" terrain is currently not functional
         # TODO: Fix "random_flat" terrain
-        # "terrain_type": "random_flat",
-        "terrain_type": "flat",
+        "terrain_type": "random_flat",
+        # "terrain_type": "flat",
         "camera_type": "rgbd_camera",
         # "camera_image_format": "L8",
         "camera_publish_points": True,
@@ -554,8 +551,8 @@ register(
         **GRASP_KWARGS_RANDOMIZER_CAMERA,
         # Note: "random_flat" terrain is currently not functional
         # TODO: Fix "random_flat" terrain
-        # "terrain_type": "random_flat",
-        "terrain_type": "flat",
+        "terrain_type": "random_flat",
+        # "terrain_type": "flat",
         "camera_type": "rgbd_camera",
         "camera_publish_points": True,
     },
@@ -566,16 +563,11 @@ register(
 # GraspPlanetary #
 ##################
 GRASP_PLANETARY_MAX_EPISODE_STEPS: int = 100
-GRASP_PLANETARY_ROBOT_Z_OFFSET: float = (
-    LUNALAB_SUMMIT_XL_GEN_Z_OFFSET
-    if "lunalab_summit_xl_gen" == DRL_GRASPING_ROBOT_MODEL_MOBILE
-    else 0.0
-)
 GRASP_PLANETARY_KWARGS: Dict[str, any] = {
     "agent_rate": 2.5,
     "robot_model": DRL_GRASPING_ROBOT_MODEL_MOBILE,
     "workspace_frame_id": "arm_base_link",
-    "workspace_centre": (0.45, 0.0, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.25),
+    "workspace_centre": (0.45, 0.0, 0.25),
     "workspace_volume": (0.35, 0.35, 0.6),
     "ignore_new_actions_while_executing": False,
     # "use_servo": True,
@@ -605,12 +597,12 @@ GRASP_PLANETARY_KWARGS_OCTREE: Dict[str, any] = {
     "octree_min_bound": (
         0.5 - 0.2,
         0.0 - 0.2,
-        GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.14 - 0.2,
+        0.14 - 0.2,
     ),
     "octree_max_bound": (
         0.5 + 0.2,
         0.0 + 0.2,
-        GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.14 + 0.2,
+        0.14 + 0.2,
     ),
     "octree_depth": 4,
     "octree_full_depth": 2,
@@ -630,8 +622,8 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict[str, any] = {
     "gravity_std": GRAVITY_EARTH_STD,
     # "gravity": GRAVITY_MOON,
     # "gravity_std": GRAVITY_MOON_STD,
-    "plugin_scene_broadcaster": False,
-    "plugin_user_commands": False,
+    "plugin_scene_broadcaster": BROADCAST_GUI,
+    "plugin_user_commands": BROADCAST_GUI,
     "plugin_sensors_render_engine": "ogre2",
     "robot_spawn_position": (0, 0, 0.1),
     "robot_spawn_quat_xyzw": (0, 0, 0, 1),
@@ -659,17 +651,17 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict[str, any] = {
     "object_type": "random_lunar_rock",
     "objects_relative_to": "arm_base_link",
     "object_count": 4,
-    "object_spawn_position": (0.5, 0.0, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
+    "object_spawn_position": (0.5, 0.0, 0.1),
     "object_random_pose": True,
     "object_random_spawn_position_segments": [
-        # (0.5, -0.01, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
-        # (0.5, 0.01, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
-        # (0.1, -0.6, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
-        # (0.2, -0.5, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
-        # (-0.1, -0.45, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
-        # (0.4, -0.45, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
-        # (0.4, 0.45, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
-        # (-0.1, 0.45, GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.1),
+        # (0.5, -0.01, 0.1),
+        # (0.5, 0.01, 0.1),
+        # (0.1, -0.6, 0.1),
+        # (0.2, -0.5, 0.1),
+        # (-0.1, -0.45, 0.1),
+        # (0.4, -0.45, 0.1),
+        # (0.4, 0.45, 0.1),
+        # (-0.1, 0.45, 0.1),
     ],
     "object_random_spawn_position_update_workspace_centre": False,
     "object_random_spawn_volume": (0.25, 0.25, 0.1),
@@ -726,13 +718,13 @@ GRASP_PLANETARY_KWARGS_RANDOMIZER_CAMERA: Dict[str, any] = {
         (0.13, 0.05, 0.1 - 0.04),
         (0.13, -0.05, 0.1 - 0.04),
     ],
-    "camera_random_pose_focal_point_z_offset": GRASP_PLANETARY_ROBOT_Z_OFFSET,
+    "camera_random_pose_focal_point_z_offset": 0.0,
 }
 GRASP_PLANETARY_KWARGS_CURRICULUM: Dict[str, any] = {
     "stages_base_reward": 1.0,
     "reach_required_distance": 0.1,
-    "lift_required_height": GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.075,
-    "lift_required_height_max": GRASP_PLANETARY_ROBOT_Z_OFFSET + 0.15,
+    "lift_required_height": 0.075,
+    "lift_required_height_max": 0.15,
     "lift_required_height_max_threshold": 0.33,
     "persistent_reward_each_step": -0.1,
     "persistent_reward_terrain_collision": 0.0,

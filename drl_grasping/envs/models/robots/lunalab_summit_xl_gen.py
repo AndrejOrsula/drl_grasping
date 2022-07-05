@@ -72,6 +72,9 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
     )
     DEFAULT_GRIPPER_JOINT_POSITIONS: List[float] = OPEN_GRIPPER_JOINT_POSITIONS
 
+    # Offset from `base_arm_link` to `base_footprint`
+    BASE_LINK_Z_OFFSET: float = -0.22
+
     def __init__(
         self,
         world: scenario.World,

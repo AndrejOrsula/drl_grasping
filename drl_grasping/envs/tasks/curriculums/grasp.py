@@ -17,9 +17,6 @@ class GraspStage(CurriculumStage):
     LIFT = 4
 
 
-# TODO: Add curriculum to increase the required lift distance as the success rate increases
-
-
 class GraspCurriculum(
     StageRewardCurriculum,
     SuccessRateImpl,
@@ -143,6 +140,12 @@ class GraspCurriculum(
             if lift_required_height_max_threshold is not None
             else 0.5
         )
+        # Offset Lift height requirement by the robot base offset
+        lift_required_height += task.robot_model_class.BASE_LINK_Z_OFFSET
+        lift_required_height_min += task.robot_model_class.BASE_LINK_Z_OFFSET
+        lift_required_height_max += task.robot_model_class.BASE_LINK_Z_OFFSET
+        lift_required_height_max_threshold += task.robot_model_class.BASE_LINK_Z_OFFSET
+
         self.__lift_required_height_curriculum_enabled = (
             not lift_required_height_min == lift_required_height_max
         )

@@ -99,7 +99,7 @@ class ManipulationGazeboEnvRandomizer(
         camera_random_pose_select_position_options: List[
             Tuple[float, float, float]
         ] = [],
-        camera_random_pose_focal_point_z_offset: float = -0.22,
+        camera_random_pose_focal_point_z_offset: float = 0.0,
         # Terrain
         terrain_enable: bool = True,
         terrain_type: str = "flat",
@@ -396,6 +396,16 @@ class ManipulationGazeboEnvRandomizer(
         # Execute a paused run for the first time before initialising everything
         if not gazebo.run(paused=True):
             raise RuntimeError("Failed to execute a paused Gazebo run")
+
+        # Offset some parameters by the robot base offset
+        self._object_spawn_position = (
+            self._object_spawn_position[0],
+            self._object_spawn_position[1],
+            self._object_spawn_position[2] + task.robot_model_class.BASE_LINK_Z_OFFSET,
+        )
+        self._camera_random_pose_focal_point_z_offset += (
+            task.robot_model_class.BASE_LINK_Z_OFFSET
+        )
 
         # Substitute frame names if needed
         self._camera_relative_to = task.substitute_special_frame(
