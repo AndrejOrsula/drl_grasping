@@ -159,7 +159,7 @@ class StageRewardCurriculum:
 
     def get_info(self) -> Dict:
 
-        # Whether the episode suceeded
+        # Whether the episode succeeded
         info = {
             "is_success": self.__episode_succeeded,
         }

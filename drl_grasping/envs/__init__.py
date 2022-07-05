@@ -531,10 +531,7 @@ register(
         **GRASP_KWARGS_SIM,
         **GRASP_KWARGS_RANDOMIZER,
         **GRASP_KWARGS_RANDOMIZER_CAMERA,
-        # Note: "random_flat" terrain is currently not functional
-        # TODO: Fix "random_flat" terrain
         "terrain_type": "random_flat",
-        # "terrain_type": "flat",
         "camera_type": "rgbd_camera",
         # "camera_image_format": "L8",
         "camera_publish_points": True,
@@ -549,10 +546,7 @@ register(
         **GRASP_KWARGS_SIM,
         **GRASP_KWARGS_RANDOMIZER,
         **GRASP_KWARGS_RANDOMIZER_CAMERA,
-        # Note: "random_flat" terrain is currently not functional
-        # TODO: Fix "random_flat" terrain
         "terrain_type": "random_flat",
-        # "terrain_type": "flat",
         "camera_type": "rgbd_camera",
         "camera_publish_points": True,
     },

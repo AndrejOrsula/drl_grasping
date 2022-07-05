@@ -156,7 +156,6 @@ class LunalabSummitXlGen(model_wrapper.ModelWrapper, model_with_file.ModelWithFi
     def get_model_file(cls, fuel: bool = False) -> str:
 
         if fuel:
-            # TODO: Add "lunalab_summit_xl_gen" to Fuel
             raise NotImplementedError
             return scenario_gazebo.get_model_file_from_fuel(
                 "https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/"

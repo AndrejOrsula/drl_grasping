@@ -169,7 +169,7 @@ class Grasp(Manipulation, abc.ABC):
     ) -> List[str]:
         """
         Returns list of all currently grasped objects.
-        Grasped object must be in contact with all gripper links (fingers) and their contant normals must be dissimilar.
+        Grasped object must be in contact with all gripper links (fingers) and their contact normals must be dissimilar.
         """
 
         if self.gripper.is_open:

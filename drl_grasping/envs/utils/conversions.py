@@ -53,7 +53,7 @@ def pointcloud2_to_open3d(
             open3d_pc.colors = open3d.utility.Vector3dVector(
                 numpy.zeros((len(valid_points), 3), dtype=numpy.float64)
             )
-    # TODO: Update octree craetor once L8 image format is supported in Ignition Gazebop
+    # TODO: Update octree creator once L8 image format is supported in Ignition Gazebo
     # elif include_intensity:
     #     # Faster approach, but only the first channel gets the intensity value (rest is 0)
     #     intensities = numpy.zeros((len(valid_points), 3), dtype=numpy.float64)

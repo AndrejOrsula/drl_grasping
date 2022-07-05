@@ -8,6 +8,7 @@ from .rock import Rock
 
 
 def get_object_model_class(object_type: str) -> ModelWrapper:
+    # TODO: Refactor into enum
 
     if "box" == object_type:
         return Box

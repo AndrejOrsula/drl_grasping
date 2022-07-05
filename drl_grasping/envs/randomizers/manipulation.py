@@ -517,14 +517,14 @@ class ManipulationGazeboEnvRandomizer(
                 "Inserting invisible plane below the terrain into the environment..."
             )
             self.add_underworld_collision_plane(task=task, gazebo=gazebo)
-        # Insert invisible planes arround the environment to precent objects from going into the abyss and causing physics errors
+        # Insert invisible planes around the environment to prevent objects from going into the abyss and causing physics errors
         if self._boundary_collision_walls:
             task.get_logger().info(
                 "Inserting invisible planes around the terrain into the environment..."
             )
             self.add_boundary_collision_walls(task=task, gazebo=gazebo)
 
-        # TODO: Visualization must follow the robot - consider using RViZ geometry markers instead of this appraocz
+        # TODO: Visualization must follow the robot - consider using RViZ geometry markers instead of this approach
         # Visualise volumes in GUI if desired
         if self._visualise_workspace:
             self.visualise_workspace(task=task, gazebo=gazebo)
@@ -752,7 +752,7 @@ class ManipulationGazeboEnvRandomizer(
                     link.enable_contact_detection(True)
 
             except Exception as ex:
-                task.get_logger().warn(f"Model could not be insterted. Reason: {ex}")
+                task.get_logger().warn(f"Model could not be inserted. Reason: {ex}")
 
         # Execute a paused run to process insertion of object model
         if not gazebo.run(paused=True):
@@ -788,7 +788,7 @@ class ManipulationGazeboEnvRandomizer(
         self, task: SupportedTasks, gazebo: scenario.GazeboSimulator
     ):
         """
-        Add an infinitely large collision planes arround the terrain in order to prevent object from going into the abyss forever
+        Add an infinitely large collision planes around the terrain in order to prevent object from going into the abyss forever
         """
 
         models.Plane(
@@ -1361,7 +1361,7 @@ class ManipulationGazeboEnvRandomizer(
                     link.enable_contact_detection(True)
 
             except Exception as ex:
-                task.get_logger().warn(f"Model could not be insterted: {ex}")
+                task.get_logger().warn(f"Model could not be inserted: {ex}")
 
         # Execute a paused run to process model insertion
         if not gazebo.run(paused=True):

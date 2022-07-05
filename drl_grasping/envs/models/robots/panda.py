@@ -136,7 +136,6 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
     def get_model_file(cls, fuel: bool = False) -> str:
 
         if fuel:
-            # TODO: Add updated "panda" to Fuel
             raise NotImplementedError
             return scenario_gazebo.get_model_file_from_fuel(
                 "https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/"

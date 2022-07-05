@@ -45,7 +45,6 @@ class LunarSurface(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
     @classmethod
     def get_model_file(self, fuel: bool = False, variant: str = "tycho") -> str:
         if fuel:
-            # TODO: Add "lunar_surface" to Fuel
             raise NotImplementedError
             return scenario_gazebo.get_model_file_from_fuel(
                 f"https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/lunar_surface_{variant}"

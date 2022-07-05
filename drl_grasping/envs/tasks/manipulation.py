@@ -179,7 +179,7 @@ class Manipulation(Task, Node, abc.ABC):
             execute_via_moveit=False,
             ignore_new_calls_while_executing=ignore_new_actions_while_executing,
             callback_group=self._callback_group,
-            # TODO: Expose as arg
+            # TODO: Expose follow_joint_trajectory_action_name as arg
             # follow_joint_trajectory_action_name="/robot_j2s7s300/follow_joint_trajectory",
         )
         # MoveIt2 real-time control (servo)
@@ -201,9 +201,9 @@ class Manipulation(Task, Node, abc.ABC):
             skip_planning=True,
             ignore_new_calls_while_executing=ignore_new_actions_while_executing,
             callback_group=self._callback_group,
-            # TODO: Expose action server as arg (and test with launch script)
+            # TODO: Expose follow_joint_trajectory_action_name as arg
         )
-        # TODO: Expose selection of MoveIt2Gripper/GripperCommand as argument
+        # TODO: Expose selection of MoveIt2Gripper/GripperCommand as arg
         # self.gripper = GripperCommand(
         #     node=self,
         #     gripper_joint_names=self.robot_gripper_joint_names,
@@ -212,7 +212,7 @@ class Manipulation(Task, Node, abc.ABC):
         #     max_effort=10.0,
         #     ignore_new_calls_while_executing=ignore_new_actions_while_executing,
         #     callback_group=self._callback_group,
-        #     # TODO: Expose as arg (and test with launch script)node: Node,
+        #     # TODO: Expose gripper_command_action_name as arg
         #     gripper_command_action_name="/robot_j2s7s300_gripper/gripper_command",
         # )
 

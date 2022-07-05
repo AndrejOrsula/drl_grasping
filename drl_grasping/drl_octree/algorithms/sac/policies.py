@@ -23,7 +23,7 @@ from drl_grasping.drl_octree.replay_buffer import (
 class ActorWithoutPreprocessing(Actor):
     """
     Actor network (policy) for SAC.
-    Overriden to not preprocess observations (unnecessary conversion into float)
+    Overridden to not preprocess observations (unnecessary conversion into float)
 
     :param observation_space: Obervation space
     :param action_space: Action space
@@ -82,7 +82,7 @@ class ActorWithoutPreprocessing(Actor):
     def extract_features(self, obs: th.Tensor) -> th.Tensor:
         """
         Preprocess the observation if needed and extract features.
-        Overriden to skip pre-processing (for some reason it converts tensor to Float)
+        Overridden to skip pre-processing (for some reason it converts tensor to Float)
 
         :param obs:
         :return:
@@ -97,7 +97,7 @@ class ActorWithoutPreprocessing(Actor):
 class ContinuousCriticWithoutPreprocessing(ContinuousCritic):
     """
     Critic network(s) for DDPG/SAC/TD3.
-    Overriden to not preprocess observations (unnecessary conversion into float)
+    Overridden to not preprocess observations (unnecessary conversion into float)
 
     It represents the action-state value function (Q-value function).
     Compared to A2C/PPO critics, this one represents the Q-value
@@ -150,7 +150,7 @@ class ContinuousCriticWithoutPreprocessing(ContinuousCritic):
     def extract_features(self, obs: th.Tensor) -> th.Tensor:
         """
         Preprocess the observation if needed and extract features.
-        Overriden to skip pre-processing (for some reason it converts tensor to Float)
+        Overridden to skip pre-processing (for some reason it converts tensor to Float)
 
         :param obs:
         :return:
@@ -196,7 +196,7 @@ class OctreeCnnPolicy(SACPolicy):
         self,
         observation_space: gym.spaces.Space,
         action_space: gym.spaces.Space,
-        # lr_schedule: Schedule, # Note: removed because hinting of Shedule results in import error
+        # lr_schedule: Schedule, # Note: removed because hinting of Schedule results in import error
         lr_schedule,
         net_arch: Optional[Union[List[int], Dict[str, List[int]]]] = None,
         activation_fn: Type[nn.Module] = nn.ReLU,
@@ -267,7 +267,7 @@ class OctreeCnnPolicy(SACPolicy):
         deterministic: bool = False,
     ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Overriden to create proper Octree batch.
+        Overridden to create proper Octree batch.
         Get the policy action and state from an observation (and optional state).
 
         :param observation: the input observation
@@ -352,7 +352,7 @@ class DepthImageCnnPolicy(SACPolicy):
         self,
         observation_space: gym.spaces.Space,
         action_space: gym.spaces.Space,
-        # lr_schedule: Schedule, # Note: removed because hinting of Shedule results in import error
+        # lr_schedule: Schedule, # Note: removed because hinting of Schedule results in import error
         lr_schedule,
         net_arch: Optional[Union[List[int], Dict[str, List[int]]]] = None,
         activation_fn: Type[nn.Module] = nn.ReLU,
@@ -421,7 +421,7 @@ class DepthImageCnnPolicy(SACPolicy):
         deterministic: bool = False,
     ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Overriden to create proper Octree batch.
+        Overridden to create proper Octree batch.
         Get the policy action and state from an observation (and optional state).
 
         :param observation: the input observation

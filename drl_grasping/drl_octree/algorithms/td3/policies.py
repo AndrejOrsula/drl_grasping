@@ -23,7 +23,7 @@ from drl_grasping.drl_octree.replay_buffer import (
 class ActorWithoutPreprocessing(Actor):
     """
     Actor network (policy) for TD3.
-    Overriden to not preprocess observations (unnecessary conversion into float)
+    Overridden to not preprocess observations (unnecessary conversion into float)
 
     :param observation_space: Obervation space
     :param action_space: Action space
@@ -59,7 +59,7 @@ class ActorWithoutPreprocessing(Actor):
     def extract_features(self, obs: th.Tensor) -> th.Tensor:
         """
         Preprocess the observation if needed and extract features.
-        Overriden to skip pre-processing (for some reason it converts tensor to Float)
+        Overridden to skip pre-processing (for some reason it converts tensor to Float)
 
         :param obs:
         :return:
@@ -74,7 +74,7 @@ class ActorWithoutPreprocessing(Actor):
 class ContinuousWithoutPreprocessing(ContinuousCritic):
     """
     Critic network(s) for DDPG/SAC/TD3.
-    Overriden to not preprocess observations (unnecessary conversion into float)
+    Overridden to not preprocess observations (unnecessary conversion into float)
 
     It represents the action-state value function (Q-value function).
     Compared to A2C/PPO critics, this one represents the Q-value
@@ -127,7 +127,7 @@ class ContinuousWithoutPreprocessing(ContinuousCritic):
     def extract_features(self, obs: th.Tensor) -> th.Tensor:
         """
         Preprocess the observation if needed and extract features.
-        Overriden to skip pre-processing (for some reason it converts tensor to Float)
+        Overridden to skip pre-processing (for some reason it converts tensor to Float)
 
         :param obs:
         :return:
@@ -226,7 +226,7 @@ class OctreeCnnPolicy(TD3Policy):
         deterministic: bool = False,
     ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Overriden to create proper Octree batch.
+        Overridden to create proper Octree batch.
         Get the policy action and state from an observation (and optional state).
 
         :param observation: the input observation
@@ -362,7 +362,7 @@ class DepthImageCnnPolicy(TD3Policy):
         deterministic: bool = False,
     ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Overriden to create proper Octree batch.
+        Overridden to create proper Octree batch.
         Get the policy action and state from an observation (and optional state).
 
         :param observation: the input observation

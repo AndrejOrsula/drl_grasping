@@ -5,6 +5,7 @@ from .sun import Sun
 
 
 def get_light_model_class(light_type: str) -> ModelWrapper:
+    # TODO: Refactor into enum
 
     if "sun" == light_type:
         return Sun

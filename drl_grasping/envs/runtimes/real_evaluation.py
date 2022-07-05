@@ -162,7 +162,6 @@ class RealEvaluationRuntime(Runtime):
         # Move to initial joint configuration
         if isinstance(self.task, Manipulation):
             print("Moving to the initial joint configuration...")
-            # TODO: Return initialisation once everything else is tested
             self.task.move_to_initial_joint_configuration()
 
         input("Press any key to confirm that robot and workspace are reset...")

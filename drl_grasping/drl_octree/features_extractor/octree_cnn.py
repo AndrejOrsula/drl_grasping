@@ -5,8 +5,6 @@ from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 from drl_grasping.drl_octree.features_extractor.modules import *
 
-# TODO: Once it is clear whether separating networks for stacks or not makes a difference (e.g. better stability), refactor this mess and use only the better solution. Same applies to other args... there are too many of them right now
-
 
 class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
     """
@@ -99,8 +97,8 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
                 [OctreePool(depth - i) for i in range(self._n_convs)]
             )
 
-            # Last convolution at depth=full_depth, which is not follewed by pooling
-            # This layer is used to significantly reduce the channels, decresing number of parameters required in the next linear layer(s)
+            # Last convolution at depth=full_depth, which is not followed by pooling
+            # This layer is used to significantly reduce the channels, decreasing number of parameters required in the next linear layer(s)
             self._full_depth_conv1d = full_depth_conv1d
             if self._full_depth_conv1d:
                 # Use 1D convolution (Conv1D instead of linear is used here to preserve spatial information)
@@ -152,8 +150,8 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
                 ]
             )
 
-            # Last convolution at depth=full_depth, which is not follewed by pooling
-            # This layer is used to significantly reduce the channels, decresing number of parameters required in the next linear layer(s)
+            # Last convolution at depth=full_depth, which is not followed by pooling
+            # This layer is used to significantly reduce the channels, decreasing number of parameters required in the next linear layer(s)
             self._full_depth_conv1d = full_depth_conv1d
             if self._full_depth_conv1d:
                 # Use 1D convolution (Conv1D instead of linear is used here to preserve spatial information)

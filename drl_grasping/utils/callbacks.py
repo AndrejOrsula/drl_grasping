@@ -68,7 +68,6 @@ class ParallelTrainCallback(BaseCallback):
     at the same time using two separate threads.
     Normally used with off-policy algorithms and `train_freq=(1, "episode")`.
 
-    TODO (external):
     - blocking mode: wait for the model to finish updating the policy before collecting new experience
         at the end of a rollout
     - force sync mode: stop training to update to the latest policy for collecting

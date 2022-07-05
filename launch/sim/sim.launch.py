@@ -14,8 +14,6 @@ from launch.conditions import LaunchConfigurationEquals, LaunchConfigurationNotE
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
-# TODO: Prettify simulation launch script
-
 
 def generate_launch_description() -> LaunchDescription:
 

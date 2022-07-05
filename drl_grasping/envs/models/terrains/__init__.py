@@ -6,10 +6,9 @@ from .lunar_surface import LunarSurface
 from .random_ground import RandomGround
 from .random_lunar_surface import RandomLunarSurface
 
-# TODO: Change to enum
-
 
 def get_terrain_model_class(terrain_type: str) -> ModelWrapper:
+    # TODO: Refactor into enum
 
     if "flat" == terrain_type:
         return Ground

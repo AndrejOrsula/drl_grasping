@@ -473,7 +473,7 @@ class ModelCollectionRandomizer:
         link.visuals[0].geometry.mesh.scale = [scale_factor] * 3
         link.collisions[0].geometry.mesh.scale = [scale_factor] * 3
 
-        # Recompute inertial properties acording to the scale
+        # Recompute inertial properties according to the scale
         link.inertial.pose.x *= inertial_scale_factor
         link.inertial.pose.y *= inertial_scale_factor
         link.inertial.pose.z *= inertial_scale_factor
@@ -690,7 +690,7 @@ class ModelCollectionRandomizer:
             # Find all textures located in the model path, used later to relative linking
             texture_files = glob.glob(os.path.join(model_path, "**", "textures", "*.*"))
 
-            # Find location ot mtl file, if any
+            # Find location of mtl file, if any
             mtllib_file = None
             with open(mesh_path, "r") as file:
                 for line in file:

@@ -44,7 +44,6 @@ class LunarHeightmap(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
     @classmethod
     def get_model_file(self, fuel: bool = False) -> str:
         if fuel:
-            # TODO: Add "lunar_heightmap" to Fuel
             raise NotImplementedError
             return scenario_gazebo.get_model_file_from_fuel(
                 "https://fuel.ignitionrobotics.org/1.0/AndrejOrsula/models/lunar_heightmap"

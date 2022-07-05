@@ -146,7 +146,6 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
         # Environment and its parameters
         DeclareLaunchArgument(
             "env",
-            # TODO: Default to Reach-Gazebo-v0 (every script)
             default_value="GraspPlanetary-OctreeWithColor-Gazebo-v0",
             description="Environment ID",
         ),
