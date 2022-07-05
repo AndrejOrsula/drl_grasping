@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # This script setups git hooks for this repository.
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" &>/dev/null && pwd)"
 REPO_DIR="$(dirname "${SCRIPT_DIR}")"
 
 pip install --user pre-commit &&
