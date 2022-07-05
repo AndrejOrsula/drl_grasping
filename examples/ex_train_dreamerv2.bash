@@ -18,9 +18,10 @@ SEED="42"
 ROBOT_MODEL="lunalab_summit_xl_gen"
 
 ## ID of the environment
+## Reach
 # ENV="Reach-ColorImage-Gazebo-v0"
+## GraspPlanetary
 ENV="GraspPlanetary-ColorImage-Gazebo-v0"
-# ENV="GraspPlanetary-MonoImage-Gazebo-v0"
 
 ## Path to logs directory
 LOG_FOLDER="${PWD}/drl_grasping_training/train/${ENV}/logs"

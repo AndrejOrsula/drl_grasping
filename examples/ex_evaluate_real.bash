@@ -15,25 +15,30 @@ export DRL_GRASPING_REAL_EVALUATION=True
 ## Random seed to use for both the environment and agent (-1 for random)
 SEED="77"
 
-## Robot to use during evaluation
-# ROBOT_MODEL="panda"
-ROBOT_MODEL="lunalab_summit_xl_gen"
+## Robot to use during training
+ROBOT_MODEL="panda"
+# ROBOT_MODEL="lunalab_summit_xl_gen"
 
 ## ID of the environment
+## Reach
 # ENV="Reach-v0"
 # ENV="Reach-ColorImage-v0"
 # ENV="Reach-DepthImage-v0"
 # ENV="Reach-Octree-v0"
 # ENV="Reach-OctreeWithIntensity-v0"
 # ENV="Reach-OctreeWithColor-v0"
+## Grasp
 # ENV="Grasp-Octree-v0"
 # ENV="Grasp-OctreeWithIntensity-v0"
-# ENV="Grasp-OctreeWithColor-v0"
+ENV="Grasp-OctreeWithColor-v0"
+## GraspPlanetary
+# ENV="GraspPlanetary-MonoImage-v0"
+# ENV="GraspPlanetary-ColorImage-v0"
 # ENV="GraspPlanetary-DepthImage-v0"
 # ENV="GraspPlanetary-DepthImageWithIntensity-v0"
 # ENV="GraspPlanetary-DepthImageWithColor-v0"
 # ENV="GraspPlanetary-Octree-v0"
-ENV="GraspPlanetary-OctreeWithIntensity-v0"
+# ENV="GraspPlanetary-OctreeWithIntensity-v0"
 # ENV="GraspPlanetary-OctreeWithColor-v0"
 
 ## Selection of RL algorithm
