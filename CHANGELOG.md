@@ -1,16 +1,17 @@
 # CHANGELOG
 
-## \[Unreleased\] - yyyy-mm-dd
+## [\[2.0.0\] - 2022-07-18](https://github.com/AndrejOrsula/drl_grasping/releases/tag/2.0.0)
 
 ### Added
 
-- Integration with ROS 2 control.
-- Support for `moveit_servo`.
+- Full integration with `ros2_control`.
+- Support for `moveit_servo` via `pymoveit`.
 - Support for mobile manipulators.
-- `lunalab_summit_xl_gen` is now added to the supported robot models.
+- `lunalab_summit_xl_gen`  is now added to the supported (mobile) robot models.
 - Configuration of pre-commit git hooks.
 - Models for `Sun` and `RandomSun`, replacing the default light contained in SDF worlds.
 - Camera can now be mounted relative to robot frame (configurable) via DetachableJoint.
+- Added experimental setup for Dreamer V2 algorithm.
 
 ### Changed
 
@@ -22,12 +23,14 @@
 - Randomizer is now used to wrap task environment during gym environment registration.
   - This means, that two environment variants of each task now exist, i.e. `*-v0` and `*-Gazebo-v0`. The default task can therefore be used with different run-times without requiring changes to the hyperparameters in order to make it functional.
 - Environments are now registered directly in `envs` module instead of `envs.tasks`
+- All important features are now exposed as ROS 2 launch scripts.
 - A single configurable launch script [sim.launch.py](./launch/sim.launch.py) now replaces all previous variations. Use its launch arguments to select robot model and enable/disable RViz2 GUI.
 - Instead of all fingers, more than half (`n//2 + 1`) are now needed to be in contact for a grasp to be successful
 - Changed PEP 8 python formatting for black to improve consistency.
 - Changed bash formatter to beautysh (minor changes).
 - Custom environment logging is now performed via ROS 2 loggers.
 - Local classes for interfacing with MoveIt 2.
+- Simplified usage and quality of life improvements.
 
 ### Fixed
 
@@ -36,6 +39,7 @@
 ### Removed
 
 - `DRL_GRASPING_DEBUG_LEVEL` environment variable is now replaced by `log-level` ROS 2 argument.
+- `ur5_rg2` and `kinova_j2s7s300` from supported robot models due to shift to `ros2_control`.
 
 ## [\[1.1.0\] - 2021-10-13](https://github.com/AndrejOrsula/drl_grasping/releases/tag/1.1.0)
 
