@@ -143,7 +143,7 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
         DeclareLaunchArgument(
             "robot_model",
             default_value="lunalab_summit_xl_gen",
-            description="Name of the robot to use. Supported options are: 'panda', 'ur5_rg2', 'kinova_j2s7s300' and 'lunalab_summit_xl_gen'.",
+            description="Name of the robot to use. Supported options are: 'panda' and 'lunalab_summit_xl_gen'.",
         ),
         DeclareLaunchArgument(
             "robot_name",
