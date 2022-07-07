@@ -70,7 +70,7 @@ class Sphere(model_wrapper.ModelWrapper):
         color: List[float],
     ) -> str:
         # Inertia is identical for all axes
-        inertia_xx_yy_zz = (mass * radius ** 2) * 2 / 5
+        inertia_xx_yy_zz = (mass * radius**2) * 2 / 5
 
         return f'''<sdf version="1.7">
                 <model name="{model_name}">

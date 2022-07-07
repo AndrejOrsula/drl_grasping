@@ -52,7 +52,7 @@ class ImageCnnFeaturesExtractor(BaseFeaturesExtractor):
         )
 
         resolution = width * height
-        flatten_dim = resolution // ((max_pool_kernel ** 2) ** 2) * full_depth_channels
+        flatten_dim = resolution // ((max_pool_kernel**2) ** 2) * full_depth_channels
 
         if not self._separate_networks_for_stacks:
             self.conv1 = ImageConvRelu(channels_in, channel_multiplier)

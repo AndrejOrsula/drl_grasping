@@ -32,7 +32,7 @@ def main(args: Dict):
 
     # If no specific seed is selected, choose a random one
     if args.seed < 0:
-        args.seed = np.random.randint(2 ** 32 - 1, dtype="int64").item()
+        args.seed = np.random.randint(2**32 - 1, dtype="int64").item()
 
     # Set the random seed across platforms
     set_random_seed(args.seed)

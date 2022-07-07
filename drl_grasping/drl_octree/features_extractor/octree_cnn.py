@@ -76,7 +76,7 @@ class OctreeCnnFeaturesExtractor(BaseFeaturesExtractor):
         # Channels ordered as [channels_in, depth, depth-1, ..., full_depth]
         # I.e [channels_in, channel_multiplier*1, channel_multiplier*2, channel_multiplier*4, channel_multiplier*8,...]
         self._n_convs = depth - full_depth
-        channels = [channel_multiplier * (2 ** i) for i in range(self._n_convs)]
+        channels = [channel_multiplier * (2**i) for i in range(self._n_convs)]
         channels.insert(0, channels_in)
 
         full_depth_voxel_count = 2 ** (3 * full_depth)

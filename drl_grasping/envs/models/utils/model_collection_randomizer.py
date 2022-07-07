@@ -479,10 +479,10 @@ class ModelCollectionRandomizer:
         link.inertial.pose.z *= inertial_scale_factor
 
         # Mass is scaled n^3
-        link.mass = link.mass.value * inertial_scale_factor ** 3
+        link.mass = link.mass.value * inertial_scale_factor**3
 
         # Inertia is scaled n^5
-        inertial_scale_factor_n5 = inertial_scale_factor ** 5
+        inertial_scale_factor_n5 = inertial_scale_factor**5
         link.inertia.ixx = link.inertia.ixx.value * inertial_scale_factor_n5
         link.inertia.iyy = link.inertia.iyy.value * inertial_scale_factor_n5
         link.inertia.izz = link.inertia.izz.value * inertial_scale_factor_n5

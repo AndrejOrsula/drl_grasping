@@ -1,12 +1,16 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 
+ci:
+  skip: [hadolint-docker]
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1
+    rev: v4.3.0
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
+      - id: check-executables-have-shebangs
       - id: check-merge-conflict
       - id: check-shebang-scripts-are-executable
       - id: check-symlinks
@@ -17,6 +21,7 @@ repos:
       - id: detect-private-key
       - id: end-of-file-fixer
       - id: mixed-line-ending
+      - id: requirements-txt-fixer
       - id: trailing-whitespace
 
   - repo: https://github.com/pycqa/isort
@@ -26,7 +31,7 @@ repos:
         args: ["--profile", "black"]
 
   - repo: https://github.com/psf/black
-    rev: 21.10b0
+    rev: 22.6.0
     hooks:
       - id: black
 
@@ -36,14 +41,14 @@ repos:
       - id: beautysh
 
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.10
+    rev: 0.7.14
     hooks:
       - id: mdformat
 
-  - repo: https://github.com/AleksaC/hadolint-py
-    rev: v2.8.0
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.10.0
     hooks:
-      - id: hadolint
+      - id: hadolint-docker
         args:
           [
             --ignore,
@@ -61,4 +66,4 @@ repos:
   - repo: https://github.com/codespell-project/codespell
     rev: v2.1.0
     hooks:
-    - id: codespell
+      - id: codespell

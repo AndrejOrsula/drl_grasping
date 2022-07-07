@@ -73,7 +73,7 @@ class Cylinder(model_wrapper.ModelWrapper):
         color: List[float],
     ) -> str:
         # Inertia is identical for xx and yy components, compute only once
-        inertia_xx_yy = (3 * radius ** 2 + length ** 2) * mass / 12
+        inertia_xx_yy = (3 * radius**2 + length**2) * mass / 12
 
         return f'''<sdf version="1.7">
                 <model name="{model_name}">
