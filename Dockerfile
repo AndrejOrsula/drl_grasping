@@ -155,32 +155,6 @@ RUN git clone https://github.com/AndrejOrsula/O-CNN.git --depth 1 -b master && \
     cd ${WS_SRC_DIR}/O-CNN/pytorch && \
     python${PYTHON_VERSION} ${WS_SRC_DIR}/O-CNN/pytorch/setup.py install --build_octree
 
-### Copy over the rest of drl_grasping, then build
-WORKDIR ${WS_DIR}
-COPY ./ ${WS_SRC_DIR}/drl_grasping/
-RUN source /opt/ros/${ROS_DISTRO}/setup.bash && \
-    colcon build --merge-install --symlink-install --cmake-args "-DCMAKE_BUILD_TYPE=Release" --packages-select drl_grasping && \
-    rm -rf ${WS_LOG_DIR}
-
-### Configure default datasets
-WORKDIR ${ASSETS_DIR}
-ARG DOWNLOAD_DATASETS
-RUN if [[ -n "${DOWNLOAD_DATASETS}" ]] ; then \
-    echo "Downloading default datasets..." && \
-    ${WS_SRC_DIR}/drl_grasping/scripts/utils/dataset/dataset_download_test.bash && \
-    ${WS_SRC_DIR}/drl_grasping/scripts/utils/dataset/dataset_unset_test.bash && \
-    ${WS_SRC_DIR}/drl_grasping/scripts/utils/dataset/dataset_download_train.bash && \
-    apt-get update && \
-    apt-get install -yq --no-install-recommends \
-    git-lfs && \
-    rm -rf /var/lib/apt/lists/* && \
-    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/assets/textures.git --depth 1 -b master ; \
-    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/assets/sdf_models.git --depth 1 -b master ; \
-    exit 0 \
-    ; else \
-    echo "Default datasets are disabled. Downloading skipped." \
-    ; fi
-
 ### Install Dreamer v2
 WORKDIR ${WS_SRC_DIR}
 ARG INSTALL_DREAMERV2
@@ -202,10 +176,39 @@ RUN if [[ -n "${INSTALL_DREAMERV2}" ]] ; then \
     echo "Dreamer V2 is disabled. Installation skipped." \
     ; fi
 
-### Setup symbolic links to simplify usage
-RUN "${WS_SRC_DIR}/drl_grasping/.docker/internal/setup_symlinks.bash"
+### Configure default datasets
+WORKDIR ${ASSETS_DIR}
+COPY ./scripts/utils/dataset ${WS_SRC_DIR}/drl_grasping/scripts/utils/dataset
+ARG DOWNLOAD_DATASETS
+RUN if [[ -n "${DOWNLOAD_DATASETS}" ]] ; then \
+    echo "Downloading default datasets..." && \
+    ${WS_SRC_DIR}/drl_grasping/scripts/utils/dataset/dataset_download_test.bash && \
+    ${WS_SRC_DIR}/drl_grasping/scripts/utils/dataset/dataset_unset_test.bash && \
+    ${WS_SRC_DIR}/drl_grasping/scripts/utils/dataset/dataset_download_train.bash && \
+    apt-get update && \
+    apt-get install -yq --no-install-recommends \
+    git-lfs && \
+    rm -rf /var/lib/apt/lists/* && \
+    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/assets/textures.git --depth 1 -b master ; \
+    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/assets/sdf_models.git --depth 1 -b master ; \
+    exit 0 \
+    ; else \
+    echo "Default datasets are disabled. Downloading skipped." \
+    ; fi
 
-### Source entrypoint within ENTRYPOINT to enable autocompletion in the interactive shell
+### Copy over the rest of drl_grasping, then build
+WORKDIR ${WS_DIR}
+COPY ./ ${WS_SRC_DIR}/drl_grasping/
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash && \
+    colcon build --merge-install --symlink-install --cmake-args "-DCMAKE_BUILD_TYPE=Release" && \
+    rm -rf ${WS_LOG_DIR}
+
+### Setup symbolic links to simplify usage
+### Source ROS workspace inside `~/.bashrc` to enable autocompletion
+RUN "${WS_SRC_DIR}/drl_grasping/.docker/internal/setup_symlinks.bash" && \
+    sed -i '$a source "/opt/ros/${ROS_DISTRO}/setup.bash"' ~/.bashrc
+
+### Setup entrypoint
 WORKDIR ${HOME}
-ENTRYPOINT ["/bin/bash", "-c", "source ${HOME}/entrypoint.bash && exec \"${@}\"", "-s"]
+ENTRYPOINT ["/bin/bash", "-c", "${HOME}/entrypoint.bash \"${@}\"", "-s"]
 CMD ["/bin/bash"]
