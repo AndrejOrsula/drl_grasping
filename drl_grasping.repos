@@ -9,9 +9,7 @@ repositories:
     version: master
   lunalab_summit_xl_gen:
     type: git
-    # TODO: Update URL for lunalab_summit_xl_gen repository
-    # url: https://github.com/snt-spacer/lunalab_summit_xl_gen.git
-    url: https://gitlab.uni.lu/spacer/phd/AndrejOrsula/lunalab_summit_xl_gen.git
+    url: https://github.com/snt-spacer/lunalab_summit_xl_gen.git
     version: ros2
   ros_ign:
     type: git
