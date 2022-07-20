@@ -1392,8 +1392,8 @@ class ManipulationGazeboEnvRandomizer(
         centre: Tuple[float, float, float],
         volume: Tuple[float, float, float],
         name: str = "",
-        min_distance_to_other_objects: float = 0.075,
-        min_distance_decay_factor: float = 0.9,
+        min_distance_to_other_objects: float = 0.2,
+        min_distance_decay_factor: float = 0.95,
     ):
 
         is_too_close = True
@@ -1623,8 +1623,8 @@ class ManipulationGazeboEnvRandomizer(
     def check_object_overlapping(
         self,
         task: SupportedTasks,
-        allowed_penetration_depth: float = 0.01,
-        terrain_allowed_penetration_depth: float = 0.02,
+        allowed_penetration_depth: float = 0.001,
+        terrain_allowed_penetration_depth: float = 0.002,
     ) -> bool:
         """
         Go through all objects and make sure that none of them are overlapping.
