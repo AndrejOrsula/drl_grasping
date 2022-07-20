@@ -3,11 +3,8 @@
 #### When this script is called, the corresponding launch string is printed to STDOUT. Therefore, feel free to modify and use such command directly.
 #### To view all arguments, run `ros2 launch drl_grasping evaluate.launch.py --show-args`.
 
-### Global configuration
-## OMP
-export OMP_DYNAMIC=TRUE
-export OMP_NUM_THREADS=4
-
+## Enable testing dataset
+ros2 run drl_grasping dataset_set_test.bash 2> /dev/null
 
 ### Arguments
 ## Random seed to use for both the environment and agent (-1 for random)

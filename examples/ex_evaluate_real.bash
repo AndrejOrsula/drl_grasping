@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
-#### This script serves as an example of utilising `ros2 launch drl_grasping evaluate.launch.py` and configuring some of its most common arguments.
+#### This script serves as an example of utilising `ros2 launch drl_grasping evaluate.launch.py` on a real robot and configuring some of its most common arguments.
 #### When this script is called, the corresponding launch string is printed to STDOUT. Therefore, feel free to modify and use such command directly.
 #### To view all arguments, run `ros2 launch drl_grasping evaluate.launch.py --show-args`.
-
-### Global configuration
-## OMP
-export OMP_DYNAMIC=TRUE
-export OMP_NUM_THREADS=4
 
 ## Use the correct runtime
 export DRL_GRASPING_REAL_EVALUATION=True
