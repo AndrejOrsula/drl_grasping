@@ -69,16 +69,16 @@ class RandomGround(model_wrapper.ModelWrapper):
                     metalness_map = os.path.join(random_texture_dir, texture)
 
         # Create SDF string for the model
-        sdf = f"""<sdf version="1.7">
+        sdf = f"""<sdf version="1.9">
             <model name="{model_name}">
                 <static>true</static>
                 <link name="{model_name}_link">
                     <collision name="{model_name}_collision">
-                        <pose>0 0 {-collision_thickness/2} 0 0 0</pose>
                         <geometry>
-                            <box>
-                                <size>{size[0]} {size[1]} {collision_thickness}</size>
-                            </box>
+                            <plane>
+                                <normal>0 0 1</normal>
+                                <size>{size[0]} {size[1]}</size>
+                            </plane>
                         </geometry>
                         <surface>
                             <friction>
