@@ -1,9 +1,5 @@
 # Reach
 Reach-Gazebo-v0:
-  # callback:
-  #   - drl_grasping.utils.callbacks.ParallelTrainCallback:
-  #       gradient_steps: 100
-  #       sleep_time: 0.0
   policy: "MlpPolicy"
   policy_kwargs:
     n_critics: 2
@@ -12,15 +8,16 @@ Reach-Gazebo-v0:
   buffer_size: 25000
   learning_starts: 0
   batch_size: 32
-  learning_rate: lin_0.0003
+  learning_rate: lin_0.0002
   gamma: 0.95
-  tau: 0.01
+  tau: 0.0005
   ent_coef: "auto_0.1"
   target_entropy: "auto"
-  train_freq: 1
-  gradient_steps: 1
+  train_freq: [1, "episode"]
+  gradient_steps: 100
   noise_type: "normal"
   noise_std: 0.025
+  use_sde: False
   optimize_memory_usage: True
 
 Reach-ColorImage-Gazebo-v0:
@@ -32,15 +29,16 @@ Reach-ColorImage-Gazebo-v0:
   buffer_size: 25000
   learning_starts: 0
   batch_size: 32
-  learning_rate: lin_0.0003
+  learning_rate: lin_0.0002
   gamma: 0.95
-  tau: 0.01
+  tau: 0.0005
   ent_coef: "auto_0.1"
   target_entropy: "auto"
-  train_freq: 1
-  gradient_steps: 1
+  train_freq: [1, "episode"]
+  gradient_steps: 100
   noise_type: "normal"
   noise_std: 0.025
+  use_sde: False
   optimize_memory_usage: True
 
 Reach-Octree-Gazebo-v0:
@@ -67,15 +65,16 @@ Reach-Octree-Gazebo-v0:
   buffer_size: 25000
   learning_starts: 0
   batch_size: 32
-  learning_rate: lin_0.0003
+  learning_rate: lin_0.0002
   gamma: 0.95
-  tau: 0.01
+  tau: 0.0005
   ent_coef: "auto_0.1"
   target_entropy: "auto"
-  train_freq: 1
-  gradient_steps: 1
+  train_freq: [1, "episode"]
+  gradient_steps: 100
   noise_type: "normal"
   noise_std: 0.025
+  use_sde: False
   optimize_memory_usage: True
 
 Reach-OctreeWithIntensity-Gazebo-v0:
@@ -102,15 +101,16 @@ Reach-OctreeWithIntensity-Gazebo-v0:
   buffer_size: 25000
   learning_starts: 0
   batch_size: 32
-  learning_rate: lin_0.0003
+  learning_rate: lin_0.0002
   gamma: 0.95
-  tau: 0.01
+  tau: 0.0005
   ent_coef: "auto_0.1"
   target_entropy: "auto"
-  train_freq: 1
-  gradient_steps: 1
+  train_freq: [1, "episode"]
+  gradient_steps: 100
   noise_type: "normal"
   noise_std: 0.025
+  use_sde: False
   optimize_memory_usage: True
 
 Reach-OctreeWithColor-Gazebo-v0:
@@ -137,15 +137,16 @@ Reach-OctreeWithColor-Gazebo-v0:
   buffer_size: 25000
   learning_starts: 0
   batch_size: 32
-  learning_rate: lin_0.0003
+  learning_rate: lin_0.0002
   gamma: 0.95
-  tau: 0.01
+  tau: 0.0005
   ent_coef: "auto_0.1"
   target_entropy: "auto"
-  train_freq: 1
-  gradient_steps: 1
+  train_freq: [1, "episode"]
+  gradient_steps: 100
   noise_type: "normal"
   noise_std: 0.025
+  use_sde: False
   optimize_memory_usage: True
 
 # Grasp
@@ -161,8 +162,9 @@ Grasp-Octree-Gazebo-v0:
       channel_multiplier: 32
       full_depth_conv1d: True
       full_depth_channels: 16
-      features_dim: 160
+      features_dim: 248
       aux_obs_dim: 10
+      aux_obs_features_dim: 8
       fast_conv: True
       batch_normalization: False
       bn_eps: 0.00001
@@ -174,7 +176,7 @@ Grasp-Octree-Gazebo-v0:
   n_timesteps: 500000
   buffer_size: 50000
   learning_starts: 0
-  batch_size: 32
+  batch_size: 64
   learning_rate: lin_0.0002
   gamma: 0.99
   tau: 0.00004
@@ -199,8 +201,9 @@ Grasp-OctreeWithIntensity-Gazebo-v0:
       channel_multiplier: 32
       full_depth_conv1d: True
       full_depth_channels: 16
-      features_dim: 160
+      features_dim: 248
       aux_obs_dim: 10
+      aux_obs_features_dim: 8
       fast_conv: True
       batch_normalization: False
       bn_eps: 0.00001
@@ -212,7 +215,7 @@ Grasp-OctreeWithIntensity-Gazebo-v0:
   n_timesteps: 500000
   buffer_size: 50000
   learning_starts: 0
-  batch_size: 32
+  batch_size: 64
   learning_rate: lin_0.0002
   gamma: 0.99
   tau: 0.00004
@@ -237,8 +240,9 @@ Grasp-OctreeWithColor-Gazebo-v0:
       channel_multiplier: 32
       full_depth_conv1d: True
       full_depth_channels: 16
-      features_dim: 160
+      features_dim: 248
       aux_obs_dim: 10
+      aux_obs_features_dim: 8
       fast_conv: True
       batch_normalization: False
       bn_eps: 0.00001
@@ -250,7 +254,7 @@ Grasp-OctreeWithColor-Gazebo-v0:
   n_timesteps: 500000
   buffer_size: 50000
   learning_starts: 0
-  batch_size: 32
+  batch_size: 64
   learning_rate: lin_0.0002
   gamma: 0.99
   tau: 0.00004
