@@ -24,7 +24,7 @@ class Panda(model_wrapper.ModelWrapper, model_with_file.ModelWithFile):
     __DEFAULT_XACRO_MAPPINGS: Dict[str, any] = {
         "name": ROBOT_MODEL_NAME,
         "gripper": True,
-        "collision_arm": True,
+        "collision_arm": False,
         "collision_gripper": True,
         "ros2_control": True,
         "ros2_control_plugin": "ign",
