@@ -183,8 +183,8 @@ ARG DOWNLOAD_DATASETS
 RUN if [[ -n "${DOWNLOAD_DATASETS}" ]] ; then \
     echo "Downloading default datasets..." && \
     ${WS_SRC_DIR}/drl_grasping/scripts/utils/dataset/dataset_download_test.bash && \
-    ${WS_SRC_DIR}/drl_grasping/scripts/utils/dataset/dataset_unset_test.bash && \
     ${WS_SRC_DIR}/drl_grasping/scripts/utils/dataset/dataset_download_train.bash && \
+    ${WS_SRC_DIR}/drl_grasping/scripts/utils/dataset/dataset_set_train.bash && \
     apt-get update && \
     apt-get install -yq --no-install-recommends \
     git-lfs && \

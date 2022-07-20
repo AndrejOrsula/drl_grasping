@@ -42,8 +42,6 @@ install(PROGRAMS
     ${SCRIPTS_DIR}/utils/dataset/dataset_download_train.bash
     ${SCRIPTS_DIR}/utils/dataset/dataset_set_test.bash
     ${SCRIPTS_DIR}/utils/dataset/dataset_set_train.bash
-    ${SCRIPTS_DIR}/utils/dataset/dataset_unset_test.bash
-    ${SCRIPTS_DIR}/utils/dataset/dataset_unset_train.bash
     ${SCRIPTS_DIR}/utils/process_collection.py
     DESTINATION lib/${PROJECT_NAME}
 )
