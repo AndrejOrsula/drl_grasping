@@ -1659,26 +1659,31 @@ class ManipulationGazeboEnvRandomizer(
                 return False
 
             # Make sure the object is not intersecting other objects
-            for contact in obj.contacts():
-                depth = np.mean([point.depth for point in contact.points])
-                if (
-                    self.terrain.name() in contact.body_b
-                    and depth < terrain_allowed_penetration_depth
-                ):
-                    continue
-                if (
-                    task.robot_name in contact.body_b
-                    or depth > allowed_penetration_depth
-                ):
-                    position, quat_random = self.get_random_object_pose(
-                        task=task,
-                        centre=self._object_spawn_position,
-                        volume=self._object_random_spawn_volume,
-                        name=object_name,
-                    )
-                    obj.reset_base_pose(position, quat_random)
-                    obj.reset_base_world_velocity([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
-                    return False
+            try:
+                for contact in obj.contacts():
+                    depth = np.mean([point.depth for point in contact.points])
+                    if (
+                        self.terrain.name() in contact.body_b
+                        and depth < terrain_allowed_penetration_depth
+                    ):
+                        continue
+                    if (
+                        task.robot_name in contact.body_b
+                        or depth > allowed_penetration_depth
+                    ):
+                        position, quat_random = self.get_random_object_pose(
+                            task=task,
+                            centre=self._object_spawn_position,
+                            volume=self._object_random_spawn_volume,
+                            name=object_name,
+                        )
+                        obj.reset_base_pose(position, quat_random)
+                        obj.reset_base_world_velocity([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+                        return False
+            except Exception as e:
+                task.get_logger().error(
+                    f"Runtime error encountered while checking objects intersections: {e}"
+                )
 
         return True
 
