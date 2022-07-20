@@ -62,7 +62,7 @@ install(PROGRAMS
 )
 
 # Install directories
-install(DIRECTORY drl_grasping/envs/worlds launch pretrained_agents rviz DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY drl_grasping/envs/worlds launch rviz DESTINATION share/${PROJECT_NAME})
 
 # Setup the project
 ament_package()
