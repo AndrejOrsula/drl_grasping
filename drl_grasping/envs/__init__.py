@@ -611,10 +611,8 @@ GRASP_PLANETARY_RANDOMIZER: str = (
     "drl_grasping.envs.randomizers:ManipulationGazeboEnvRandomizer"
 )
 GRASP_PLANETARY_KWARGS_RANDOMIZER: Dict[str, any] = {
-    "gravity": GRAVITY_EARTH,
-    "gravity_std": GRAVITY_EARTH_STD,
-    # "gravity": GRAVITY_MOON,
-    # "gravity_std": GRAVITY_MOON_STD,
+    "gravity": GRAVITY_MOON,
+    "gravity_std": GRAVITY_MOON_STD,
     "plugin_scene_broadcaster": BROADCAST_GUI,
     "plugin_user_commands": BROADCAST_GUI,
     "plugin_sensors_render_engine": "ogre2",
