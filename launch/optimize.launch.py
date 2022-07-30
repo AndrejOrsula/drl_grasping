@@ -1,7 +1,7 @@
 #!/usr/bin/env -S ros2 launch
 """Optimize hyperparameters for RL training with Optuna"""
 
-from os import path
+from os import cpu_count, path
 from typing import List
 
 from ament_index_python.packages import get_package_share_directory
@@ -9,7 +9,11 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    SetEnvironmentVariable,
+)
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
@@ -141,7 +145,14 @@ def generate_launch_description() -> LaunchDescription:
         ),
     ]
 
-    return LaunchDescription(declared_arguments + launch_descriptions + nodes)
+    environment_variables = [
+        SetEnvironmentVariable(name="OMP_DYNAMIC", value="TRUE"),
+        SetEnvironmentVariable(name="OMP_NUM_THREADS", value=str(cpu_count() // 2)),
+    ]
+
+    return LaunchDescription(
+        declared_arguments + launch_descriptions + nodes + environment_variables
+    )
 
 
 def generate_declared_arguments() -> List[DeclareLaunchArgument]:
