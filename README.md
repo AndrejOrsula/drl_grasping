@@ -3,13 +3,17 @@
 This project focuses on applying deep reinforcement learning to acquire a robust policy that allows robots to grasp diverse objects from compact 3D observations in the form of octrees.
 
 <p align="center" float="middle">
-  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim_panda.webp"/>
-  <em>[Franka Emika Panda] Evaluation of a trained policy on novel scenes (previously unseen camera poses, objects, terrain textures, ...).</em>
+  <a href="https://www.youtube.com/watch?v=1-cudiW4eaU">
+    <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim_panda.webp"/>
+  </a>
+  <em>Evaluation of a trained policy on novel scenes (previously unseen camera poses, objects, terrain textures, ...).</em>
 </p>
 
 <p align="center" float="middle">
-  <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim2real.webp"/>
-  <em>[UR5 with RG2 gripper] Sim-to-Real transfer of a policy trained solely inside a simulation (zero-shot transfer). Credit: Aalborg University</em>
+  <a href="https://www.youtube.com/watch?v=btxqzFOgCyQ">
+    <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim2real.webp"/>
+  </a>
+  <em>Sim-to-Real transfer of a policy trained solely inside a simulation (zero-shot transfer). Credit: Aalborg University</em>
 </p>
 
 ## Overview
@@ -24,6 +28,7 @@ This project focuses on applying deep reinforcement learning to acquire a robust
   <a href="https://moveit.ros.org">
     <img src="https://img.shields.io/badge/Motion%20Planning-MoveIt%202-0A58F7"/>
   </a>
+  <br>
   <a href="https://www.gymlibrary.ml">
     <img src="https://img.shields.io/badge/RL%20Environment%20API-OpenAI%20Gym-CBCBCC"/>
   </a>
@@ -47,15 +52,21 @@ If you are interested in configuring these environments, first take a look at th
 <thead>
   <tr align="center" valign="bottom">
     <th>
-      <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177349186-978fa919-c2ab-40f2-b667-830c42c83ce8.png"/>
+      <a href="./drl_grasping/envs/tasks/reach">
+        <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177349186-978fa919-c2ab-40f2-b667-830c42c83ce8.png"/>
+      </a>
       <em>Reach the end-effector goal.</em>
     </th>
     <th>
-      <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177349182-09a0202f-37b1-4240-82c1-3c00e5c17293.png"/>
+      <a href="./drl_grasping/envs/tasks/grasp">
+        <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177349182-09a0202f-37b1-4240-82c1-3c00e5c17293.png"/>
+      </a>
       <em>Grasp and lift a random object.</em>
     </th>
     <th>
-      <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177349185-037a1ed6-f46a-44e1-bba2-e1557d1b894c.png"/>
+      <a href="./drl_grasping/envs/tasks/grasp_planetary">
+        <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177349185-037a1ed6-f46a-44e1-bba2-e1557d1b894c.png"/>
+      </a>
       <em>Grasp and lift a Moon rock.</em>
     </th>
   </tr>
@@ -119,12 +130,16 @@ By default, `Grasp` and `GraspPlanetary` tasks utilize [`GraspCurriculum`](./drl
 To facilitate the sim-to-real transfer of trained agents, simulation environments introduce domain randomization with the aim of improving the generalization of learned policies. This randomization is accomplished via [`ManipulationGazeboEnvRandomizer`](./drl_grasping/envs/randomizers/manipulation.py) that populates the virtual world and enables randomizing of several properties at each reset of the environment. As this randomizer is configurable with numerous parameters, please take a look at the source code to see what environments you can create.
 
 <p align="center" float="middle">
-  <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177401924-134095c6-2b30-4529-8f81-d3c9e4d9144b.png"/>
+  <a href="./drl_grasping/envs/randomizers/manipulation.py">
+    <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177401924-134095c6-2b30-4529-8f81-d3c9e4d9144b.png"/>
+  </a>
   <em>Examples of domain randomization for the <code>Grasp</code> task.</em>
 </p>
 
 <p align="center" float="middle">
-  <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/177400741-73e98b4e-d3a7-40f2-a09d-57f126cfddd9.png"/>
+  <a href="./drl_grasping/envs/randomizers/manipulation.py">
+    <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/181464827-90ec191a-3166-42f3-862c-415eff56e490.png"/>
+  </a>
   <em>Examples of domain randomization for the <code>GraspPlanetary</code> task.</em>
 </p>
 
@@ -143,7 +158,9 @@ This project initially investigated how 3D visual observations can be leveraged 
 To enable the extraction of abstract features from 3D octree observations, an octree-based 3D CNN is employed. The network module that accomplishes such feature extraction is implemented in the form of [`OctreeCnnFeaturesExtractor`](./drl_grasping/drl_octree/features_extractor/octree_cnn.py) (PyTorch). This features extractor is part of the `OctreeCnnPolicy` policy implemented for TD3, SAC and TQC algorithms. Internally, the feature extractor utilizes [O-CNN](https://github.com/microsoft/O-CNN) implementation to benefit from hardware acceleration on NVIDIA GPUs.
 
 <p align="center" float="middle">
-  <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/176558147-600646ce-ff9c-4660-8300-532acb6df0e4.svg"/>
+  <a href="./drl_grasping/drl_octree/features_extractor/octree_cnn.py">
+    <img width="100.0%" src="https://user-images.githubusercontent.com/22929099/176558147-600646ce-ff9c-4660-8300-532acb6df0e4.svg"/>
+  </a>
   <em>Illustration of the end-to-end actor-critic network architecture with octree-based 3D CNN feature extractor.</em>
 </p>
 
@@ -175,15 +192,17 @@ Setup-wise, there are two options when using this repository. **Option A – Doc
 First, ensure your system has a setup for using Docker with NVIDIA GPUs. You can follow [`install_docker_with_nvidia.bash`](./.docker/host/install_docker_with_nvidia.bash) installation script for Debian-based distributions. Alternatively, consult the [NVIDIA Container Toolkit Installation Guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) for other Linux distributions.
 
 ```bash
+# Execute script inside a cloned repository
 .docker/host/install_docker_with_nvidia.bash
+# (Alternative) Execute script from URL
+bash -c "$(wget -qO - https://raw.githubusercontent.com/AndrejOrsula/drl_grasping/master/.docker/host/install_docker_with_nvidia.bash)"
 ```
 
 ### Clone a Prebuilt Docker Image
 
-Prebuilt Docker images of `drl_grasping` can be pulled directly from [Docker Hub](https://hub.docker.com/repository/docker/andrejorsula/drl_grasping) without needing to build them locally. You can use the following command to manually pull the latest image or one of the previous tagged [Releases](https://github.com/AndrejOrsula/drl_grasping/releases).
+Prebuilt Docker images of `drl_grasping` can be pulled directly from [Docker Hub](https://hub.docker.com/repository/docker/andrejorsula/drl_grasping) without needing to build them locally. You can use the following command to manually pull the latest image or one of the previous tagged [Releases](https://github.com/AndrejOrsula/drl_grasping/releases). The average size of images is 25GB (including datasets).
 
 ```bash
-# Size is ~25GB (including datasets)
 docker pull andrejorsula/drl_grasping:${TAG:-latest}
 ```
 
@@ -200,7 +219,10 @@ It is also possible to build the Docker image locally using the included [Docker
 For simplicity, please run `drl_grasping` Docker containers using the included [`run.bash`](./.docker/run.bash) script shown below (arguments are optional). It enables NVIDIA GPUs and GUI interface while automatically mounting the necessary volumes (e.g. persistent logging) and setting environment variables (e.g. synchronization of middleware communication with the host). This script will always print the corresponding low-level `docker run ...` command for your reference.
 
 ```bash
+# Execute script inside a cloned repository
 .docker/run.bash ${TAG:-latest} ${CMD}
+# (Alternative) Execute script from URL
+bash -c "$(wget -qO - https://raw.githubusercontent.com/AndrejOrsula/drl_grasping/master/.docker/run.bash)" -- ${TAG:-latest} ${CMD}
 ```
 
 The network communication of `drl_grasping` within this Docker container is configured based on the ROS 2 [`ROS_DOMAIN_ID`](https://docs.ros.org/en/galactic/Concepts/About-Domain-ID.html) environment variable, which can be set via `ROS_DOMAIN_ID={0...101} .docker/run.bash ${TAG:-latest} ${CMD}`. By default (`ROS_DOMAIN_ID=0`), external communication is restricted and multicast is disabled. With `ROS_DOMAIN_ID=42`, the communication remains restricted to `localhost` with multicast enabled, enabling monitoring of communication outside the container but within the same system. Using `ROS_DOMAIN_ID=69` will use the default network interface and multicast settings, which can enable monitoring of communication within the same LAN. All other `ROS_DOMAIN_ID`s share the default behaviour and can be employed to enable communication partitioning for running of multiple `drl_grasping` instances.
@@ -279,23 +301,23 @@ ros2 launch drl_grasping random_agent.launch.py seed:=42 robot_model:=lunalab_su
 
 </details>
 
-<details><summary><b>[WIP] Try Pre-trained Agents</b></summary>
+<!-- <details><summary><b>[WIP] Try Pre-trained Agents</b></summary>
 
 **Note:** Submodule `pretrained_agents` is currently incompatible with `drl_grasping` version `2.0.0`. Previously released versions using the Docker setup are functional if you want to test this feature.
 
-> Submodule [pretrained_agents](https://github.com/AndrejOrsula/drl_grasping_pretrained_agents) contains a selection of agents that are already trained and ready. To try them out, run the following example. It should open RViz 2 and Gazebo client instances that provide you with visual feedback, while the agent's performance will be logged and printed to `STDOUT`.
->
-> ```bash
-> ros2 run drl_grasping ex_evaluate_pretrained_agent.bash
-> ```
->
-> After running the example script, the underlying `ros2 launch drl_grasping evaluate.launch.py ...` command with all arguments will always be printed for your reference (example shown below). If desired, you can launch this command directly with custom arguments. For example, you can select what agent to try according to the support matrix from [AndrejOrsula/drl_grasping_pretrained_agents](./pretrained_agents/README.md).
->
-> ```bash
-> ros2 launch drl_grasping evaluate.launch.py seed:=77 robot_model:=panda env:=Grasp-Octree-Gazebo-v0 algo:=tqc log_folder:=/root/ws/install/share/drl_grasping/pretrained_agents reward_log:=/root/drl_grasping_training/evaluate/Grasp-Octree-Gazebo-v0 stochastic:=false n_episodes:=200 load_best:=false enable_rviz:=true log_level:=error
-> ```
+Submodule [pretrained_agents](https://github.com/AndrejOrsula/drl_grasping_pretrained_agents) contains a selection of agents that are already trained and ready. To try them out, run the following example. It should open RViz 2 and Gazebo client instances that provide you with visual feedback, while the agent's performance will be logged and printed to `STDOUT`.
 
-</details>
+```bash
+ros2 run drl_grasping ex_evaluate_pretrained_agent.bash
+```
+
+After running the example script, the underlying `ros2 launch drl_grasping evaluate.launch.py ...` command with all arguments will always be printed for your reference (example shown below). If desired, you can launch this command directly with custom arguments. For example, you can select what agent to try according to the support matrix from [AndrejOrsula/drl_grasping_pretrained_agents](./pretrained_agents/README.md).
+
+```bash
+ros2 launch drl_grasping evaluate.launch.py seed:=77 robot_model:=panda env:=Grasp-Octree-Gazebo-v0 algo:=tqc log_folder:=/root/ws/install/share/drl_grasping/pretrained_agents reward_log:=/root/drl_grasping_training/evaluate/Grasp-Octree-Gazebo-v0 stochastic:=false n_episodes:=200 load_best:=false enable_rviz:=true log_level:=error
+```
+
+</details> -->
 
 <details><summary><b>Train New Agents</b></summary>
 
@@ -378,27 +400,19 @@ ros2 launch drl_grasping optimize.launch.py seed:=69 robot_model:=panda env:=Gra
 
 </details>
 
-<!-- ## Citation
-TODO: Add citation once available
+## Citation
 
 Please use the following citation if you use `drl_grasping` in your work.
 
 ```bibtex
-@inproceedings{author_title_year,
- author    = {},
- title     = {},
- booktitle = {},
- series    = {},
- year      = {},
- isbn      = {},
- location  = {},
- pages     = {},
- numpages  = {},
- publisher = {},
- address   = {},
- keywords  = {},
+@inproceedings{orsula_learning_2022,
+  author    = {Andrej Orsula and Simon B{\o}gh and Miguel Olivares-Mendez and Carol Martinez},
+  title     = {{Learning} to {Grasp} on the {Moon} from {3D} {Octree} {Observations} with {Deep} {Reinforcement} {Learning}},
+  year      = {2022},
+  booktitle = {2022 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  month     = oct
 }
-``` -->
+```
 
 ## Directory Structure
 
