@@ -189,9 +189,11 @@ RUN if [[ -n "${DOWNLOAD_DATASETS}" ]] ; then \
     apt-get install -yq --no-install-recommends \
     git-lfs && \
     rm -rf /var/lib/apt/lists/* && \
-    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/assets/textures.git --depth 1 -b master ; \
-    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/assets/sdf_models.git --depth 1 -b master ; \
-    exit 0 \
+    if [[ -n "${UNILU_GITLAB_ACCESS_TOKEN}" ]] ; then \
+    echo "Downloading default textures and SDF models..." && \
+    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/assets/textures.git --depth 1 -b master && \
+    git clone https://gitlab.uni.lu/spacer/phd/AndrejOrsula/assets/sdf_models.git --depth 1 -b master \
+    ; fi \
     ; else \
     echo "Default datasets are disabled. Downloading skipped." \
     ; fi

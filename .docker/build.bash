@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
-TAG="andrejorsula/drl_grasping"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" &>/dev/null && pwd)"
+PROJECT_DIR="$(dirname "${SCRIPT_DIR}")"
+
+TAG="andrejorsula/$(basename "${PROJECT_DIR}")"
 
 if [ "${#}" -gt "0" ]; then
     if [[ "${1}" != "-"* ]]; then
@@ -10,9 +13,6 @@ if [ "${#}" -gt "0" ]; then
         BUILD_ARGS=${*:1}
     fi
 fi
-
-SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" &>/dev/null && pwd)"
-PROJECT_DIR="$(dirname "${SCRIPT_DIR}")"
 
 DOCKER_BUILD_CMD=(
     docker build

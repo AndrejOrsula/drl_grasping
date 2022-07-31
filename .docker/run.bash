@@ -2,6 +2,22 @@
 
 TAG="andrejorsula/drl_grasping"
 
+## Forward custom volumes and environment variables
+CUSTOM_VOLUMES=()
+CUSTOM_ENVS=()
+while getopts ":v:e:" opt; do
+    case "${opt}" in
+        v) CUSTOM_VOLUMES+=("${OPTARG}") ;;
+        e) CUSTOM_ENVS+=("${OPTARG}") ;;
+        *)
+            echo >&2 "Usage: ${0} [-v VOLUME] [-e ENV] [TAG] [CMD]"
+            exit 2
+            ;;
+    esac
+done
+shift "$((OPTIND - 1))"
+
+## Determine TAG and CMD positional arguments
 if [ "${#}" -gt "0" ]; then
     if [[ $(docker images --format "{{.Tag}}" "${TAG}") =~ (^|[[:space:]])${1}($|[[:space:]]) || $(wget -q https://registry.hub.docker.com/v2/repositories/${TAG}/tags -O - | grep -Poe '(?<=(\"name\":\")).*?(?=\")') =~ (^|[[:space:]])${1}($|[[:space:]]) ]]; then
         # Use the first argument as a tag is such tag exists either locally or on the remote registry
@@ -48,14 +64,12 @@ GUI_ENVS=(
 )
 
 ## Additional volumes
-CUSTOM_VOLUMES=()
 # Synchronize timezone with host
 CUSTOM_VOLUMES+=("/etc/localtime:/etc/localtime:ro")
 # Persistent storage of logs
 CUSTOM_VOLUMES+=("${PWD}/drl_grasping_training_docker:/root/drl_grasping_training")
 
 ## Additional environment variables
-CUSTOM_ENVS=()
 # Synchronize ROS_DOMAIN_ID with host
 if [ -n "${ROS_DOMAIN_ID}" ]; then
     CUSTOM_ENVS+=("ROS_DOMAIN_ID=${ROS_DOMAIN_ID}")

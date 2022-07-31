@@ -1,6 +1,8 @@
 # Docker
 **/Dockerfile
 **/.dockerignore
+**/.docker/host
+**/.docker/*.bash
 
 # Git
 **/.git
@@ -17,3 +19,7 @@
 
 # Python
 **/__pycache__
+
+# Markdown
+**/README.md
+**/CHANGELOG.md
