@@ -83,15 +83,6 @@ class GraspOctree(Grasp, abc.ABC):
         # TODO: Customize replay buffer to support variable sized observations
         # If enabled, proprieceptive observations will be embedded inside octree in a hacky way
         # (replace with Dict once https://github.com/DLR-RM/stable-baselines3/pull/243 is merged)
-        return gym.spaces.Box(
-            low=0,
-            high=255,
-            shape=(self._octree_n_stacked, self._octree_max_size),
-            dtype=np.uint8,
-        )
-
-    def create_proprioceptive_observation_space(self) -> ObservationSpace:
-
         # 0   - (gripper) Gripper state
         #       - 1.0: opened
         #       - -1.0: closed
@@ -100,12 +91,10 @@ class GraspOctree(Grasp, abc.ABC):
         # 4:10 - (v1_x, v1_y, v1_z, v2_x, v2_y, v2_z) 3D orientation in "6D representation"
         #       - normalised
         return gym.spaces.Box(
-            low=np.array(
-                (-1.0, -np.inf, -np.inf, -np.inf, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0)
-            ),
-            high=np.array((1.0, np.inf, np.inf, np.inf, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)),
-            shape=(10,),
-            dtype=np.float32,
+            low=0,
+            high=255,
+            shape=(self._octree_n_stacked, self._octree_max_size),
+            dtype=np.uint8,
         )
 
     def get_observation(self) -> Observation:
@@ -132,28 +121,26 @@ class GraspOctree(Grasp, abc.ABC):
 
         # Write the original length into the padded octree for reference
         octree[-4:] = np.ndarray(
-            buffer=np.array([octree_size], dtype="uint32").tobytes(),
+            buffer=np.array([octree_size], dtype=np.uint32).tobytes(),
             shape=(4,),
-            dtype="uint8",
+            dtype=np.uint8,
         )
         # To get it back:
-        # octree_size = np.frombuffer(buffer=octree[-4:],
-        #                             dtype='uint32',
-        #                             count=1)
+        # octree_size = np.frombuffer(buffer=octree[-4:], dtype=np.uint32, count=1)
 
         if self._proprioceptive_observations:
             # Add number of auxiliary observations to octree structure
             octree[-8:-4] = np.ndarray(
-                buffer=np.array([10], dtype="uint32").tobytes(),
+                buffer=np.array([10], dtype=np.uint32).tobytes(),
                 shape=(4,),
-                dtype="uint8",
+                dtype=np.uint8,
             )
 
             # Gather proprioceptive observations
             ee_position, ee_orientation = self.get_ee_pose()
             ee_orientation = orientation_quat_to_6d(quat_xyzw=ee_orientation)
             aux_obs = (
-                (1 if self.gripper.is_open else -1,)
+                (1.0 if self.gripper.is_open else -1.0,)
                 + ee_position
                 + ee_orientation[0]
                 + ee_orientation[1]
@@ -161,9 +148,9 @@ class GraspOctree(Grasp, abc.ABC):
 
             # Add auxiliary observations into the octree structure
             octree[-48:-8] = np.ndarray(
-                buffer=np.array(aux_obs, dtype="float32").tobytes(),
+                buffer=np.array(aux_obs, dtype=np.float32).tobytes(),
                 shape=(40,),
-                dtype="uint8",
+                dtype=np.uint8,
             )
 
         self.__stacked_octrees.append(octree)
@@ -172,7 +159,7 @@ class GraspOctree(Grasp, abc.ABC):
             self.__stacked_octrees.append(octree)
 
         # Create the observation
-        observation = Observation(np.array(self.__stacked_octrees))
+        observation = Observation(np.array(self.__stacked_octrees, dtype=np.uint8))
 
         self.get_logger().debug(f"\nobservation: {observation}")
 

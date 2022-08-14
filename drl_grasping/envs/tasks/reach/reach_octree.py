@@ -113,14 +113,12 @@ class ReachOctree(Reach, abc.ABC):
 
         # Write the original length into the padded octree for reference
         octree[-4:] = np.ndarray(
-            buffer=np.array([octree_size], dtype="uint32").tobytes(),
+            buffer=np.array([octree_size], dtype=np.uint32).tobytes(),
             shape=(4,),
-            dtype="uint8",
+            dtype=np.uint8,
         )
         # To get it back:
-        # octree_size = np.frombuffer(buffer=octree[-4:],
-        #                             dtype='uint32',
-        #                             count=1)
+        # octree_size = np.frombuffer(buffer=octree[-4:], dtype=np.uint32, count=1)
 
         self.__stacked_octrees.append(octree)
         # For the first buffer after reset, fill with identical observations until deque is full
@@ -128,7 +126,7 @@ class ReachOctree(Reach, abc.ABC):
             self.__stacked_octrees.append(octree)
 
         # Create the observation
-        observation = Observation(np.array(self.__stacked_octrees))
+        observation = Observation(np.array(self.__stacked_octrees, dtype=np.uint8))
 
         self.get_logger().debug(f"\nobservation: {observation}")
 

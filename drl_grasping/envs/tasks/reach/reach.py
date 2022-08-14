@@ -79,7 +79,9 @@ class Reach(Manipulation, abc.ABC):
         target_position = self.get_object_position(object_model=self.object_names[0])
 
         # Create the observation
-        observation = Observation(np.concatenate([ee_position, target_position]))
+        observation = Observation(
+            np.concatenate([ee_position, target_position], dtype=np.float32)
+        )
 
         self.get_logger().debug(f"\nobservation: {observation}")
 

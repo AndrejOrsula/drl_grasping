@@ -75,30 +75,19 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
             size += self._num_pixels
 
         if self._proprioceptive_observations:
+            # 0   - (gripper) Gripper state
+            #       - 1.0: opened
+            #       - -1.0: closed
+            # 1:4 - (x, y, z) displacement
+            #       - metric units, unbound
+            # 4:10 - (v1_x, v1_y, v1_z, v2_x, v2_y, v2_z) 3D orientation in "6D representation"
+            #       - normalised
             size += 11
 
         return gym.spaces.Box(
             low=-1.0,
             high=1.0,
             shape=(self._image_n_stacked, size),
-            dtype=np.float32,
-        )
-
-    def create_proprioceptive_observation_space(self) -> ObservationSpace:
-
-        # 0   - (gripper) Gripper state
-        #       - 1.0: opened
-        #       - -1.0: closed
-        # 1:4 - (x, y, z) displacement
-        #       - metric units, unbound
-        # 4:10 - (v1_x, v1_y, v1_z, v2_x, v2_y, v2_z) 3D orientation in "6D representation"
-        #       - normalised
-        return gym.spaces.Box(
-            low=np.array(
-                (-1.0, -np.inf, -np.inf, -np.inf, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0)
-            ),
-            high=np.array((1.0, np.inf, np.inf, np.inf, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)),
-            shape=(10,),
             dtype=np.float32,
         )
 
@@ -234,7 +223,7 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
             ee_position, ee_orientation = self.get_ee_pose()
             ee_orientation = orientation_quat_to_6d(quat_xyzw=ee_orientation)
             aux_obs = (
-                (1 if self.gripper.is_open else -1,)
+                (1.0 if self.gripper.is_open else -1.0,)
                 + ee_position
                 + ee_orientation[0]
                 + ee_orientation[1]
@@ -249,7 +238,7 @@ class GraspPlanetaryDepthImage(GraspPlanetary, abc.ABC):
             self.__stacked_images.append(depth_image)
 
         # Create the observation
-        observation = Observation(np.array(self.__stacked_images))
+        observation = Observation(np.array(self.__stacked_images, dtype=np.uint8))
 
         self.get_logger().debug(f"\nobservation: {observation}")
 
