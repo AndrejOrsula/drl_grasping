@@ -16,6 +16,20 @@ This project focuses on applying deep reinforcement learning to acquire a robust
   <em>Sim-to-Real transfer of a policy trained solely inside a simulation (zero-shot transfer). Credit: Aalborg University</em>
 </p>
 
+<p align="center" float="middle">
+  <a href="https://www.youtube.com/watch?v=FZSoOkK6VFc">
+    <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim_lunar.webp"/>
+  </a>
+  <em>Evaluation of a trained policy for grasping rocks on the Moon inside a simulation.</em>
+</p>
+
+<p align="center" float="middle">
+  <a href="https://www.youtube.com/watch?v=FZSoOkK6VFc">
+    <img width="100.0%" src="https://github.com/AndrejOrsula/master_thesis/raw/media/media/webp/sim2real_lunar.webp"/>
+  </a>
+  <em>Sim-to-Real transfer in a Moon-analogue facility (zero-shot transfer). Credit: University of Luxembourg</em>
+</p>
+
 ## Overview
 
 <p align="center">
