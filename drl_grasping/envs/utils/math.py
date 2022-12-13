@@ -36,3 +36,11 @@ def distance_to_nearest_point(
 ) -> float:
 
     return np.linalg.norm(np.array(points) - np.array(origin), axis=1).min()
+
+
+def get_nearest_point(
+    origin: Tuple[float, float, float], points: List[Tuple[float, float, float]]
+) -> Tuple[float, float, float]:
+
+    target_distances = np.linalg.norm(np.array(points) - np.array(origin), axis=1)
+    return points[target_distances.argmin()]

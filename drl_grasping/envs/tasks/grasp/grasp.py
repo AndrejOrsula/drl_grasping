@@ -1,6 +1,7 @@
 import abc
 import itertools
-from typing import Dict, List, Tuple
+from collections import deque
+from typing import Dict, List
 
 import gym
 import numpy as np
@@ -15,7 +16,8 @@ from scipy.spatial.transform import Rotation
 
 from drl_grasping.envs.tasks.curriculums import GraspCurriculum
 from drl_grasping.envs.tasks.manipulation import Manipulation
-from drl_grasping.envs.utils.conversions import quat_to_xyzw
+from drl_grasping.envs.utils.conversions import orientation_quat_to_6d, quat_to_xyzw
+from drl_grasping.envs.utils.math import get_nearest_point
 
 
 class Grasp(Manipulation, abc.ABC):
@@ -23,6 +25,7 @@ class Grasp(Manipulation, abc.ABC):
         self,
         gripper_dead_zone: float,
         full_3d_orientation: bool,
+        obs_n_stacked: int = 1,
         preload_replay_buffer: bool = False,
         **kwargs,
     ):
@@ -42,6 +45,12 @@ class Grasp(Manipulation, abc.ABC):
         self.__gripper_dead_zone = gripper_dead_zone
         self.__full_3d_orientation = full_3d_orientation
         self.__preload_replay_buffer = preload_replay_buffer
+
+        # Additional parameters
+        self._obs_n_stacked = obs_n_stacked
+
+        # List of all octrees
+        self.__stacked_obs = deque([], maxlen=self._obs_n_stacked)
 
     def create_action_space(self) -> ActionSpace:
 
@@ -73,7 +82,54 @@ class Grasp(Manipulation, abc.ABC):
 
     def create_observation_space(self) -> ObservationSpace:
 
-        pass
+        # 0     - (gripper) Gripper state
+        #       - {opened: 1.0, closed: -1.0}
+        # 1:4   - (x, y, z) displacement
+        #       - metric units, unbound
+        # 4:10  - (v1_x, v1_y, v1_z, v2_x, v2_y, v2_z) 3D orientation in "6D representation"
+        #       - normalised
+        # 10:13 - (x, y, z) nearest object position
+        # Note: These could theoretically be restricted to the workspace and object spawn area instead of inf
+        return gym.spaces.Box(
+            low=np.array(
+                (
+                    -1.0,
+                    -np.inf,
+                    -np.inf,
+                    -np.inf,
+                    -1.0,
+                    -1.0,
+                    -1.0,
+                    -1.0,
+                    -1.0,
+                    -1.0,
+                    -np.inf,
+                    -np.inf,
+                    -np.inf,
+                )
+                * self._obs_n_stacked
+            ),
+            high=np.array(
+                (
+                    1.0,
+                    np.inf,
+                    np.inf,
+                    np.inf,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    np.inf,
+                    np.inf,
+                    np.inf,
+                )
+                * self._obs_n_stacked
+            ),
+            shape=(13 * self._obs_n_stacked,),
+            dtype=np.float32,
+        )
 
     def set_action(self, action: Action):
 
@@ -116,7 +172,50 @@ class Grasp(Manipulation, abc.ABC):
 
     def get_observation(self) -> Observation:
 
-        raise NotImplementedError()
+        # Gather proprioceptive observations
+        ee_position, ee_orientation = self.get_ee_pose()
+        ee_position = np.array(ee_position, dtype=np.float32)
+        ee_orientation = np.array(
+            orientation_quat_to_6d(quat_xyzw=ee_orientation), dtype=np.float32
+        )
+
+        # Determine position of the nearest object
+        object_positions = np.array(
+            tuple(self.get_object_positions().values()), dtype=np.float32
+        )
+        nearest_object_position = get_nearest_point(
+            origin=ee_position, points=object_positions
+        )
+
+        # Create the observation
+        obs = np.concatenate(
+            [
+                (1.0 if self.gripper.is_open else -1.0,),
+                ee_position,
+                ee_orientation[0],
+                ee_orientation[1],
+                nearest_object_position,
+            ],
+            dtype=np.float32,
+        )
+
+        # Stack the observation if necessary
+        if self._obs_n_stacked > 1:
+            self.__stacked_obs.append(obs)
+            # For the first buffer after reset, fill with identical observations until deque is full
+            while not self._obs_n_stacked == len(self.__stacked_obs):
+                self.__stacked_obs.append(obs)
+            # Create the observation
+            observation = Observation(
+                np.concatenate(self.__stacked_obs, dtype=np.float32)
+            )
+        else:
+            observation = Observation(obs)
+
+        self.get_logger().debug(f"\nobservation: {observation}")
+
+        # Return the observation
+        return observation
 
     def get_reward(self) -> Reward:
 

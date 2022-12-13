@@ -3,8 +3,6 @@ import abc
 from drl_grasping.envs.models.robots import LunalabSummitXlGen
 from drl_grasping.envs.tasks.grasp import Grasp
 
-# Note: GraspPlanetary task is currently almost identical to the Grasp task
-
 
 class GraspPlanetary(Grasp, abc.ABC):
     def __init__(

@@ -358,7 +358,7 @@ GRASP_KWARGS_OCTREE: Dict[str, any] = {
     "proprioceptive_observations": True,
 }
 GRASP_KWARGS_SIM: Dict[str, any] = {
-    "physics_rate": 250.0,
+    "physics_rate": 400.0,
     "real_time_factor": float(np.finfo(np.float32).max),
     "world": path.join(DRL_GRASPING_WORLDS_DIR, "default.sdf"),
 }
@@ -465,6 +465,16 @@ GRASP_KWARGS_CURRICULUM: Dict[str, any] = {
 
 # Task
 register(
+    id="Grasp-v0",
+    entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
+    max_episode_steps=GRASP_MAX_EPISODE_STEPS,
+    kwargs={
+        "task_cls": tasks.Grasp,
+        **GRASP_KWARGS,
+        **GRASP_KWARGS_CURRICULUM,
+    },
+)
+register(
     id="Grasp-Octree-v0",
     entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
     max_episode_steps=GRASP_MAX_EPISODE_STEPS,
@@ -507,6 +517,17 @@ register(
     },
 )
 # Gazebo wrapper
+register(
+    id="Grasp-Gazebo-v0",
+    entry_point=GRASP_RANDOMIZER,
+    max_episode_steps=GRASP_MAX_EPISODE_STEPS,
+    kwargs={
+        "env": "Grasp-v0",
+        **GRASP_KWARGS_SIM,
+        **GRASP_KWARGS_RANDOMIZER,
+        "camera_enable": False,
+    },
+)
 register(
     id="Grasp-Octree-Gazebo-v0",
     entry_point=GRASP_RANDOMIZER,
@@ -603,7 +624,7 @@ GRASP_PLANETARY_KWARGS_OCTREE: Dict[str, any] = {
     "proprioceptive_observations": True,
 }
 GRASP_PLANETARY_KWARGS_SIM: Dict[str, any] = {
-    "physics_rate": 200.0,
+    "physics_rate": 500.0,
     "real_time_factor": float(np.finfo(np.float32).max),
     "world": path.join(DRL_GRASPING_WORLDS_DIR, "lunar.sdf"),
 }
@@ -745,6 +766,16 @@ GRASP_PLANETARY_KWARGS_CURRICULUM: Dict[str, any] = {
 
 # Task
 register(
+    id="GraspPlanetary-v0",
+    entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
+    max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
+    kwargs={
+        "task_cls": tasks.GraspPlanetary,
+        **GRASP_PLANETARY_KWARGS,
+        **GRASP_PLANETARY_KWARGS_CURRICULUM,
+    },
+)
+register(
     id="GraspPlanetary-ColorImage-v0",
     entry_point=DRL_GRASPING_TASK_ENTRYPOINT,
     max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
@@ -848,6 +879,17 @@ register(
     },
 )
 # Gazebo wrapper
+register(
+    id="GraspPlanetary-Gazebo-v0",
+    entry_point=GRASP_PLANETARY_RANDOMIZER,
+    max_episode_steps=GRASP_PLANETARY_MAX_EPISODE_STEPS,
+    kwargs={
+        "env": "GraspPlanetary-v0",
+        **GRASP_PLANETARY_KWARGS_SIM,
+        **GRASP_PLANETARY_KWARGS_RANDOMIZER,
+        "camera_enable": False,
+    },
+)
 register(
     id="GraspPlanetary-ColorImage-Gazebo-v0",
     entry_point=GRASP_PLANETARY_RANDOMIZER,

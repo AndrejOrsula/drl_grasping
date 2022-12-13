@@ -20,7 +20,7 @@ Reach-Gazebo-v0:
   noise_type: "normal"
   noise_std: 0.025
   use_sde: False
-  optimize_memory_usage: True
+  optimize_memory_usage: False
 
 Reach-ColorImage-Gazebo-v0:
   policy: "CnnPolicy"
@@ -160,6 +160,30 @@ Reach-OctreeWithColor-Gazebo-v0:
   optimize_memory_usage: True
 
 # Grasp
+Grasp-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+  policy: "MlpPolicy"
+  policy_kwargs:
+    n_critics: 1
+    net_arch: [128, 64]
+  n_timesteps: 1000000
+  buffer_size: 250000
+  learning_starts: 20000
+  batch_size: 256
+  learning_rate: lin_0.0002
+  gamma: 0.99
+  tau: 0.0001
+  ent_coef: "auto_1.0"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
+  noise_type: "normal"
+  noise_std: 0.025
+  use_sde: False
+  optimize_memory_usage: False
+
 Grasp-Octree-Gazebo-v0:
   callback:
     - drl_grasping.utils.callbacks.CurriculumLoggerCallback
@@ -284,6 +308,30 @@ Grasp-OctreeWithColor-Gazebo-v0:
   optimize_memory_usage: True
 
 # GraspPlanetary
+GraspPlanetary-Gazebo-v0:
+  callback:
+    - drl_grasping.utils.callbacks.CurriculumLoggerCallback
+  policy: "MlpPolicy"
+  policy_kwargs:
+    n_critics: 1
+    net_arch: [128, 64]
+  n_timesteps: 1000000
+  buffer_size: 250000
+  learning_starts: 20000
+  batch_size: 512
+  learning_rate: lin_0.0002
+  gamma: 0.99
+  tau: 0.0001
+  ent_coef: "auto_1.0"
+  target_entropy: "auto"
+  top_quantiles_to_drop_per_net: 3
+  train_freq: [1, "episode"]
+  gradient_steps: 100
+  noise_type: "normal"
+  noise_std: 0.025
+  use_sde: False
+  optimize_memory_usage: False
+
 GraspPlanetary-DepthImage-Gazebo-v0:
   callback:
     - drl_grasping.utils.callbacks.CurriculumLoggerCallback

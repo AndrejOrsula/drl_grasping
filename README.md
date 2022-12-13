@@ -88,8 +88,8 @@ If you are interested in configuring these environments, first take a look at th
 <tbody>
   <tr>
     <td>Reach-v0 (state obs)</td>
-    <td align="center">—</td>
-    <td align="center">—</td>
+    <td>Grasp-v0 (state obs)</td>
+    <td>GraspPlanetary-v0 (state obs)</td>
   </tr>
   <tr>
     <td align="center">—</td>
