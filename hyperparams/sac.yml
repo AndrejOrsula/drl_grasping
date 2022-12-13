@@ -4,13 +4,13 @@ Reach-Gazebo-v0:
   policy_kwargs:
     n_critics: 2
     net_arch: [128, 64]
-  n_timesteps: 50000
+  n_timesteps: 200000
   buffer_size: 25000
-  learning_starts: 0
-  batch_size: 32
+  learning_starts: 5000
+  batch_size: 512
   learning_rate: lin_0.0002
   gamma: 0.95
-  tau: 0.0005
+  tau: 0.001
   ent_coef: "auto_0.1"
   target_entropy: "auto"
   train_freq: [1, "episode"]
@@ -27,7 +27,7 @@ Reach-ColorImage-Gazebo-v0:
     net_arch: [128, 128]
   n_timesteps: 50000
   buffer_size: 25000
-  learning_starts: 0
+  learning_starts: 5000
   batch_size: 32
   learning_rate: lin_0.0002
   gamma: 0.95
@@ -63,7 +63,7 @@ Reach-Octree-Gazebo-v0:
     share_features_extractor: True
   n_timesteps: 50000
   buffer_size: 25000
-  learning_starts: 0
+  learning_starts: 5000
   batch_size: 32
   learning_rate: lin_0.0002
   gamma: 0.95
@@ -99,7 +99,7 @@ Reach-OctreeWithIntensity-Gazebo-v0:
     share_features_extractor: True
   n_timesteps: 50000
   buffer_size: 25000
-  learning_starts: 0
+  learning_starts: 5000
   batch_size: 32
   learning_rate: lin_0.0002
   gamma: 0.95
@@ -135,7 +135,7 @@ Reach-OctreeWithColor-Gazebo-v0:
     share_features_extractor: True
   n_timesteps: 50000
   buffer_size: 25000
-  learning_starts: 0
+  learning_starts: 5000
   batch_size: 32
   learning_rate: lin_0.0002
   gamma: 0.95
@@ -157,13 +157,13 @@ Grasp-Gazebo-v0:
   policy_kwargs:
     n_critics: 1
     net_arch: [128, 64]
-  n_timesteps: 1000000
+  n_timesteps: 10000000
   buffer_size: 250000
   learning_starts: 20000
-  batch_size: 256
+  batch_size: 1024
   learning_rate: lin_0.0002
   gamma: 0.99
-  tau: 0.0001
+  tau: 0.001
   ent_coef: "auto_1.0"
   target_entropy: "auto"
   train_freq: [1, "episode"]
@@ -198,7 +198,7 @@ Grasp-Octree-Gazebo-v0:
     share_features_extractor: True
   n_timesteps: 500000
   buffer_size: 50000
-  learning_starts: 0
+  learning_starts: 10000
   batch_size: 64
   learning_rate: lin_0.0002
   gamma: 0.99
@@ -237,7 +237,7 @@ Grasp-OctreeWithIntensity-Gazebo-v0:
     share_features_extractor: True
   n_timesteps: 500000
   buffer_size: 50000
-  learning_starts: 0
+  learning_starts: 10000
   batch_size: 64
   learning_rate: lin_0.0002
   gamma: 0.99
@@ -276,7 +276,7 @@ Grasp-OctreeWithColor-Gazebo-v0:
     share_features_extractor: True
   n_timesteps: 500000
   buffer_size: 50000
-  learning_starts: 0
+  learning_starts: 10000
   batch_size: 64
   learning_rate: lin_0.0002
   gamma: 0.99
@@ -298,13 +298,13 @@ GraspPlanetary-Gazebo-v0:
   policy_kwargs:
     n_critics: 1
     net_arch: [128, 64]
-  n_timesteps: 1000000
+  n_timesteps: 10000000
   buffer_size: 250000
   learning_starts: 20000
-  batch_size: 512
+  batch_size: 2048
   learning_rate: lin_0.0002
   gamma: 0.99
-  tau: 0.0001
+  tau: 0.001
   ent_coef: "auto_1.0"
   target_entropy: "auto"
   train_freq: [1, "episode"]
@@ -336,7 +336,7 @@ GraspPlanetary-DepthImage-Gazebo-v0:
     share_features_extractor: True
   n_timesteps: 500000
   buffer_size: 50000
-  learning_starts: 0
+  learning_starts: 20000
   batch_size: 64
   learning_rate: lin_0.0002
   gamma: 0.99
@@ -372,7 +372,7 @@ GraspPlanetary-DepthImageWithIntensity-Gazebo-v0:
     share_features_extractor: True
   n_timesteps: 500000
   buffer_size: 50000
-  learning_starts: 0
+  learning_starts: 20000
   batch_size: 64
   learning_rate: lin_0.0002
   gamma: 0.99
@@ -408,7 +408,7 @@ GraspPlanetary-DepthImageWithColor-Gazebo-v0:
     share_features_extractor: True
   n_timesteps: 500000
   buffer_size: 50000
-  learning_starts: 0
+  learning_starts: 20000
   batch_size: 64
   learning_rate: lin_0.0002
   gamma: 0.99
@@ -447,7 +447,7 @@ GraspPlanetary-Octree-Gazebo-v0:
     share_features_extractor: True
   n_timesteps: 500000
   buffer_size: 50000
-  learning_starts: 0
+  learning_starts: 20000
   batch_size: 64
   learning_rate: lin_0.0002
   gamma: 0.99
@@ -486,7 +486,7 @@ GraspPlanetary-OctreeWithIntensity-Gazebo-v0:
     share_features_extractor: True
   n_timesteps: 500000
   buffer_size: 50000
-  learning_starts: 0
+  learning_starts: 20000
   batch_size: 64
   learning_rate: lin_0.0002
   gamma: 0.99
@@ -525,7 +525,7 @@ GraspPlanetary-OctreeWithColor-Gazebo-v0:
     share_features_extractor: True
   n_timesteps: 500000
   buffer_size: 50000
-  learning_starts: 0
+  learning_starts: 20000
   batch_size: 64
   learning_rate: lin_0.0002
   gamma: 0.99
