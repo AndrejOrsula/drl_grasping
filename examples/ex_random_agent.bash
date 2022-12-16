@@ -20,10 +20,12 @@ ROBOT_MODEL="lunalab_summit_xl_gen"
 # ENV="Reach-OctreeWithIntensity-Gazebo-v0"
 # ENV="Reach-OctreeWithColor-Gazebo-v0"
 ## Grasp
+# ENV="Grasp-Gazebo-v0"
 # ENV="Grasp-Octree-Gazebo-v0"
 # ENV="Grasp-OctreeWithIntensity-Gazebo-v0"
 # ENV="Grasp-OctreeWithColor-Gazebo-v0"
 ## GraspPlanetary
+# ENV="GraspPlanetary-Gazebo-v0"
 # ENV="GraspPlanetary-MonoImage-Gazebo-v0"
 # ENV="GraspPlanetary-ColorImage-Gazebo-v0"
 # ENV="GraspPlanetary-DepthImage-Gazebo-v0"

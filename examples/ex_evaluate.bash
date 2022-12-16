@@ -23,10 +23,12 @@ ROBOT_MODEL="panda"
 # ENV="Reach-OctreeWithIntensity-Gazebo-v0"
 # ENV="Reach-OctreeWithColor-Gazebo-v0"
 ## Grasp
+ENV="Grasp-Gazebo-v0"
 # ENV="Grasp-Octree-Gazebo-v0"
 # ENV="Grasp-OctreeWithIntensity-Gazebo-v0"
-ENV="Grasp-OctreeWithColor-Gazebo-v0"
+# ENV="Grasp-OctreeWithColor-Gazebo-v0"
 ## GraspPlanetary
+# ENV="GraspPlanetary-Gazebo-v0"
 # ENV="GraspPlanetary-MonoImage-Gazebo-v0"
 # ENV="GraspPlanetary-ColorImage-Gazebo-v0"
 # ENV="GraspPlanetary-DepthImage-Gazebo-v0"
@@ -37,9 +39,9 @@ ENV="Grasp-OctreeWithColor-Gazebo-v0"
 # ENV="GraspPlanetary-OctreeWithColor-Gazebo-v0"
 
 ## Selection of RL algorithm
+ALGO="sac"
 # ALGO="td3"
-# ALGO="sac"
-ALGO="tqc"
+# ALGO="tqc"
 
 ## Path to logs directory
 LOG_FOLDER="${PWD}/drl_grasping_training/train/${ENV}/logs"

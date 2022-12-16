@@ -23,10 +23,12 @@ ROBOT_MODEL="panda"
 # ENV="Reach-OctreeWithIntensity-v0"
 # ENV="Reach-OctreeWithColor-v0"
 ## Grasp
+# ENV="Grasp-v0"
 # ENV="Grasp-Octree-v0"
 # ENV="Grasp-OctreeWithIntensity-v0"
 ENV="Grasp-OctreeWithColor-v0"
 ## GraspPlanetary
+# ENV="GraspPlanetary-v0"
 # ENV="GraspPlanetary-MonoImage-v0"
 # ENV="GraspPlanetary-ColorImage-v0"
 # ENV="GraspPlanetary-DepthImage-v0"
@@ -37,9 +39,9 @@ ENV="Grasp-OctreeWithColor-v0"
 # ENV="GraspPlanetary-OctreeWithColor-v0"
 
 ## Selection of RL algorithm
+ALGO="sac"
 # ALGO="td3"
-# ALGO="sac"
-ALGO="tqc"
+# ALGO="tqc"
 
 ## Path to logs directory
 LOG_FOLDER="${PWD}/drl_grasping_training/train/${ENV}/logs"
