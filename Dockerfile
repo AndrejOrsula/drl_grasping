@@ -76,6 +76,15 @@ RUN apt-get update && \
     apt-get install -yq --no-install-recommends \
     ignition-${IGNITION_VERSION} && \
     rm -rf /var/lib/apt/lists/*
+## UNTIL FIXED: Compile ign-gazebo 6.9.0 from source because newer versions introduce errors
+## Commit: https://github.com/gazebosim/gz-sim/commit/2938ede79feeb0fb1638370b910f06fb530be0ee
+RUN git clone https://github.com/gazebosim/gz-sim.git -b ign-gazebo6 ${WS_SRC_DIR}/ign-gazebo && \
+    git -C ${WS_SRC_DIR}/ign-gazebo reset --hard 2938ede79feeb0fb1638370b910f06fb530be0ee && \
+    rm -rf ${WS_SRC_DIR}/ign-gazebo/.git
+WORKDIR ${WS_DIR}
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash && \
+    colcon build --merge-install --symlink-install --cmake-args "-DCMAKE_BUILD_TYPE=Release" && \
+    rm -rf ${WS_LOG_DIR}
 
 ### Install Python requirements (Torch, SB3, ...)
 COPY ./python_requirements.txt ${WS_SRC_DIR}/drl_grasping/python_requirements.txt
