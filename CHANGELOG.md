@@ -1,17 +1,19 @@
 # CHANGELOG
 
-## [\[2.0.0\] - 2022-07-18](https://github.com/AndrejOrsula/drl_grasping/releases/tag/2.0.0)
+## [\[2.0.0\] - 2022-12-16](https://github.com/AndrejOrsula/drl_grasping/releases/tag/2.0.0)
 
 ### Added
 
 - Full integration with `ros2_control`.
 - Support for `moveit_servo` via `pymoveit`.
 - Support for mobile manipulators.
-- `lunalab_summit_xl_gen`  is now added to the supported (mobile) robot models.
-- Configuration of pre-commit git hooks.
+- `lunalab_summit_xl_gen` is now added to the supported (mobile) robot models.
+- New `GraspPlanetary` environment with various observation variants.
+- Additional observation variants for `Grasp` environments.
 - Models for `Sun` and `RandomSun`, replacing the default light contained in SDF worlds.
 - Camera can now be mounted relative to robot frame (configurable) via DetachableJoint.
 - Added experimental setup for Dreamer V2 algorithm.
+- Configuration of pre-commit git hooks.
 
 ### Changed
 
