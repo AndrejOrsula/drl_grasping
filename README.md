@@ -424,7 +424,8 @@ Please use the following citation if you use `drl_grasping` in your work.
   title     = {{Learning} to {Grasp} on the {Moon} from {3D} {Octree} {Observations} with {Deep} {Reinforcement} {Learning}},
   year      = {2022},
   booktitle = {2022 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
-  month     = oct
+  pages     = {4112--4119},
+  doi       = {10.1109/IROS47612.2022.9981661}
 }
 ```
 
